@@ -81,6 +81,12 @@ Stops all Docker containers (works for both modes).
 just repo-status
 ```
 
+### Show git diff across all repos
+```bash
+just repo-diff
+```
+Shows unstaged changes in all repositories with diff stats and full diffs.
+
 ### Show current branches in all repos
 ```bash
 just repo-branches

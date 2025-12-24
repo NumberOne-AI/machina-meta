@@ -51,6 +51,22 @@ repo-status:
         git -C "$dir" status -sb
     done
 
+# Show git diff across all repos
+repo-diff:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        echo ""
+        echo "=== $(basename "$dir") ==="
+        if git -C "$dir" diff --quiet; then
+            echo "No changes"
+        else
+            git -C "$dir" diff --stat
+            echo ""
+            git -C "$dir" diff
+        fi
+    done
+
 # Show current branches
 repo-branches:
     #!/usr/bin/env bash

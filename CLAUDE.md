@@ -120,6 +120,7 @@ just repo-branches
 
 ```bash
 just repo-status    # Git status across all repos
+just repo-diff      # Show diffs across all repos
 just repo-branches  # Show current branches
 just repo-log 5     # Show last 5 commits from each repo
 just dev-status     # Check all dev servers (API, frontend, databases)
@@ -418,6 +419,7 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 |---------|---------|
 | `just bootstrap` | Initial setup |
 | `just repo-status` | Git status all repos |
+| `just repo-diff` | Show diffs all repos |
 | `just repo-branches` | Show current branches |
 | `just repo-checkout <branch>` | Checkout across all repos |
 | `just checkout-repo <repo> <branch>` | Checkout in specific repo |
