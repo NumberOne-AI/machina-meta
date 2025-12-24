@@ -258,7 +258,7 @@ dev-status:
     echo "|----------|---------|------|---------|--------|-----|"
 
     # Check Frontend
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200"; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -qE "^[23][0-9][0-9]$"; then
         echo "| Frontend | Frontend | Next.js | 3000 | ✅ Running | http://localhost:3000 |"
     else
         echo "| Frontend | Frontend | Next.js | 3000 | ❌ Stopped | - |"
