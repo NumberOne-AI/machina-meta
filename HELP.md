@@ -16,14 +16,46 @@ Installs dependencies for all services (dem2, dem2-webui, medical-catalog).
 
 ## Development Stack
 
-### Start databases and apply migrations
+### Two Development Modes
+
+#### Production Mode (Default) - Containerized Applications
 ```bash
 just dev-up
 ```
-- Starts: PostgreSQL, Neo4j, Redis, Qdrant, RedisInsight
-- Runs PostgreSQL migrations (alembic)
-- Runs Neo4j graph migrations
-- Takes ~10 seconds total
+Starts the **full stack in Docker containers** (production-like environment):
+- **Frontend** (Next.js) - containerized on port 3000
+- **Backend** (FastAPI) - containerized on port 8000
+- **Databases**: PostgreSQL, Neo4j, Redis, Qdrant, RedisInsight
+- **Migrations**: Applied automatically on backend startup
+- **Startup time**: ~60 seconds total
+
+This mode is ideal for:
+- Testing the production build
+- Consistent environment across team members
+- End-to-end integration testing
+
+#### Hot-Reload Mode - Local Development
+```bash
+just dev-up-hot
+```
+Starts **only the databases**, for local hot-reload development:
+- **Databases**: PostgreSQL, Neo4j, Redis, Qdrant, RedisInsight
+- **Migrations**: Applied automatically
+- **Applications**: Run manually with hot-reload
+
+After starting databases, run applications in separate terminals:
+```bash
+# Terminal 1: Backend API with hot-reload
+cd repos/dem2 && just run         # http://localhost:8000
+
+# Terminal 2: Frontend with hot-reload
+cd repos/dem2-webui && pnpm dev   # http://localhost:3000
+```
+
+This mode is ideal for:
+- Active feature development
+- Instant code changes without rebuilds
+- Debugging with direct console output
 
 ### Check status of all services
 ```bash
@@ -40,17 +72,7 @@ Shows markdown table with status of all 7 services across 5 categories:
 ```bash
 just dev-down
 ```
-Stops all Docker containers.
-
-### Start application servers
-After `just dev-up`, start these in separate terminals:
-```bash
-# Terminal 1: Backend API
-cd repos/dem2 && just run         # http://localhost:8000
-
-# Terminal 2: Frontend
-cd repos/dem2-webui && pnpm dev   # http://localhost:3000
-```
+Stops all Docker containers (works for both modes).
 
 ## Git Operations (Cross-Repo)
 

@@ -48,8 +48,13 @@ just status
 just branches
 just dev-status
 
-# Start development
+# Start development (choose one mode):
+
+# Option 1: Production mode (full stack in containers)
 just dev-up
+
+# Option 2: Hot-reload mode (databases only, run apps manually)
+just dev-up-hot
 # Then in separate terminals:
 cd repos/dem2 && just run
 cd repos/dem2-webui && pnpm dev
@@ -117,9 +122,14 @@ just pull-all     # Pull latest in each repo
 
 ```bash
 just dev-status   # Check what's running
-just dev-up       # Start databases and run migrations
-just dev-down     # Stop all development services
+just dev-up       # Start full stack (production mode - containers)
+just dev-up-hot   # Start databases only (hot-reload mode)
+just dev-down     # Stop all services
 ```
+
+**Two Development Modes:**
+- **Production Mode** (`just dev-up`): Full stack in Docker containers (frontend + backend + databases)
+- **Hot-Reload Mode** (`just dev-up-hot`): Databases only, run apps with `just run` and `pnpm dev` for instant code changes
 
 ## Development Setup by Service
 
@@ -397,7 +407,8 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 | `just branches` | Show current branches |
 | `just checkout <branch>` | Checkout across all repos |
 | `just dev-status` | Check all services |
-| `just dev-up` | Start databases |
+| `just dev-up` | Start full stack (production mode) |
+| `just dev-up-hot` | Start databases only (hot-reload mode) |
 | `just dev-down` | Stop all services |
 | `just check-all` | Lint/type check all |
 | `just test-all` | Test all repos |

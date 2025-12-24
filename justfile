@@ -68,24 +68,43 @@ checkout branch:
         git -C "$dir" checkout {{branch}} 2>/dev/null || git -C "$dir" checkout -b {{branch}}
     done
 
-# Start full development stack
+# Start full stack in production mode (databases + frontend + backend containers)
 dev-up:
-    @echo "Starting databases..."
-    cd repos/dem2 && just dev-env-up -d
-    @echo "Waiting for databases to be ready..."
-    sleep 5
+    @echo "Starting full stack in production mode..."
+    @echo "Building and starting all services (migrations run automatically)..."
+    docker compose --profile prod up -d --build
     @echo ""
-    @echo "Apply migrations..."
+    @echo "✅ Stack starting! Services will be ready in ~60 seconds"
+    @echo ""
+    @echo "Services:"
+    @echo "  - Frontend:  http://localhost:3000"
+    @echo "  - Backend:   http://localhost:8000"
+    @echo "  - Neo4j:     http://localhost:7474"
+    @echo "  - Qdrant:    http://localhost:6333"
+    @echo ""
+    @echo "Run 'just dev-status' to check when all services are ready"
+
+# Start databases only for hot-reload development
+dev-up-hot:
+    @echo "Starting databases for hot-reload development..."
+    docker compose up -d postgres neo4j redis qdrant redisinsight
+    @echo "Waiting for databases to be ready..."
+    sleep 10
+    @echo ""
+    @echo "Applying migrations..."
     cd repos/dem2 && uv run alembic upgrade head
     cd repos/dem2 && just graph-upgrade-head
     @echo ""
-    @echo "Stack ready! Start services:"
+    @echo "✅ Databases ready! Start application services:"
     @echo "  Terminal 1: cd repos/dem2 && just run"
     @echo "  Terminal 2: cd repos/dem2-webui && pnpm dev"
+    @echo ""
+    @echo "Run 'just dev-status' to check all services"
 
 # Stop all development services
 dev-down:
-    cd repos/dem2 && just dev-env-down
+    @echo "Stopping all services..."
+    docker compose down
 
 # Show status of all local dev servers and services
 dev-status:
