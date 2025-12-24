@@ -105,6 +105,8 @@ dev-up-hot:
 dev-down:
     @echo "Stopping all services..."
     docker compose down
+    @echo "Stopping any legacy services..."
+    docker compose -p machina-med down 2>/dev/null || true
 
 # Show status of all local dev servers and services
 dev-status:
