@@ -70,36 +70,128 @@ checkout branch:
 
 # Start full stack in production mode (databases + frontend + backend containers)
 dev-up:
-    @echo "Starting full stack in production mode..."
-    @echo "Building and starting all services (migrations run automatically)..."
-    docker compose --profile prod up -d --build
-    @echo ""
-    @echo "✅ Stack starting! Services will be ready in ~60 seconds"
-    @echo ""
-    @echo "Services:"
-    @echo "  - Frontend:  http://localhost:3000"
-    @echo "  - Backend:   http://localhost:8000"
-    @echo "  - Neo4j:     http://localhost:7474"
-    @echo "  - Qdrant:    http://localhost:6333"
-    @echo ""
-    @echo "Run 'just dev-status' to check when all services are ready"
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "Starting full stack in production mode..."
+    echo "Building and starting all services (migrations run automatically)..."
+    echo ""
+
+    if ! docker compose --profile prod up -d --build; then
+        echo ""
+        echo "❌ ERROR: Failed to start services"
+        echo ""
+        echo "Showing service status:"
+        docker compose ps
+        echo ""
+        echo "Showing recent logs:"
+        docker compose logs --tail=50
+        exit 1
+    fi
+
+    echo ""
+    echo "Waiting for services to initialize..."
+    sleep 5
+
+    echo ""
+    echo "Checking service status..."
+    docker compose ps
+
+    # Check for any services that failed
+    if docker compose ps | grep -E "(Exit|unhealthy)" > /dev/null; then
+        echo ""
+        echo "⚠️  WARNING: Some services are not healthy"
+        echo ""
+        echo "Showing logs for failed services:"
+        docker compose logs --tail=100
+        echo ""
+        echo "Run 'docker compose logs <service-name>' to see full logs"
+    else
+        echo ""
+        echo "✅ All services started successfully!"
+    fi
+
+    echo ""
+    echo "Services:"
+    echo "  - Frontend:  http://localhost:3000"
+    echo "  - Backend:   http://localhost:8000"
+    echo "  - Neo4j:     http://localhost:7474"
+    echo "  - Qdrant:    http://localhost:6333"
+    echo ""
+    echo "Run 'just dev-status' to check when all services are ready"
 
 # Start databases only for hot-reload development
 dev-up-hot:
-    @echo "Starting databases for hot-reload development..."
-    docker compose up -d postgres neo4j redis qdrant redisinsight
-    @echo "Waiting for databases to be ready..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "Starting databases for hot-reload development..."
+    echo ""
+
+    if ! docker compose up -d postgres neo4j redis qdrant redisinsight; then
+        echo ""
+        echo "❌ ERROR: Failed to start database services"
+        echo ""
+        echo "Showing service status:"
+        docker compose ps
+        echo ""
+        echo "Showing recent logs:"
+        docker compose logs --tail=50
+        exit 1
+    fi
+
+    echo "Waiting for databases to be ready..."
     sleep 10
-    @echo ""
-    @echo "Applying migrations..."
-    cd repos/dem2 && uv run alembic upgrade head
-    cd repos/dem2 && just graph-upgrade-head
-    @echo ""
-    @echo "✅ Databases ready! Start application services:"
-    @echo "  Terminal 1: cd repos/dem2 && just run"
-    @echo "  Terminal 2: cd repos/dem2-webui && pnpm dev"
-    @echo ""
-    @echo "Run 'just dev-status' to check all services"
+
+    echo ""
+    echo "Checking database status..."
+    docker compose ps postgres neo4j redis qdrant redisinsight
+
+    # Check for any databases that failed
+    if docker compose ps postgres neo4j redis qdrant redisinsight | grep -E "(Exit|unhealthy)" > /dev/null; then
+        echo ""
+        echo "⚠️  WARNING: Some databases are not healthy"
+        echo ""
+        echo "Showing logs:"
+        docker compose logs --tail=100 postgres neo4j redis qdrant redisinsight
+        echo ""
+        echo "Continuing with migrations anyway (may fail)..."
+    fi
+
+    echo ""
+    echo "Applying migrations..."
+
+    if ! (cd repos/dem2 && uv run alembic upgrade head); then
+        echo ""
+        echo "❌ ERROR: PostgreSQL migrations failed"
+        echo ""
+        echo "Possible causes:"
+        echo "  - Database not ready (wait and try: cd repos/dem2 && uv run alembic upgrade head)"
+        echo "  - Configuration issue in .env file"
+        echo "  - Database connection error"
+        echo ""
+        echo "Check logs: docker compose logs postgres"
+        exit 1
+    fi
+
+    if ! (cd repos/dem2 && just graph-upgrade-head); then
+        echo ""
+        echo "❌ ERROR: Neo4j graph migrations failed"
+        echo ""
+        echo "Possible causes:"
+        echo "  - Neo4j not ready (wait and try: cd repos/dem2 && just graph-upgrade-head)"
+        echo "  - Configuration issue"
+        echo ""
+        echo "Check logs: docker compose logs neo4j"
+        exit 1
+    fi
+
+    echo ""
+    echo "✅ Databases ready! Start application services:"
+    echo "  Terminal 1: cd repos/dem2 && just run"
+    echo "  Terminal 2: cd repos/dem2-webui && pnpm dev"
+    echo ""
+    echo "Run 'just dev-status' to check all services"
 
 # Stop all development services
 dev-down:
