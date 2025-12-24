@@ -32,6 +32,14 @@ just dev-up
 
 ## Common Commands
 
+### Development Stack
+```bash
+just dev-status       # Check status of all dev servers
+just dev-up           # Start development stack
+just dev-down         # Stop all services
+```
+
+### Cross-Repo Operations
 ```bash
 just status           # Git status across all repos
 just branches         # Show current branch in each repo
