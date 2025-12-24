@@ -68,6 +68,37 @@ checkout branch:
         git -C "$dir" checkout {{branch}} 2>/dev/null || git -C "$dir" checkout -b {{branch}}
     done
 
+# Checkout branch in a specific repo (e.g., just checkout-repo dem2 feature/my-branch)
+checkout-repo repo branch:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ ! -d "repos/{{repo}}" ]; then
+        echo "❌ ERROR: Repository 'repos/{{repo}}' not found"
+        echo ""
+        echo "Available repositories:"
+        ls -1 repos/
+        exit 1
+    fi
+
+    echo "Fetching latest changes for {{repo}}..."
+    git -C "repos/{{repo}}" fetch
+
+    echo "Checking out {{branch}} in {{repo}}..."
+    if git -C "repos/{{repo}}" checkout {{branch}}; then
+        echo "✅ Checked out existing branch {{branch}}"
+        echo ""
+        echo "Pulling latest changes..."
+        git -C "repos/{{repo}}" pull || echo "⚠️  No remote tracking branch"
+    else
+        echo "Branch doesn't exist, creating new branch {{branch}}..."
+        git -C "repos/{{repo}}" checkout -b {{branch}}
+        echo "✅ Created new branch {{branch}}"
+    fi
+
+    echo ""
+    echo "Current branch in {{repo}}: $(git -C repos/{{repo}} branch --show-current)"
+
 # Start full stack in production mode (databases + frontend + backend containers)
 dev-up:
     #!/usr/bin/env bash

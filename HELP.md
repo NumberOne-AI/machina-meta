@@ -92,6 +92,17 @@ just checkout <branch-name>
 ```
 Creates branch if it doesn't exist. Example: `just checkout feature/my-feature`
 
+### Checkout branch in a specific repo
+```bash
+just checkout-repo <repo-name> <branch-name>
+```
+Fetches latest, checks out branch (creates if needed), and pulls.
+
+Examples:
+- `just checkout-repo dem2 feature/docproc-extraction-pipeline`
+- `just checkout-repo dem2-webui dev`
+- `just checkout-repo medical-catalog main`
+
 ### Pull latest in all repos
 ```bash
 just pull-all

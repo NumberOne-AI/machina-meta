@@ -420,6 +420,7 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 | `just status` | Git status all repos |
 | `just branches` | Show current branches |
 | `just checkout <branch>` | Checkout across all repos |
+| `just checkout-repo <repo> <branch>` | Checkout in specific repo |
 | `just dev-status` | Check all services |
 | `just dev-up` | Start full stack (production mode) |
 | `just dev-up-hot` | Start databases only (hot-reload mode) |
