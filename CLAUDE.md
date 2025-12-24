@@ -56,6 +56,7 @@ cd repos/dem2-webui && git push origin feature/my-feature
 just status      # See all repo states
 just branches    # See current branches
 just log         # See recent commits
+just dev-status  # Check all dev servers (API, frontend, databases)
 ```
 
 **Syncing repos:**
