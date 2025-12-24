@@ -30,31 +30,38 @@ sync-all:
 
 # Pull latest for all repos
 pull-all:
-    @for dir in repos/*/; do \
-        echo "=== Pulling $$dir ==="; \
-        git -C "$$dir" pull; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        echo "=== Pulling $dir ==="
+        git -C "$dir" pull
     done
 
 # Show status across all repos
 status:
-    @for dir in repos/*/; do \
-        echo ""; \
-        echo "=== $$(basename $$dir) ==="; \
-        git -C "$$dir" status -sb; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        echo ""
+        echo "=== $(basename "$dir") ==="
+        git -C "$dir" status -sb
     done
 
 # Show current branches
 branches:
-    @for dir in repos/*/; do \
-        printf "%-20s %s\n" "$$(basename $$dir):" "$$(git -C $$dir branch --show-current)"; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        printf "%-20s %s\n" "$(basename "$dir"):" "$(git -C "$dir" branch --show-current)"
     done
 
 # Checkout branch across all repos (creates if doesn't exist)
 checkout branch:
-    @for dir in repos/*/; do \
-        echo "Checking out {{branch}} in $$(basename $$dir)..."; \
-        git -C "$$dir" checkout {{branch}} 2>/dev/null || \
-        git -C "$$dir" checkout -b {{branch}}; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        echo "Checking out {{branch}} in $(basename "$dir")..."
+        git -C "$dir" checkout {{branch}} 2>/dev/null || git -C "$dir" checkout -b {{branch}}
     done
 
 # Start full development stack
@@ -97,20 +104,24 @@ test-all:
 
 # Tag all repos with version
 tag-release version:
-    @echo "Tagging all repos with {{version}}..."
-    @for dir in repos/*/; do \
-        echo "Tagging $$(basename $$dir)..."; \
-        git -C "$$dir" tag -a {{version}} -m "Release {{version}}"; \
-        git -C "$$dir" push origin {{version}}; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Tagging all repos with {{version}}..."
+    for dir in repos/*/; do
+        echo "Tagging $(basename "$dir")..."
+        git -C "$dir" tag -a {{version}} -m "Release {{version}}"
+        git -C "$dir" push origin {{version}}
     done
-    @echo "All repos tagged with {{version}}"
+    echo "All repos tagged with {{version}}"
 
 # Show git log summary for all repos
 log lines="10":
-    @for dir in repos/*/; do \
-        echo ""; \
-        echo "=== $$(basename $$dir) ==="; \
-        git -C "$$dir" log --oneline -n {{lines}}; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for dir in repos/*/; do
+        echo ""
+        echo "=== $(basename "$dir") ==="
+        git -C "$dir" log --oneline -n {{lines}}
     done
 
 # Create preview environment
