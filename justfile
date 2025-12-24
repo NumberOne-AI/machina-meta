@@ -243,7 +243,7 @@ dev-up-hot:
 # Stop all development services
 dev-down:
     @echo "Stopping all services..."
-    docker compose down
+    docker compose --profile prod down
     @echo "Stopping any legacy services..."
     docker compose -p machina-med down 2>/dev/null || true
 
