@@ -285,26 +285,34 @@ just preview my-feature
 
 ## Development Services
 
-The development stack is organized into 3 layers:
+The development stack is organized into 5 categories:
 
-### Application Layer
+### Frontend
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| Frontend | 3000 | Next.js | http://localhost:3000 |
+
+### Backend
 | Service | Port | Type | Health Check |
 |---------|------|------|--------------|
 | Backend API | 8000 | FastAPI | http://localhost:8000/docs |
-| Frontend | 3000 | Next.js | http://localhost:3000 |
 
-### Data Layer
+### Database
 | Service | Port | Type | Health Check |
 |---------|------|------|--------------|
-| PostgreSQL | 5432 | Database | `psql -h localhost -U postgres` |
-| Neo4j | 7474, 7687 | Graph Database | http://localhost:7474 |
+| PostgreSQL | 5432 | Relational | `psql -h localhost -U postgres` |
+| Neo4j | 7474, 7687 | Graph | http://localhost:7474 |
+
+### Infrastructure
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
 | Redis | 6379 | Cache/Pub-Sub | `redis-cli ping` |
-| Qdrant | 6333 | Vector DB | http://localhost:6333 |
+| Qdrant | 6333 | Vector Search | http://localhost:6333 |
 
-### Tools Layer
+### Dev Tools
 | Service | Port | Type | Health Check |
 |---------|------|------|--------------|
-| RedisInsight | 5540 | Dev Tool | http://localhost:5540 |
+| RedisInsight | 5540 | Redis UI | http://localhost:5540 |
 
 ## Integration with External Tools
 

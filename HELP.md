@@ -29,10 +29,12 @@ just dev-up
 ```bash
 just dev-status
 ```
-Shows markdown table with status of all 7 services across 3 layers:
-- **Application**: Backend API, Frontend
-- **Data**: PostgreSQL, Neo4j, Redis, Qdrant
-- **Tools**: RedisInsight
+Shows markdown table with status of all 7 services across 5 categories:
+- **Frontend**: Next.js application
+- **Backend**: FastAPI application
+- **Database**: PostgreSQL (relational), Neo4j (graph)
+- **Infrastructure**: Redis (cache/pub-sub), Qdrant (vector search)
+- **Dev Tools**: RedisInsight (Redis UI)
 
 ### Stop all development services
 ```bash

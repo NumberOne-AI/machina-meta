@@ -94,56 +94,56 @@ dev-status:
 
     echo "# Development Stack Status"
     echo ""
-    echo "| Layer | Service | Type | Port(s) | Status | URL |"
-    echo "|-------|---------|------|---------|--------|-----|"
-
-    # Check Backend API
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs 2>/dev/null | grep -q "200"; then
-        echo "| Application | Backend API | FastAPI | 8000 | ✅ Running | http://localhost:8000 |"
-    else
-        echo "| Application | Backend API | FastAPI | 8000 | ❌ Stopped | - |"
-    fi
+    echo "| Category | Service | Type | Port(s) | Status | URL |"
+    echo "|----------|---------|------|---------|--------|-----|"
 
     # Check Frontend
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200"; then
-        echo "| Application | Frontend | Next.js | 3000 | ✅ Running | http://localhost:3000 |"
+        echo "| Frontend | Frontend | Next.js | 3000 | ✅ Running | http://localhost:3000 |"
     else
-        echo "| Application | Frontend | Next.js | 3000 | ❌ Stopped | - |"
+        echo "| Frontend | Frontend | Next.js | 3000 | ❌ Stopped | - |"
+    fi
+
+    # Check Backend API
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs 2>/dev/null | grep -q "200"; then
+        echo "| Backend | Backend API | FastAPI | 8000 | ✅ Running | http://localhost:8000 |"
+    else
+        echo "| Backend | Backend API | FastAPI | 8000 | ❌ Stopped | - |"
     fi
 
     # PostgreSQL
     if docker ps --format '{{{{.Names}}}}' | grep -q "postgres"; then
-        echo "| Data | PostgreSQL | Database | 5432 | ✅ Running | localhost:5432 |"
+        echo "| Database | PostgreSQL | Relational | 5432 | ✅ Running | localhost:5432 |"
     else
-        echo "| Data | PostgreSQL | Database | 5432 | ❌ Stopped | - |"
+        echo "| Database | PostgreSQL | Relational | 5432 | ❌ Stopped | - |"
     fi
 
     # Neo4j
     if docker ps --format '{{{{.Names}}}}' | grep -q "neo4j"; then
-        echo "| Data | Neo4j | Graph Database | 7474, 7687 | ✅ Running | http://localhost:7474 |"
+        echo "| Database | Neo4j | Graph | 7474, 7687 | ✅ Running | http://localhost:7474 |"
     else
-        echo "| Data | Neo4j | Graph Database | 7474, 7687 | ❌ Stopped | - |"
+        echo "| Database | Neo4j | Graph | 7474, 7687 | ❌ Stopped | - |"
     fi
 
     # Redis
     if docker ps --format '{{{{.Names}}}}' | grep -q "redis"; then
-        echo "| Data | Redis | Cache/Pub-Sub | 6379 | ✅ Running | localhost:6379 |"
+        echo "| Infrastructure | Redis | Cache/Pub-Sub | 6379 | ✅ Running | localhost:6379 |"
     else
-        echo "| Data | Redis | Cache/Pub-Sub | 6379 | ❌ Stopped | - |"
+        echo "| Infrastructure | Redis | Cache/Pub-Sub | 6379 | ❌ Stopped | - |"
     fi
 
     # Qdrant
     if docker ps --format '{{{{.Names}}}}' | grep -q "qdrant"; then
-        echo "| Data | Qdrant | Vector DB | 6333 | ✅ Running | http://localhost:6333 |"
+        echo "| Infrastructure | Qdrant | Vector Search | 6333 | ✅ Running | http://localhost:6333 |"
     else
-        echo "| Data | Qdrant | Vector DB | 6333 | ❌ Stopped | - |"
+        echo "| Infrastructure | Qdrant | Vector Search | 6333 | ❌ Stopped | - |"
     fi
 
     # RedisInsight (optional)
     if docker ps --format '{{{{.Names}}}}' | grep -q "redisinsight"; then
-        echo "| Tools | RedisInsight | Dev Tool | 5540 | ✅ Running | http://localhost:5540 |"
+        echo "| Dev Tools | RedisInsight | Redis UI | 5540 | ✅ Running | http://localhost:5540 |"
     else
-        echo "| Tools | RedisInsight | Dev Tool | 5540 | ⚪ Optional | - |"
+        echo "| Dev Tools | RedisInsight | Redis UI | 5540 | ⚪ Optional | - |"
     fi
 
 # Run checks across all repos
