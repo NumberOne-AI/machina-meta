@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code when working with the **machina-meta** workspace.
 
+## ⚠️ CRITICAL: Git Push Policy
+
+**NEVER push to git repositories unless explicitly requested or confirmed by the user.**
+
+- Always commit changes locally
+- **DO NOT** run `git push` automatically
+- **DO NOT** push as part of workflows or multi-step operations
+- Ask the user first: "Should I push these changes to the remote repository?"
+- Only push if the user explicitly says "yes", "push", "push it", or gives clear confirmation
+
+This applies to:
+- machina-meta repository
+- All submodule repositories (dem2, dem2-webui, dem2-infra, medical-catalog)
+
 ## Workspace Overview
 
 **machina-meta** is the unified workspace for the MachinaMed (dem2) platform. It coordinates multiple git repositories using git submodules, providing integrated development and deployment workflows.
