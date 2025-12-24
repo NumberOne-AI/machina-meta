@@ -101,6 +101,8 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DYNACONF_PG_DB__HOST=postgres
+      - DYNACONF_PG_DB__DATABASE=machina_med
+      - DYNACONF_PG_DB__USER=postgres
       - DYNACONF_NEO4J_DB__HOST=neo4j
       - DYNACONF_REDIS_DB__HOST=redis
       - DYNACONF_QDRANT__HOST=qdrant
