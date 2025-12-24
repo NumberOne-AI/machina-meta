@@ -97,7 +97,7 @@ cd repos/dem2-webui && pnpm dev
 
 ```bash
 # From machina-meta root
-just checkout feature/my-feature
+just repo-checkout feature/my-feature
 
 # Work in individual repos
 cd repos/dem2
@@ -112,24 +112,24 @@ git push origin feature/my-feature
 
 # Check status across all
 cd ../..
-just status
-just branches
+just repo-status
+just repo-branches
 ```
 
 #### Checking Workspace State
 
 ```bash
-just status       # Git status across all repos
-just branches     # Show current branches
-just log 5        # Show last 5 commits from each repo
-just dev-status   # Check all dev servers (API, frontend, databases)
+just repo-status    # Git status across all repos
+just repo-branches  # Show current branches
+just repo-log 5     # Show last 5 commits from each repo
+just dev-status     # Check all dev servers (API, frontend, databases)
 ```
 
 #### Syncing Repositories
 
 ```bash
-just sync-all     # Update all submodules to latest
-just pull-all     # Pull latest in each repo
+just repo-sync      # Update all submodules to latest
+just repo-pull      # Pull latest in each repo
 ```
 
 #### Development Stack
@@ -417,17 +417,17 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 | Command | Purpose |
 |---------|---------|
 | `just bootstrap` | Initial setup |
-| `just status` | Git status all repos |
-| `just branches` | Show current branches |
-| `just checkout <branch>` | Checkout across all repos |
+| `just repo-status` | Git status all repos |
+| `just repo-branches` | Show current branches |
+| `just repo-checkout <branch>` | Checkout across all repos |
 | `just checkout-repo <repo> <branch>` | Checkout in specific repo |
 | `just dev-status` | Check all services |
 | `just dev-up` | Start full stack (production mode) |
 | `just dev-up-hot` | Start databases only (hot-reload mode) |
 | `just dev-down` | Stop all services |
-| `just check-all` | Lint/type check all |
-| `just test-all` | Test all repos |
-| `just log <n>` | Show commits |
+| `just repo-check` | Lint/type check all |
+| `just repo-test` | Test all repos |
+| `just repo-log <n>` | Show commits |
 | `just preview <name>` | Create preview env |
 
 ### Service Commands
@@ -444,7 +444,7 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 **Submodules out of sync:**
 ```bash
 git submodule update --init --recursive
-just sync-all
+just repo-sync
 ```
 
 **Databases not starting:**

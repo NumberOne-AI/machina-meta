@@ -29,11 +29,11 @@ dev-setup:
     @echo "Setup complete!"
 
 # Sync all repos to latest
-sync-all:
+repo-sync:
     git submodule update --remote --merge
 
 # Pull latest for all repos
-pull-all:
+repo-pull:
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do
@@ -42,7 +42,7 @@ pull-all:
     done
 
 # Show status across all repos
-status:
+repo-status:
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do
@@ -52,7 +52,7 @@ status:
     done
 
 # Show current branches
-branches:
+repo-branches:
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do
@@ -60,7 +60,7 @@ branches:
     done
 
 # Checkout branch across all repos (creates if doesn't exist)
-checkout branch:
+repo-checkout branch:
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do
@@ -291,7 +291,7 @@ dev-status:
     fi
 
 # Run checks across all repos
-check-all:
+repo-check:
     @echo "=== dem2 ==="
     cd repos/dem2 && just check
     @echo ""
@@ -302,7 +302,7 @@ check-all:
     cd repos/medical-catalog && just check
 
 # Run tests across all repos
-test-all:
+repo-test:
     @echo "=== dem2 ==="
     cd repos/dem2 && just test
     @echo ""
@@ -310,7 +310,7 @@ test-all:
     cd repos/dem2-webui && pnpm test
 
 # Tag all repos with version
-tag-release version:
+repo-tag version:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "Tagging all repos with {{version}}..."
@@ -322,7 +322,7 @@ tag-release version:
     echo "All repos tagged with {{version}}"
 
 # Show git log summary for all repos
-log lines="10":
+repo-log lines="10":
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do

@@ -78,19 +78,19 @@ Stops all Docker containers (works for both modes).
 
 ### Show git status across all repos
 ```bash
-just status
+just repo-status
 ```
 
 ### Show current branches in all repos
 ```bash
-just branches
+just repo-branches
 ```
 
 ### Checkout branch across all repos
 ```bash
-just checkout <branch-name>
+just repo-checkout <branch-name>
 ```
-Creates branch if it doesn't exist. Example: `just checkout feature/my-feature`
+Creates branch if it doesn't exist. Example: `just repo-checkout feature/my-feature`
 
 ### Checkout branch in a specific repo
 ```bash
@@ -105,18 +105,18 @@ Examples:
 
 ### Pull latest in all repos
 ```bash
-just pull-all
+just repo-pull
 ```
 
 ### Show recent commits
 ```bash
-just log           # Default: 10 commits per repo
-just log 5         # Show 5 commits per repo
+just repo-log           # Default: 10 commits per repo
+just repo-log 5         # Show 5 commits per repo
 ```
 
 ### Sync all submodules to latest
 ```bash
-just sync-all
+just repo-sync
 ```
 Updates all submodules to their remote tracking branches.
 
@@ -124,7 +124,7 @@ Updates all submodules to their remote tracking branches.
 
 ### Run linting and type checks across all repos
 ```bash
-just check-all
+just repo-check
 ```
 Runs:
 - dem2: `just check` (ruff format, ruff check, mypy)
@@ -133,7 +133,7 @@ Runs:
 
 ### Run tests across all repos
 ```bash
-just test-all
+just repo-test
 ```
 Runs unit tests in dem2 and dem2-webui.
 
@@ -141,7 +141,7 @@ Runs unit tests in dem2 and dem2-webui.
 
 ### Tag all repos with a version
 ```bash
-just tag-release v2.5.0
+just repo-tag v2.5.0
 ```
 Tags and pushes to all repos simultaneously.
 
@@ -183,7 +183,7 @@ just check            # Lint + format + typecheck
 ### Working on a feature spanning multiple repos
 ```bash
 # 1. Checkout feature branch everywhere
-just checkout feature/new-chat
+just repo-checkout feature/new-chat
 
 # 2. Work in individual repos
 cd repos/dem2
@@ -198,14 +198,14 @@ git push origin feature/new-chat
 
 # 3. Check status
 cd ../..
-just status
-just branches
+just repo-status
+just repo-branches
 ```
 
 ### Daily development routine
 ```bash
 # Morning: sync everything
-just pull-all
+just repo-pull
 just dev-status
 
 # Start databases if needed
@@ -216,8 +216,8 @@ cd repos/dem2 && just run
 cd repos/dem2-webui && pnpm dev
 
 # Before committing
-just check-all
-just test-all
+just repo-check
+just repo-test
 
 # End of day: stop services
 just dev-down
@@ -228,7 +228,7 @@ just dev-down
 ### Submodules out of sync
 ```bash
 git submodule update --init --recursive
-just sync-all
+just repo-sync
 ```
 
 ### Database connection issues
