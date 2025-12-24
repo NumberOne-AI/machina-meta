@@ -25,9 +25,10 @@ just dev-up
 Starts the **full stack in Docker containers** (production-like environment):
 - **Frontend** (Next.js) - containerized on port 3000
 - **Backend** (FastAPI) - containerized on port 8000
+- **Medical Catalog** (FastAPI) - containerized on port 8001
 - **Databases**: PostgreSQL, Neo4j, Redis, Qdrant, RedisInsight
 - **Migrations**: Applied automatically on backend startup
-- **Startup time**: ~60 seconds total
+- **Startup time**: ~90 seconds total
 
 This mode is ideal for:
 - Testing the production build
@@ -61,9 +62,9 @@ This mode is ideal for:
 ```bash
 just dev-status
 ```
-Shows markdown table with status of all 7 services across 5 categories:
+Shows markdown table with status of all 8 services across 5 categories:
 - **Frontend**: Next.js application
-- **Backend**: FastAPI application
+- **Backend**: Backend API, Medical Catalog (FastAPI applications)
 - **Database**: PostgreSQL (relational), Neo4j (graph)
 - **Infrastructure**: Redis (cache/pub-sub), Qdrant (vector search)
 - **Dev Tools**: RedisInsight (Redis UI)

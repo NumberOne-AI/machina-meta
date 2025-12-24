@@ -271,6 +271,13 @@ dev-status:
         echo "| Backend | Backend API | FastAPI | 8000 | ❌ Stopped | - |"
     fi
 
+    # Check Medical Catalog
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/health 2>/dev/null | grep -q "200"; then
+        echo "| Backend | Medical Catalog | FastAPI | 8001 | ✅ Running | http://localhost:8001 |"
+    else
+        echo "| Backend | Medical Catalog | FastAPI | 8001 | ❌ Stopped | - |"
+    fi
+
     # PostgreSQL
     if docker ps --format '{{{{.Names}}}}' | grep -q "postgres"; then
         echo "| Database | PostgreSQL | Relational | 5432 | ✅ Running | localhost:5432 |"

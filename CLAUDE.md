@@ -72,6 +72,7 @@ just dev-up-hot
 # Then in separate terminals:
 cd repos/dem2 && just run
 cd repos/dem2-webui && pnpm dev
+cd repos/medical-catalog && just run
 ```
 
 ## Working with the Workspace
@@ -143,7 +144,7 @@ just dev-down     # Stop all services
 ```
 
 **Two Development Modes:**
-- **Production Mode** (`just dev-up`): Full stack in Docker containers (frontend + backend + databases)
+- **Production Mode** (`just dev-up`): Full stack in Docker containers (frontend + backend + medical-catalog + databases)
 - **Hot-Reload Mode** (`just dev-up-hot`): Databases only, run apps with `just run` and `pnpm dev` for instant code changes
 
 ## Development Setup by Service
@@ -321,6 +322,7 @@ The development stack is organized into 5 categories:
 | Service | Port | Type | Health Check |
 |---------|------|------|--------------|
 | Backend API | 8000 | FastAPI | http://localhost:8000/docs |
+| Medical Catalog | 8001 | FastAPI | http://localhost:8001/health |
 
 ### Database
 | Service | Port | Type | Health Check |

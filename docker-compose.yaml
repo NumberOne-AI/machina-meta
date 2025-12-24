@@ -126,6 +126,31 @@ services:
       start_period: 60s
     profiles: ["prod"]
 
+  medical-catalog:
+    build:
+      context: ./repos/medical-catalog
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-dev-local}
+    ports:
+      - "8001:8000"
+    environment:
+      - ENV_FOR_DYNACONF=production
+      - DYNACONF_QDRANT__HOST=qdrant
+      - DYNACONF_QDRANT__PORT=6333
+    volumes:
+      - ./repos/medical-catalog/logs:/app/logs
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    profiles: ["prod"]
+
   frontend:
     build:
       context: ./repos/dem2-webui
