@@ -1,0 +1,12 @@
+[submodule "repos/dem2"]
+	path = repos/dem2
+	url = https://github.com/NumberOne-AI/dem2.git
+[submodule "repos/dem2-webui"]
+	path = repos/dem2-webui
+	url = https://github.com/NumberOne-AI/dem2-webui.git
+[submodule "repos/dem2-infra"]
+	path = repos/dem2-infra
+	url = https://github.com/NumberOne-AI/dem2-infra.git
+[submodule "repos/medical-catalog"]
+	path = repos/medical-catalog
+	url = https://github.com/NumberOne-AI/medical-catalog.git
