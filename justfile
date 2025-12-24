@@ -87,71 +87,72 @@ dev-down:
 dev-status:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "=== Development Stack Status ==="
+
+    echo "# Development Stack Status"
     echo ""
+    echo "| Service | Type | Port(s) | Status | URL |"
+    echo "|---------|------|---------|--------|-----|"
 
     # Check Backend API
-    echo "Backend API (port 8000):"
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs 2>/dev/null | grep -q "200"; then
-        echo "  ✓ Running - http://localhost:8000"
+        echo "| Backend API | Application | 8000 | ✅ Running | http://localhost:8000 |"
     else
-        echo "  ✗ Not responding"
+        echo "| Backend API | Application | 8000 | ❌ Stopped | - |"
     fi
-    echo ""
 
     # Check Frontend
-    echo "Frontend (port 3000):"
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200"; then
-        echo "  ✓ Running - http://localhost:3000"
+        echo "| Frontend | Application | 3000 | ✅ Running | http://localhost:3000 |"
     else
-        echo "  ✗ Not responding"
+        echo "| Frontend | Application | 3000 | ❌ Stopped | - |"
     fi
-    echo ""
-
-    # Check Database Containers
-    echo "Database Services:"
 
     # PostgreSQL
     if docker ps --format '{{{{.Names}}}}' | grep -q "postgres"; then
-        echo "  ✓ PostgreSQL - Running (port 5432)"
+        echo "| PostgreSQL | Database | 5432 | ✅ Running | localhost:5432 |"
     else
-        echo "  ✗ PostgreSQL - Not running"
+        echo "| PostgreSQL | Database | 5432 | ❌ Stopped | - |"
     fi
 
     # Neo4j
     if docker ps --format '{{{{.Names}}}}' | grep -q "neo4j"; then
-        echo "  ✓ Neo4j - Running (ports 7474, 7687)"
+        echo "| Neo4j | Graph Database | 7474, 7687 | ✅ Running | http://localhost:7474 |"
     else
-        echo "  ✗ Neo4j - Not running"
+        echo "| Neo4j | Graph Database | 7474, 7687 | ❌ Stopped | - |"
     fi
 
     # Redis
     if docker ps --format '{{{{.Names}}}}' | grep -q "redis"; then
-        echo "  ✓ Redis - Running (port 6379)"
+        echo "| Redis | Cache/Pub-Sub | 6379 | ✅ Running | localhost:6379 |"
     else
-        echo "  ✗ Redis - Not running"
+        echo "| Redis | Cache/Pub-Sub | 6379 | ❌ Stopped | - |"
     fi
 
     # Qdrant
     if docker ps --format '{{{{.Names}}}}' | grep -q "qdrant"; then
-        echo "  ✓ Qdrant - Running (port 6333)"
+        echo "| Qdrant | Vector DB | 6333 | ✅ Running | http://localhost:6333 |"
     else
-        echo "  ✗ Qdrant - Not running"
+        echo "| Qdrant | Vector DB | 6333 | ❌ Stopped | - |"
     fi
 
     # RedisInsight (optional)
     if docker ps --format '{{{{.Names}}}}' | grep -q "redisinsight"; then
-        echo "  ✓ RedisInsight - Running (port 5540)"
+        echo "| RedisInsight | Dev Tool | 5540 | ✅ Running | http://localhost:5540 |"
     else
-        echo "  · RedisInsight - Not running (optional)"
+        echo "| RedisInsight | Dev Tool | 5540 | ⚪ Optional | - |"
     fi
 
     echo ""
-    echo "Quick Actions:"
-    echo "  Start databases: just dev-up"
-    echo "  Start backend:   cd repos/dem2 && just run"
-    echo "  Start frontend:  cd repos/dem2-webui && pnpm dev"
-    echo "  Stop all:        just dev-down"
+    echo "## Quick Actions"
+    echo ""
+    echo '```bash'
+    echo "just dev-up        # Start all databases"
+    echo "just dev-down      # Stop all services"
+    echo ""
+    echo "# Start application servers (in separate terminals):"
+    echo "cd repos/dem2 && just run           # Backend"
+    echo "cd repos/dem2-webui && pnpm dev     # Frontend"
+    echo '```'
 
 # Run checks across all repos
 check-all:
