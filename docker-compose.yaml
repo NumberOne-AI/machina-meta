@@ -107,8 +107,10 @@ services:
       - DYNACONF_REDIS_DB__HOST=redis
       - DYNACONF_QDRANT__HOST=qdrant
       - NEO4J_URI=bolt://neo4j:7687
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     volumes:
       - ./repos/dem2/logs:/app/logs
+      - ./n1-machina1-825bbed2774d.json:/app/gcp-credentials.json:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,6 +136,8 @@ services:
         GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-dev-local}
     ports:
       - "8001:8000"
+    env_file:
+      - ./repos/dem2/.env
     environment:
       - ENV_FOR_DYNACONF=production
       - DYNACONF_QDRANT__HOST=qdrant
@@ -157,8 +161,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - ./repos/dem2-webui/.env
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
       - NODE_ENV=production
     depends_on:
       backend:
