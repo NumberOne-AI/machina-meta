@@ -1,0 +1,17 @@
+{
+  "name": "machina-meta",
+  "version": "1.0.0",
+  "description": "MachinaMed unified workspace - LSP and development tools",
+  "private": true,
+  "scripts": {
+    "postinstall": "echo 'Development tools installed. Pyright LSP server is now available.'",
+    "pyright": "pyright",
+    "pyright:version": "pyright --version"
+  },
+  "devDependencies": {
+    "pyright": "^1.1.390"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
