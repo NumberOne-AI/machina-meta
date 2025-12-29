@@ -16,6 +16,19 @@ This applies to:
 - machina-meta repository
 - All submodule repositories (dem2, dem2-webui, dem2-infra, medical-catalog)
 
+## ⚠️ CRITICAL: Git Commit Message Policy
+
+**NEVER add Claude Code attribution or co-authorship credits to commit messages.**
+
+- **DO NOT** include `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+- **DO NOT** include `Co-Authored-By: Claude <noreply@anthropic.com>` or similar lines
+- Write clear, concise commit messages following conventional commit format (`feat:`, `fix:`, `chore:`, etc.)
+- Follow the existing repository's commit message style
+
+This applies to:
+- machina-meta repository
+- All submodule repositories (dem2, dem2-webui, dem2-infra, medical-catalog)
+
 ## Workspace Overview
 
 **machina-meta** is the unified workspace for the MachinaMed (dem2) platform. It coordinates multiple git repositories using git submodules, providing integrated development and deployment workflows.
