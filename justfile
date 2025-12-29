@@ -41,6 +41,10 @@ repo-pull:
         git -C "$dir" pull
     done
 
+# Push all repos (submodules first, then parent)
+repo-push:
+    @./scripts/push-all.sh
+
 # Show status across all repos
 repo-status:
     #!/usr/bin/env bash
