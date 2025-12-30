@@ -6,7 +6,8 @@ Structure follows the workspace hierarchy. Update continuously as work progresse
 ## Task States
 - **PROPOSED** - Under consideration, not yet approved
 - **STARTED** - Approved and in progress
-- **DONE** - Completed
+- **REVIEW** - Work completed, awaiting user review and approval before marking DONE
+- **DONE** - Completed and approved by user
 - **REVERTED** - Was DONE but later rolled back (e.g., git revert)
 - **CANCELLED** - Removed from scope with documented reason
 
@@ -77,6 +78,22 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - All current problems and tasks remain in repos/dem2 (all are dem2-specific)
   - Files created: PROBLEMS.md, TODO.md
   - Files modified: CLAUDE.md (added framework documentation sections)
+
+- [REVIEW] **Create comprehensive API routes documentation** - Document all routes across all services
+  - Impact: HIGH | Added: 2025-12-30
+  - Created route scanning system with Python scripts
+  - Scanned FastAPI routes from dem2 (128 routes) and medical-catalog (20 routes)
+  - Scanned Next.js routes from dem2-webui (2 API routes + 23 pages)
+  - Generated intermediate routes.json with structured data
+  - Generated ROUTES.md with comprehensive markdown tables
+  - Total: 173 routes documented across 3 services
+  - Files created:
+    - scripts/scan_routes.py (route scanner using regex for reliability)
+    - scripts/generate_routes_md.py (markdown generator)
+    - routes.json (591 lines, structured route data)
+    - ROUTES.md (253 lines, comprehensive documentation)
+  - Committed: ed93bb3
+  - Status: Work complete, awaiting user review and approval
 
 ---
 

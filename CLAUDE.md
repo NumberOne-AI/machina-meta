@@ -444,7 +444,8 @@ The `TODO.md` file tracks planned work, improvements, and technical debt.
 **Task States**:
 - `[PROPOSED]` - Under consideration, not yet approved
 - `[STARTED]` - Approved and in progress
-- `[DONE]` - Completed
+- `[REVIEW]` - Work completed, awaiting user review and approval before marking DONE
+- `[DONE]` - Completed and approved by user
 - `[REVERTED]` - Was DONE but later rolled back (e.g., git revert)
 - `[CANCELLED]` - Removed from scope with documented reason
 
@@ -489,6 +490,15 @@ Each task entry includes:
 - **Changes to PROBLEMS.md or TODO.md MUST be committed to git immediately after modification**
 - Do not batch changes to these files with other work
 - These files track project state and must be version-controlled as soon as they are updated
+
+**⚠️ CRITICAL: Task State Changes Require User Approval**:
+- **NEVER mark a task as [DONE] or a problem as [SOLVED] without explicit user approval**
+- When work is completed, change the task state to [REVIEW]
+- The [REVIEW] state indicates: "Work completed, awaiting user review and approval before marking DONE"
+- Wait for the user to explicitly approve ("mark it done", "looks good", "approved", etc.)
+- Only change from [REVIEW] to [DONE] after receiving explicit user approval
+- This applies to ALL repositories: machina-meta, dem2, dem2-webui, medical-catalog, dem2-infra
+- For problems: use [INVESTIGATING] until user confirms the solution is acceptable, then [SOLVED]
 
 ## Project-Specific Documentation
 
