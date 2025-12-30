@@ -68,26 +68,32 @@ def generate_example(service: str, port: int, method: str, path: str) -> str:
 
 
 def generate_service_section(
-    service_name: str, routes: list[dict[str, Any]]
+    service_name: str, service_data: dict[str, Any]
 ) -> str:
     """Generate markdown section for a single service."""
     lines = []
 
-    # Service header
-    service_routes = [r for r in routes if r["service"] == service_name]
+    port = service_data["port"]
+    service_routes = service_data["routes"]
+
     if not service_routes:
         return ""
 
-    port = service_routes[0]["port"]
     lines.append(f"## {service_name}")
     lines.append("")
     lines.append(f"**Port**: {port}")
     lines.append(f"**Total Routes**: {len(service_routes)}")
     lines.append("")
 
+    # Add service name to each route for table generation
+    routes_with_service = [
+        {**route, "service": service_name, "port": port}
+        for route in service_routes
+    ]
+
     # Group routes by type
-    api_routes = [r for r in service_routes if r["method"] != "PAGE"]
-    page_routes = [r for r in service_routes if r["method"] == "PAGE"]
+    api_routes = [r for r in routes_with_service if r["method"] != "PAGE"]
+    page_routes = [r for r in routes_with_service if r["method"] == "PAGE"]
 
     if api_routes:
         lines.append("### API Routes")
@@ -108,6 +114,9 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     """Generate complete ROUTES.md content."""
     lines = []
 
+    services = data["services"]
+    service_names = sorted(services.keys())
+
     # Header
     lines.append("# API Routes Documentation")
     lines.append("")
@@ -115,22 +124,22 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"**Generated**: {data['scan_date']}")
     lines.append(f"**Total Routes**: {data['total_routes']}")
-    lines.append(f"**Services**: {', '.join(sorted(data['services']))}")
+    lines.append(f"**Services**: {', '.join(service_names)}")
     lines.append("")
 
     # Table of Contents
     lines.append("## Table of Contents")
     lines.append("")
-    for service in sorted(data["services"]):
+    for service in service_names:
         lines.append(f"- [{service}](#{service})")
     lines.append("")
     lines.append("---")
     lines.append("")
 
     # Service sections
-    routes = data["routes"]
-    for service in sorted(data["services"]):
-        section = generate_service_section(service, routes)
+    for service_name in service_names:
+        service_data = services[service_name]
+        section = generate_service_section(service_name, service_data)
         if section:
             lines.append(section)
             lines.append("---")
@@ -148,14 +157,9 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     lines.append("| Service | Routes |")
     lines.append("|---------|--------|")
 
-    route_counts = {}
-    for route in routes:
-        service = route["service"]
-        route_counts[service] = route_counts.get(service, 0) + 1
-
-    for service in sorted(route_counts.keys()):
-        count = route_counts[service]
-        lines.append(f"| {service} | {count} |")
+    for service_name in service_names:
+        count = len(services[service_name]["routes"])
+        lines.append(f"| {service_name} | {count} |")
 
     lines.append("")
 
@@ -166,9 +170,10 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     lines.append("|--------|-------|")
 
     method_counts = {}
-    for route in routes:
-        method = route["method"]
-        method_counts[method] = method_counts.get(method, 0) + 1
+    for service_data in services.values():
+        for route in service_data["routes"]:
+            method = route["method"]
+            method_counts[method] = method_counts.get(method, 0) + 1
 
     for method in sorted(method_counts.keys()):
         count = method_counts[method]
@@ -208,7 +213,7 @@ def main() -> None:
 
     print(f"✓ Generated {output_file}")
     print(f"  Total routes: {data['total_routes']}")
-    print(f"  Services: {', '.join(sorted(data['services']))}")
+    print(f"  Services: {', '.join(sorted(data['services'].keys()))}")
 
 
 if __name__ == "__main__":

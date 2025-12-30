@@ -2,7 +2,7 @@
 
 Comprehensive listing of all API routes and pages across all services in the machina-meta workspace.
 
-**Generated**: 2025-12-30T10:22:16.038303
+**Generated**: 2025-12-30T10:35:30.514603
 **Total Routes**: 172
 **Services**: dem2, dem2-webui, medical-catalog
 
