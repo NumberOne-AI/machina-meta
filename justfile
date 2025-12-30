@@ -365,3 +365,7 @@ preview name:
     cd repos/dem2-infra && git checkout -b preview/{{name}} || git checkout preview/{{name}}
     @echo "Preview environment '{{name}}' created"
     @echo "Push dem2-infra branch to trigger deployment"
+
+# Find all source code
+find-src:
+    find -type f | grep -Ev '(\.git|\.venv|\.mypy_cache|\.ruff_cache|\.pytest_cache|\.pyc)\b'

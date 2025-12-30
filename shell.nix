@@ -31,6 +31,7 @@ mkShell {
   buildInputs = [ bashInteractive fd gnumake ];
 
   packages = with pkgs; [
+    universal-ctags
     claude-code
     # libmagic
     poppler-utils
