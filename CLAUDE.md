@@ -410,6 +410,86 @@ Copy `.env.example` to `.env` and fill in values for each service.
 - **Commits**: Conventional commits (`feat:`, `fix:`, `chore:`, etc.)
 - **Preview envs**: `git tag -f preview-{id} && git push origin preview-{id} --force`
 
+## PROBLEMS.md - Issue Tracking
+
+The `PROBLEMS.md` file tracks known problems, issues, and challenges that may not yet have solutions.
+
+**Relationship to TODO.md**:
+- Problems are observations that need investigation before becoming actionable tasks
+- When a solution is identified, create a TODO item and link it to the problem
+- When the TODO is completed, mark the problem as SOLVED
+
+**Problem States**:
+- `[OPEN]` - Needs investigation to understand root cause
+- `[INVESTIGATING]` - Active analysis or proposed solutions exist
+- `[SOLVED]` - Completed TODO items address this problem
+- `[WONT_FIX]` - Acknowledged but intentionally not addressed
+
+**Severity Levels**:
+- `CRITICAL` - Blocking production or core functionality
+- `HIGH` - Significant impact on users or development
+- `MEDIUM` - Notable issue worth tracking
+- `LOW` - Minor annoyance or edge case
+
+## TODO.md - Task Tracking
+
+The `TODO.md` file tracks planned work, improvements, and technical debt.
+
+**Structure**: Organized as a tree following the workspace hierarchy:
+- `Workspace - Multi-Repo Features` - Cross-repository work
+- `Workspace - Infrastructure & CI/CD` - Workspace-level infrastructure
+- `Workspace - Documentation & Tooling` - Workspace-level docs and tools
+- Repository-specific sections (see individual repos)
+
+**Task States**:
+- `[PROPOSED]` - Under consideration, not yet approved
+- `[STARTED]` - Approved and in progress
+- `[DONE]` - Completed
+- `[REVERTED]` - Was DONE but later rolled back (e.g., git revert)
+- `[CANCELLED]` - Removed from scope with documented reason
+
+**Task Format**:
+Each task entry includes:
+- **State**: One of PROPOSED, STARTED, DONE, REVERTED, or CANCELLED
+- **Impact**: HIGH, MEDIUM, or LOW - estimate of value/importance
+- **Added**: Date task was created
+- **Completed**: Date task was finished (for DONE items)
+- **Subtasks**: Checkmarked list of completed work items
+
+**Impact Levels**:
+- `HIGH` - Critical for core functionality, blocking other work, or significant user value
+- `MEDIUM` - Important improvement, enhances quality or developer experience
+- `LOW` - Nice to have, minor improvement, or future consideration
+
+**Workflow**:
+- Add new tasks under the appropriate category with `[PROPOSED]` or `[STARTED]` state
+- Include impact estimate for prioritization
+- When completing work, mark as `[DONE]` with completion date
+- **Important**: DONE items should reference a relevant git commit that implements the change
+- Update continuously as work progresses
+- Include file paths for implementation context where helpful
+
+**Task Journal Requirements**:
+- **All changes to a task MUST be journaled within the task entry itself**
+- Adding steps: Add with `- [ ]` checkbox
+- Completing steps: Change `- [ ]` to `- [x]` with completion note
+- **Removing steps**: Do NOT delete silently. Mark as cancelled with reason:
+  - `- [CANCELLED] Step description - Reason for cancellation (YYYY-MM-DD)`
+- Changing scope: Add a note explaining the change
+- This preserves the full history of task evolution
+
+**Commit Requirements**:
+- **Every git commit MUST have an associated TODO.md item**
+- Before making a commit, ensure there is a corresponding task entry
+- If no task exists, create one (even retroactively) before or with the commit
+- Mark the task as DONE with completion date when work is finished
+- Trivial fixes (typos, formatting) may share a parent task or use a catch-all maintenance task
+
+**Immediate Commit Requirement**:
+- **Changes to PROBLEMS.md or TODO.md MUST be committed to git immediately after modification**
+- Do not batch changes to these files with other work
+- These files track project state and must be version-controlled as soon as they are updated
+
 ## Project-Specific Documentation
 
 Refer to individual CLAUDE.md files for detailed service guidance:
