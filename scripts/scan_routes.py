@@ -3,19 +3,25 @@
 Scan API routes from all services in the machina-meta workspace.
 
 This script discovers routes from:
-- FastAPI services (dem2, medical-catalog)
+- FastAPI services (dem2, medical-catalog) - Uses OpenAPI JSON
 - Next.js App Router pages and API routes (dem2-webui)
 
 Output: routes.json with structured route data for all services.
 """
 
-import ast
 import json
 import re
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+try:
+    import requests
+except ImportError:
+    print("Error: requests library not found. Install with: pip install requests")
+    sys.exit(1)
 
 
 @dataclass
@@ -35,154 +41,95 @@ class RouteInfo:
 
 
 class FastAPIRouteScanner:
-    """Scanner for FastAPI routes in Python files using regex for reliability."""
+    """Scanner for FastAPI routes using OpenAPI JSON specification."""
 
-    HTTP_METHODS = ["get", "post", "put", "patch", "delete", "options", "head", "websocket"]
-
-    def __init__(self, service_name: str, port: int, base_path: Path):
+    def __init__(self, service_name: str, port: int, openapi_url: str):
         self.service_name = service_name
         self.port = port
-        self.base_path = base_path
+        self.openapi_url = openapi_url
         self.routes: list[RouteInfo] = []
 
     def scan(self) -> list[RouteInfo]:
-        """Scan all Python files for FastAPI routes."""
-        # Exclude common directories
-        exclude_dirs = {
-            ".venv",
-            "venv",
-            "node_modules",
-            "__pycache__",
-            ".pytest_cache",
-            ".mypy_cache",
-            ".git",
-            "alembic",
-        }
+        """Scan FastAPI routes from OpenAPI JSON."""
+        print(f"  Fetching OpenAPI spec from {self.openapi_url}...")
 
-        python_files = []
-        for py_file in self.base_path.rglob("*.py"):
-            # Skip if any part of the path is in exclude_dirs
-            if any(part in exclude_dirs for part in py_file.parts):
-                continue
-            # Skip test files
-            if "test" in py_file.stem.lower() or "test" in py_file.parent.name.lower():
-                continue
-            python_files.append(py_file)
-
-        print(f"  Scanning {len(python_files)} Python files in {self.service_name}...")
-
-        for py_file in python_files:
-            try:
-                self._scan_file(py_file)
-            except Exception as e:
-                print(f"    Warning: Failed to parse {py_file}: {e}")
-
-        print(f"  Found {len(self.routes)} routes in {self.service_name}")
-        return self.routes
-
-    def _scan_file(self, file_path: Path) -> None:
-        """Scan a single Python file for route definitions using regex."""
         try:
-            content = file_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            return
+            response = requests.get(self.openapi_url, timeout=5)
+            response.raise_for_status()
+            openapi_spec = response.json()
+        except requests.exceptions.ConnectionError:
+            print(f"  ⚠️  Could not connect to {self.openapi_url}")
+            print(f"  ⚠️  Make sure {self.service_name} is running on port {self.port}")
+            print(f"  ⚠️  Start service with: cd repos/{self.service_name} && just run")
+            return []
+        except requests.exceptions.Timeout:
+            print(f"  ⚠️  Timeout connecting to {self.openapi_url}")
+            return []
+        except requests.exceptions.RequestException as e:
+            print(f"  ⚠️  Error fetching OpenAPI spec: {e}")
+            return []
+        except json.JSONDecodeError:
+            print(f"  ⚠️  Invalid JSON response from {self.openapi_url}")
+            return []
 
-        # Extract router prefix from APIRouter initialization
-        router_prefix = self._extract_router_prefix_regex(content)
+        # Parse OpenAPI spec
+        paths = openapi_spec.get("paths", {})
+        print(f"  Parsing {len(paths)} paths from OpenAPI spec...")
 
-        # Find all route decorators using regex
-        # Pattern matches: @router.METHOD("path", ...optional params...) or @router.METHOD('path', ...)
-        for method in self.HTTP_METHODS:
-            pattern = rf'@router\.{method}\s*\(\s*["\']([^"\']+)["\']'
-            matches = re.finditer(pattern, content, re.MULTILINE)
-
-            for match in matches:
-                route_path = match.group(1)
-                decorator_start = match.start()
-
-                # Find the function definition after this decorator
-                func_pattern = r'\n\s*(?:async\s+)?def\s+(\w+)\s*\('
-                func_match = re.search(func_pattern, content[decorator_start:])
-
-                if not func_match:
+        for path, path_item in paths.items():
+            for method, operation in path_item.items():
+                # Skip non-HTTP methods
+                if method.lower() not in ["get", "post", "put", "patch", "delete", "options", "head"]:
                     continue
 
-                handler_name = func_match.group(1)
-                func_start = decorator_start + func_match.start()
+                # Extract route information
+                summary = operation.get("summary", "")
+                description = operation.get("description", summary)
+                operation_id = operation.get("operationId", "")
 
-                # Extract docstring if present
-                description = self._extract_docstring(content, func_start)
+                # Get response model from responses section
+                response_model = ""
+                responses = operation.get("responses", {})
+                success_response = responses.get("200") or responses.get("201") or responses.get("202")
+                if success_response and "content" in success_response:
+                    content = success_response["content"]
+                    if "application/json" in content:
+                        schema = content["application/json"].get("schema", {})
+                        if "$ref" in schema:
+                            # Extract model name from $ref
+                            ref = schema["$ref"]
+                            response_model = ref.split("/")[-1]
+                        elif "title" in schema:
+                            response_model = schema["title"]
 
-                # Extract response_model from decorator if present
-                response_model = self._extract_response_model(content, decorator_start, func_start)
+                # Get parameters
+                parameters = []
+                for param in operation.get("parameters", []):
+                    param_name = param.get("name", "")
+                    if param_name:
+                        parameters.append(param_name)
 
-                # Combine router prefix with route path
-                full_path = router_prefix + route_path if router_prefix else route_path
-                full_path = full_path.replace("//", "/")
-
-                # Get line number
-                line_number = content[:decorator_start].count('\n') + 1
-
-                relative_file = file_path.relative_to(self.base_path)
+                # Get tags (can be used to infer source file/module)
+                tags = operation.get("tags", [])
+                file_hint = tags[0] if tags else ""
 
                 self.routes.append(
                     RouteInfo(
                         service=self.service_name,
                         port=self.port,
-                        path=full_path,
-                        method=method.upper() if method != "websocket" else "WS",
-                        description=description,
-                        file_path=str(relative_file),
-                        line_number=line_number,
-                        handler_name=handler_name,
+                        path=path,
+                        method=method.upper(),
+                        description=description or summary,
+                        file_path=f"{file_hint}" if file_hint else "(OpenAPI)",
+                        line_number=0,
+                        handler_name=operation_id,
+                        parameters=parameters,
                         response_model=response_model,
                     )
                 )
 
-    def _extract_router_prefix_regex(self, content: str) -> str:
-        """Extract router prefix using regex."""
-        # Pattern: router = APIRouter(prefix="/api/v1/xxx", ...)
-        patterns = [
-            r'router\s*=\s*APIRouter\s*\(\s*prefix\s*=\s*["\']([^"\']+)["\']',
-            r'router\s*=\s*APIRouter\s*\([^)]*prefix\s*=\s*["\']([^"\']+)["\']',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, content)
-            if match:
-                return match.group(1)
-
-        return ""
-
-    def _extract_docstring(self, content: str, func_start: int) -> str:
-        """Extract first line of docstring from function."""
-        # Look for docstring after function definition
-        # Pattern: def func(): """docstring"""
-        docstring_pattern = r'def\s+\w+[^:]*:\s*(?:"""([^"]+)"""|\'\'\'([^\']+)\'\'\')'
-        match = re.search(docstring_pattern, content[func_start:func_start + 500])
-
-        if match:
-            docstring = match.group(1) or match.group(2)
-            # Take only first line
-            return docstring.split('\n')[0].strip()
-
-        return ""
-
-    def _extract_response_model(self, content: str, decorator_start: int, func_start: int) -> str:
-        """Extract response_model from decorator."""
-        decorator_text = content[decorator_start:func_start]
-
-        # Pattern: response_model=SomeModel or response_model = SomeModel
-        pattern = r'response_model\s*=\s*([A-Za-z_][\w\[\],\s]*)'
-        match = re.search(pattern, decorator_text)
-
-        if match:
-            model = match.group(1).strip()
-            # Clean up (remove trailing commas, spaces, etc.)
-            model = re.sub(r'[,\s)]+$', '', model)
-            return model
-
-        return ""
+        print(f"  Found {len(self.routes)} routes in {self.service_name}")
+        return self.routes
 
 
 class NextJSRouteScanner:
@@ -348,32 +295,47 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
         {
             "name": "dem2",
             "port": 8000,
-            "path": workspace_root / "repos" / "dem2",
-            "scanner": FastAPIRouteScanner,
+            "type": "fastapi",
+            "openapi_url": "http://localhost:8000/api/v1/openapi.json",
         },
         {
             "name": "medical-catalog",
             "port": 8001,
-            "path": workspace_root / "repos" / "medical-catalog",
-            "scanner": FastAPIRouteScanner,
+            "type": "fastapi",
+            "openapi_url": "http://localhost:8001/openapi.json",
         },
         {
             "name": "dem2-webui",
             "port": 3000,
+            "type": "nextjs",
             "path": workspace_root / "repos" / "dem2-webui",
-            "scanner": NextJSRouteScanner,
         },
     ]
 
     for service in services:
         print(f"\nScanning {service['name']}...")
-        if not service["path"].exists():
-            print(f"  Warning: {service['path']} does not exist, skipping")
-            continue
 
-        scanner = service["scanner"](service["name"], service["port"], service["path"])
-        service_routes = scanner.scan()
-        routes.extend(service_routes)
+        if service["type"] == "fastapi":
+            scanner = FastAPIRouteScanner(
+                service["name"],
+                service["port"],
+                service["openapi_url"]
+            )
+            service_routes = scanner.scan()
+            routes.extend(service_routes)
+
+        elif service["type"] == "nextjs":
+            if not service["path"].exists():
+                print(f"  Warning: {service['path']} does not exist, skipping")
+                continue
+
+            scanner = NextJSRouteScanner(
+                service["name"],
+                service["port"],
+                service["path"]
+            )
+            service_routes = scanner.scan()
+            routes.extend(service_routes)
 
     # Sort routes by service, then by path
     routes.sort(key=lambda r: (r.service, r.path))

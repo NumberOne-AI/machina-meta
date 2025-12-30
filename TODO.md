@@ -82,18 +82,23 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 - [REVIEW] **Create comprehensive API routes documentation** - Document all routes across all services
   - Impact: HIGH | Added: 2025-12-30
   - Created route scanning system with Python scripts
-  - Scanned FastAPI routes from dem2 (128 routes) and medical-catalog (20 routes)
+  - Scanned FastAPI routes from dem2 (126 routes) and medical-catalog (21 routes) using OpenAPI JSON
   - Scanned Next.js routes from dem2-webui (2 API routes + 23 pages)
   - Generated intermediate routes.json with structured data
   - Generated ROUTES.md with comprehensive markdown tables
-  - Total: 173 routes documented across 3 services
+  - Total: 172 routes documented across 3 services
   - Files created:
-    - scripts/scan_routes.py (route scanner using regex for reliability)
+    - scripts/scan_routes.py (route scanner using OpenAPI for FastAPI services)
     - scripts/generate_routes_md.py (markdown generator)
-    - routes.json (591 lines, structured route data)
-    - ROUTES.md (253 lines, comprehensive documentation)
-  - Committed: ed93bb3
-  - Status: Work complete, awaiting user review and approval
+    - routes.json (structured route data with descriptions from OpenAPI)
+    - ROUTES.md (comprehensive documentation with detailed descriptions)
+  - Implementation details:
+    - FastAPI scanner fetches OpenAPI JSON from running services
+    - Extracts complete route metadata: descriptions, parameters, response models
+    - Provides helpful error messages if services are not running
+    - Next.js scanner uses file-based detection for pages and API routes
+  - Commits: ed93bb3, (pending: OpenAPI integration)
+  - Status: Updated to use OpenAPI JSON, awaiting user review and approval
 
 ---
 

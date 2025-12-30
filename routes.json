@@ -1,6 +1,6 @@
 {
-  "scan_date": "2025-12-30T09:34:42.421123",
-  "total_routes": 173,
+  "scan_date": "2025-12-30T10:22:16.038303",
+  "total_routes": 172,
   "services": [
     "medical-catalog",
     "dem2",
@@ -10,1538 +10,1810 @@
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/allergies",
+      "path": "/api/v1/auth/google/callback",
       "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 585,
-      "handler_name": "get_patient_allergies",
-      "parameters": [],
-      "response_model": "list[AllergyIntoleranceResponse],\n    summary"
+      "description": "Google Oauth Callback",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "google_oauth_callback_api_v1_auth_google_callback_get",
+      "parameters": [
+        "state"
+      ],
+      "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/allergies",
+      "path": "/api/v1/auth/google/login",
+      "method": "GET",
+      "description": "Google Oauth Init",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "google_oauth_init_api_v1_auth_google_login_get",
+      "parameters": [
+        "callback_url",
+        "redirect",
+        "pr_number"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/auth/logout",
       "method": "POST",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 556,
-      "handler_name": "create_allergy_intolerance",
-      "parameters": [],
-      "response_model": "AllergyIntoleranceResponse,\n    status_code"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/allergies/grouped",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 607,
-      "handler_name": "get_patient_allergies_grouped",
-      "parameters": [],
-      "response_model": "list[AllergyGroupedResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/allergies/{allergy_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 673,
-      "handler_name": "delete_allergy",
-      "parameters": [],
+      "description": "Logout",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "logout_api_v1_auth_logout_post",
+      "parameters": [
+        "refresh_token",
+        "access_token"
+      ],
       "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/allergies/{allergy_id}/status",
-      "method": "PATCH",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 646,
-      "handler_name": "update_allergy_status",
-      "parameters": [],
-      "response_model": "AllergyIntoleranceResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/allergy-records",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 368,
-      "handler_name": "list_allergy_records",
-      "parameters": [],
-      "response_model": "list[AllergyRecordResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/allergy-records/{record_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 446,
-      "handler_name": "get_allergy_record",
-      "parameters": [],
-      "response_model": "AllergyRecordDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/drugs/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 79,
-      "handler_name": "search_drugs_get",
-      "parameters": [],
-      "response_model": "DrugSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/drugs/search",
+      "path": "/api/v1/auth/refresh",
       "method": "POST",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 58,
-      "handler_name": "search_drugs",
-      "parameters": [],
-      "response_model": "DrugSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/drugs/search/formatted",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 107,
-      "handler_name": "search_drugs_formatted",
-      "parameters": [],
-      "response_model": "FormattedDrugResult"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/health",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 41,
-      "handler_name": "health_check",
-      "parameters": [],
-      "response_model": "dict"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/papers/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 369,
-      "handler_name": "search_papers_get",
-      "parameters": [],
-      "response_model": "PaperSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/papers/search",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 348,
-      "handler_name": "search_papers",
-      "parameters": [],
-      "response_model": "PaperSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/papers/search/formatted",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 408,
-      "handler_name": "search_papers_formatted",
-      "parameters": [],
-      "response_model": "FormattedPaperResult"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/trials/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 157,
-      "handler_name": "search_clinical_trials_get",
-      "parameters": [],
-      "response_model": "ClinicalTrialSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/trials/search",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 136,
-      "handler_name": "search_clinical_trials",
-      "parameters": [],
-      "response_model": "ClinicalTrialSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/trials/search/formatted",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 196,
-      "handler_name": "search_clinical_trials_formatted",
-      "parameters": [],
-      "response_model": "FormattedTrialResult"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/variants/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 257,
-      "handler_name": "search_variants_get",
-      "parameters": [],
+      "description": "Refresh Tokens",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "refresh_tokens_api_v1_auth_refresh_post",
+      "parameters": [
+        "refresh_token"
+      ],
       "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/api/v1/medical-sources/variants/search",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 236,
-      "handler_name": "search_variants",
-      "parameters": [],
-      "response_model": "VariantSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/api/v1/medical-sources/variants/search/formatted",
+      "path": "/api/v1/auth/users/me",
       "method": "GET",
-      "description": "",
-      "file_path": "services/medical-sources/src/machina/medical_sources/api/router.py",
-      "line_number": 302,
-      "handler_name": "search_variants_formatted",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/by-tag/{tag_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 326,
-      "handler_name": "get_bookmarks_by_tag",
-      "parameters": [],
-      "response_model": "Page[BookmarkOut]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/care_network",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/care/router.py",
-      "line_number": 119,
-      "handler_name": "get_care_network",
-      "parameters": [],
-      "response_model": "CareNetworkResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/cleanup/orphaned_resources",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 319,
-      "handler_name": "cleanup_orphaned_resources",
-      "parameters": [],
-      "response_model": "dict[str, int],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/complete",
-      "method": "POST",
-      "description": "",
-      "file_path": "machina/machina-medical/src/machina_medical/onboarding/router.py",
-      "line_number": 14,
-      "handler_name": "store_onboarding_answers",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/conditions",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 41,
-      "handler_name": "list_conditions",
-      "parameters": [],
-      "response_model": "list[ConditionCaseResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/conditions/{condition_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/api/conditions.py",
-      "line_number": 86,
-      "handler_name": "get_condition",
-      "parameters": [],
-      "response_model": "ConditionResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/conditions/{condition_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 117,
-      "handler_name": "get_condition",
-      "parameters": [],
-      "response_model": "ConditionCaseDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/count",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 80,
-      "handler_name": "count_bookmarks",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/document_references",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 258,
-      "handler_name": "get_document_references",
-      "parameters": [],
-      "response_model": "list[DocumentReference],\n    response_model_exclude_none"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/document_references/{document_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 276,
-      "handler_name": "get_document_reference_by_id",
-      "parameters": [],
-      "response_model": "DocumentReference,\n    response_model_exclude_none"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/document_references/{document_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/document/router.py",
-      "line_number": 126,
-      "handler_name": "get_document_reference_by_id",
-      "parameters": [],
-      "response_model": "DocumentReferenceResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/document_references/{document_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/document/router.py",
-      "line_number": 165,
-      "handler_name": "delete_document_reference",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/document_references/{document_id}/details",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/document/router.py",
-      "line_number": 75,
-      "handler_name": "get_document_reference_details",
-      "parameters": [],
-      "response_model": "DocumentReferenceDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/encounters",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 429,
-      "handler_name": "get_encounters",
-      "parameters": [],
-      "response_model": "list[EncounterResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/encounters",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/care/router.py",
-      "line_number": 26,
-      "handler_name": "get_encounters",
-      "parameters": [],
-      "response_model": "list[EncounterResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/events",
-      "method": "WS",
-      "description": "",
-      "file_path": "services/medical-data-engine/src/machina/medical_data_engine/routes.py",
-      "line_number": 47,
-      "handler_name": "events_websocket",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 43,
-      "handler_name": "list_files",
-      "parameters": [],
-      "response_model": "Page[FileRecordOut]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files/bulk_delete",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 51,
-      "handler_name": "bulk_delete_files",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files/upload",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 23,
-      "handler_name": "upload_file",
-      "parameters": [],
-      "response_model": "FileRecordOut"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files/upload/bulk",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 33,
-      "handler_name": "bulk_upload_files",
-      "parameters": [],
-      "response_model": "list[FileRecordOut]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files/{file_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 88,
-      "handler_name": "delete_file",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/files/{file_id}/download",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/file-storage/src/machina/file_storage/router.py",
-      "line_number": 120,
-      "handler_name": "download_file",
-      "parameters": [],
-      "response_model": "FileDownloadOut"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/geocode/zip",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/geocoding/src/machina/geocoding/router.py",
-      "line_number": 23,
-      "handler_name": "geocode_zip",
-      "parameters": [],
-      "response_model": "GeocodeResult"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/google/callback",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 52,
-      "handler_name": "google_oauth_callback",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/google/login",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 33,
-      "handler_name": "google_oauth_init",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/grouped",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/observation/router.py",
-      "line_number": 17,
-      "handler_name": "get_patient_observations_grouped",
-      "parameters": [],
-      "response_model": "list[ObservationTypeGroupedResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/health",
-      "method": "GET",
-      "description": "Simple health probe.",
-      "file_path": "services/geocoding/src/machina/geocoding/router.py",
-      "line_number": 44,
-      "handler_name": "health_check",
-      "parameters": [],
-      "response_model": "dict[str, str]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/health",
-      "method": "GET",
-      "description": "Simple health probe.",
-      "file_path": "services/indicators-catalog/src/machina/indicators_catalog/router.py",
-      "line_number": 74,
-      "handler_name": "health_check",
-      "parameters": [],
-      "response_model": "dict[str, str]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/logout",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 70,
-      "handler_name": "logout",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/loinc/{loinc_code}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/indicators-catalog/src/machina/indicators_catalog/router.py",
-      "line_number": 55,
-      "handler_name": "get_by_loinc_code",
-      "parameters": [],
-      "response_model": "IndicatorModel"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-events",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 198,
-      "handler_name": "get_intake_event_by_date_range",
-      "parameters": [],
-      "response_model": "list[IntakeEventSchema],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-events",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 218,
-      "handler_name": "create_intake_event",
-      "parameters": [],
-      "response_model": "IntakeEventSchema,\n    status_code"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-events/bulk",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 248,
-      "handler_name": "create_bulk_intake_event",
-      "parameters": [],
-      "response_model": "list[IntakeEventSchema],\n    status_code"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-events/bulk",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 271,
-      "handler_name": "delete_bulk_intake_event",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-events/{intake_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 292,
-      "handler_name": "delete_supplement_intake",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-regimens",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 42,
-      "handler_name": "create_intake_regimen",
-      "parameters": [],
-      "response_model": "IntakeRegimenSchema,\n    status_code"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-regimens/list",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 103,
-      "handler_name": "list_intake_regimens",
-      "parameters": [],
-      "response_model": "list[IntakeRegimenSchema],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-regimens/{regimen_id}",
-      "method": "PATCH",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 155,
-      "handler_name": "update_intake_regimen",
-      "parameters": [],
-      "response_model": "IntakeRegimenSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/intake-regimens/{regimen_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 141,
-      "handler_name": "delete_supplement_regimen",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/medications/by_rxcui",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 415,
-      "handler_name": "get_or_enrich_medication_by_name",
-      "parameters": [],
-      "response_model": "MedicationSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/medications/by_uuid",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 398,
-      "handler_name": "get_medication_by_uuid",
-      "parameters": [],
-      "response_model": "MedicationSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/medications/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 434,
-      "handler_name": "search_medication",
-      "parameters": [],
-      "response_model": "list[MedicationSearchResult],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/medications/{medication_id}/ingredients",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 448,
-      "handler_name": "get_medication_ingredients",
-      "parameters": [],
-      "response_model": "list[IngredientSchema],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/supplements/by_ingr_grp",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 346,
-      "handler_name": "get_or_enrich_supplement_by_ingr_grp",
-      "parameters": [],
-      "response_model": "SupplementSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/supplements/by_ods_label",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 326,
-      "handler_name": "get_or_enrich_supplement_by_ods_label_id",
-      "parameters": [],
-      "response_model": "SupplementSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/supplements/by_uuid",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 308,
-      "handler_name": "get_supplement_by_uuid",
-      "parameters": [],
-      "response_model": "SupplementSchema,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/supplements/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 384,
-      "handler_name": "search_supplement",
-      "parameters": [],
-      "response_model": "list[SubstanceSearchResult],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/medication/supplements/{supplement_id}/ingredients",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/medication/router.py",
-      "line_number": 371,
-      "handler_name": "get_supplement_ingredients",
-      "parameters": [],
-      "response_model": "list[IngredientSchema],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 130,
-      "handler_name": "get_observations",
-      "parameters": [],
-      "response_model": "dict[str, ObservationGroupedByLoinc],\n    response_model_exclude_none"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/body_system/{body_system}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 100,
-      "handler_name": "get_observations_by_body_system",
-      "parameters": [],
-      "response_model": "list[Observation],\n    response_model_exclude_none"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/grouped",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 56,
-      "handler_name": "get_patient_observations_grouped",
-      "parameters": [],
-      "response_model": "ObservationsGroupedPaginatedResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/stats",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 203,
-      "handler_name": "get_observations_stats_v2",
-      "parameters": [],
-      "response_model": "list[ObservationMetric],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/stats",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 252,
-      "handler_name": "get_patient_observation_stats",
-      "parameters": [],
-      "response_model": "ObservationStatsResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/types/by-uuid/{uuid}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 354,
-      "handler_name": "get_observation_type_by_uuid",
-      "parameters": [],
-      "response_model": "ObservationTypeDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/types/search",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 307,
-      "handler_name": "search_observation_types",
-      "parameters": [],
-      "response_model": "list[ObservationTypeSearchResult],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/types/{code}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 389,
-      "handler_name": "get_observation_types_by_code",
-      "parameters": [],
-      "response_model": "list[ObservationTypeDetailResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/values",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 69,
-      "handler_name": "get_observations_values_v2",
-      "parameters": [],
-      "response_model": "dict[str, list[Observation]],\n    response_model_exclude_none"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/values/{uid}",
-      "method": "PATCH",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 421,
-      "handler_name": "update_observation_value",
-      "parameters": [],
-      "response_model": "ObservationValueResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/values/{uid}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 479,
-      "handler_name": "delete_observation_value",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/observations/{observation_type_uuid}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py",
-      "line_number": 522,
-      "handler_name": "delete_observation_type",
-      "parameters": [],
-      "response_model": "dict[str, int],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/organizations",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 390,
-      "handler_name": "get_organizations",
-      "parameters": [],
-      "response_model": "list[OrganizationResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/patients/statistics",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 335,
-      "handler_name": "get_patients_statistics",
-      "parameters": [],
-      "response_model": "PatientsStatistics,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/patients/{patient_uuid}/statistics",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 300,
-      "handler_name": "get_patient_statistics",
-      "parameters": [],
-      "response_model": "PatientStatistics,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/practitioners",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 351,
-      "handler_name": "get_practitioners",
-      "parameters": [],
-      "response_model": "list[PractitionerResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/process_document",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 51,
-      "handler_name": "process_document",
-      "parameters": [],
-      "response_model": "ProcessDocumentResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/queue/stats",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 223,
-      "handler_name": "get_queue_stats",
-      "parameters": [],
-      "response_model": "QueueStats"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/refresh",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 62,
-      "handler_name": "refresh_tokens",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/resource_connections",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 525,
-      "handler_name": "get_resource_connections",
-      "parameters": [],
-      "response_model": "ResourceConnectionsResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/run",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/agent_router.py",
-      "line_number": 22,
-      "handler_name": "run_agent",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/run_live",
-      "method": "WS",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/agent_router.py",
-      "line_number": 30,
-      "handler_name": "run_agent_live",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/run_sse",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/agent_router.py",
-      "line_number": 47,
-      "handler_name": "run_agent_sse",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/search",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/indicators-catalog/src/machina/indicators_catalog/router.py",
-      "line_number": 29,
-      "handler_name": "search_indicators",
-      "parameters": [],
-      "response_model": "IndicatorSearchResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/survey/answers",
-      "method": "PUT",
-      "description": "",
-      "file_path": "machina/machina-medical/src/machina_medical/onboarding/router.py",
-      "line_number": 35,
-      "handler_name": "submit_answers",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/survey/questions",
-      "method": "GET",
-      "description": "",
-      "file_path": "machina/machina-medical/src/machina_medical/onboarding/router.py",
-      "line_number": 29,
-      "handler_name": "get_questions",
-      "parameters": [],
-      "response_model": "list[QuestionSchema]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/symptom-types",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 283,
-      "handler_name": "list_symptom_types",
-      "parameters": [],
-      "response_model": "list[SymptomTypeWithCountResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/symptom-types/{type_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 321,
-      "handler_name": "get_symptom_type",
-      "parameters": [],
-      "response_model": "SymptomTypeDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/symptoms",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 164,
-      "handler_name": "list_symptoms",
-      "parameters": [],
-      "response_model": "list[SymptomEpisodeResponse],\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/symptoms/{symptom_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/api/symptoms.py",
-      "line_number": 90,
-      "handler_name": "get_symptom",
-      "parameters": [],
-      "response_model": "SymptomResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/symptoms/{symptom_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/graph-memory/src/machina/graph_memory/medical/graph/condition/routes.py",
-      "line_number": 236,
-      "handler_name": "get_symptom",
-      "parameters": [],
-      "response_model": "SymptomEpisodeDetailResponse,\n    summary"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/tasks",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 101,
-      "handler_name": "get_user_tasks",
-      "parameters": [],
-      "response_model": "list[ProcessingTaskResponse]"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/tasks/stream",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 144,
-      "handler_name": "stream_user_tasks_progress",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/tasks/{task_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 179,
-      "handler_name": "get_task_status",
-      "parameters": [],
-      "response_model": "ProcessingTaskResponse"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/test-stream",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-data-engine/src/machina/medical_data_engine/routes.py",
-      "line_number": 85,
-      "handler_name": "test_stream",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/test_process_document",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/docproc/src/machina/docproc/router.py",
-      "line_number": 67,
-      "handler_name": "test_process_document",
-      "parameters": [],
-      "response_model": "ProcessDocumentResponse,\n    tags"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/user_data",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/medical-data-storage/src/machina/medical_data_storage/router.py",
-      "line_number": 57,
-      "handler_name": "erase_user_data",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/me",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 78,
-      "handler_name": "user_info",
+      "description": "User Info",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "user_info_api_v1_auth_users_me_get",
       "parameters": [],
       "response_model": "UserOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me",
+      "path": "/api/v1/auth/users/me",
       "method": "DELETE",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 85,
-      "handler_name": "delete_user",
-      "parameters": [],
+      "description": "Delete User",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "delete_user_api_v1_auth_users_me_delete",
+      "parameters": [
+        "refresh_token",
+        "access_token"
+      ],
       "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/patients",
+      "path": "/api/v1/auth/users/me/patients",
       "method": "GET",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 122,
-      "handler_name": "list_patients",
-      "parameters": [],
-      "response_model": "list[UserPatientOut]"
+      "description": "List Patients",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "list_patients_api_v1_auth_users_me_patients_get",
+      "parameters": [
+        "q"
+      ],
+      "response_model": "Response List Patients Api V1 Auth Users Me Patients Get"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/patients",
+      "path": "/api/v1/auth/users/me/patients",
       "method": "POST",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 133,
-      "handler_name": "create_patient",
-      "parameters": [],
-      "response_model": "UserPatientOut,\n    status_code"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/me/patients/{patient_id}",
-      "method": "PATCH",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 148,
-      "handler_name": "patch_patient",
+      "description": "Create Patient",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "create_patient_api_v1_auth_users_me_patients_post",
       "parameters": [],
       "response_model": "UserPatientOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/patients/{patient_id}",
+      "path": "/api/v1/auth/users/me/patients/{patient_id}",
+      "method": "PATCH",
+      "description": "Patch Patient",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "patch_patient_api_v1_auth_users_me_patients__patient_id__patch",
+      "parameters": [
+        "patient_id"
+      ],
+      "response_model": "UserPatientOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/auth/users/me/patients/{patient_id}",
       "method": "DELETE",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 161,
-      "handler_name": "delete_patient",
-      "parameters": [],
+      "description": "Delete Patient",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "delete_patient_api_v1_auth_users_me_patients__patient_id__delete",
+      "parameters": [
+        "patient_id"
+      ],
       "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/patients/{patient_id}/data",
+      "path": "/api/v1/auth/users/me/patients/{patient_id}/data",
       "method": "DELETE",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 173,
-      "handler_name": "delete_patient_data",
-      "parameters": [],
+      "description": "Delete Patient Data",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "delete_patient_data_api_v1_auth_users_me_patients__patient_id__data_delete",
+      "parameters": [
+        "patient_id"
+      ],
       "response_model": ""
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/settings",
+      "path": "/api/v1/auth/users/me/settings",
       "method": "GET",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 103,
-      "handler_name": "get_user_settings",
+      "description": "Get User Settings",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "get_user_settings_api_v1_auth_users_me_settings_get",
       "parameters": [],
       "response_model": "UserSettingsOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/me/settings",
+      "path": "/api/v1/auth/users/me/settings",
       "method": "PATCH",
-      "description": "",
-      "file_path": "services/auth/src/machina/auth/router.py",
-      "line_number": 111,
-      "handler_name": "update_user_settings",
+      "description": "Update User Settings",
+      "file_path": "auth",
+      "line_number": 0,
+      "handler_name": "update_user_settings_api_v1_auth_users_me_settings_patch",
       "parameters": [],
       "response_model": "UserSettingsOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/sessions",
+      "path": "/api/v1/bookmark-groups",
+      "method": "POST",
+      "description": "Create Group",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "create_group_api_v1_bookmark_groups_post",
+      "parameters": [],
+      "response_model": "BookmarkGroupOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-groups",
       "method": "GET",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 106,
-      "handler_name": "list_sessions",
-      "parameters": [],
-      "response_model": ""
+      "description": "List Groups",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "list_groups_api_v1_bookmark_groups_get",
+      "parameters": [
+        "page",
+        "size"
+      ],
+      "response_model": "Page_BookmarkGroupOut_"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/sessions",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 25,
-      "handler_name": "create_session",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/sessions/{session_id}",
+      "path": "/api/v1/bookmark-groups/{group_id}",
       "method": "GET",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 77,
-      "handler_name": "get_session",
-      "parameters": [],
-      "response_model": ""
+      "description": "Get Group",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "get_group_api_v1_bookmark_groups__group_id__get",
+      "parameters": [
+        "group_id"
+      ],
+      "response_model": "BookmarkGroupWithItemsOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/users/sessions/{session_id}",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 45,
-      "handler_name": "create_session_with_id",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/sessions/{session_id}/feedback",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 180,
-      "handler_name": "submit_feedback_by_invocation",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/sessions/{session_id}/name",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 131,
-      "handler_name": "set_session_name",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/users/sessions/{session_id}/summarize",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/medical-agent/src/machina/medical_agent/api/session_router.py",
-      "line_number": 163,
-      "handler_name": "summarize_session_name",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/{bookmark_id}",
-      "method": "GET",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 89,
-      "handler_name": "get_bookmark",
-      "parameters": [],
-      "response_model": "BookmarkOut"
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/{bookmark_id}",
+      "path": "/api/v1/bookmark-groups/{group_id}",
       "method": "PATCH",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 102,
-      "handler_name": "update_bookmark",
+      "description": "Update Group",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "update_group_api_v1_bookmark_groups__group_id__patch",
+      "parameters": [
+        "group_id"
+      ],
+      "response_model": "BookmarkGroupOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-groups/{group_id}",
+      "method": "DELETE",
+      "description": "Delete Group",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "delete_group_api_v1_bookmark_groups__group_id__delete",
+      "parameters": [
+        "group_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags",
+      "method": "POST",
+      "description": "Create Tag",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "create_tag_api_v1_bookmark_tags_post",
+      "parameters": [],
+      "response_model": "BookmarkTagOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags",
+      "method": "GET",
+      "description": "List Tags",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "list_tags_api_v1_bookmark_tags_get",
+      "parameters": [
+        "page",
+        "size"
+      ],
+      "response_model": "Page_BookmarkTagOut_"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags/search",
+      "method": "GET",
+      "description": "Search Tags",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "search_tags_api_v1_bookmark_tags_search_get",
+      "parameters": [
+        "q",
+        "page",
+        "size"
+      ],
+      "response_model": "Page_BookmarkTagOut_"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags/{tag_id}",
+      "method": "GET",
+      "description": "Get Tag",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "get_tag_api_v1_bookmark_tags__tag_id__get",
+      "parameters": [
+        "tag_id"
+      ],
+      "response_model": "BookmarkTagOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags/{tag_id}",
+      "method": "PATCH",
+      "description": "Update Tag",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "update_tag_api_v1_bookmark_tags__tag_id__patch",
+      "parameters": [
+        "tag_id"
+      ],
+      "response_model": "BookmarkTagOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmark-tags/{tag_id}",
+      "method": "DELETE",
+      "description": "Delete Tag",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "delete_tag_api_v1_bookmark_tags__tag_id__delete",
+      "parameters": [
+        "tag_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks",
+      "method": "POST",
+      "description": "Create Bookmark",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "create_bookmark_api_v1_bookmarks_post",
       "parameters": [],
       "response_model": "BookmarkOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/{bookmark_id}/tags/{tag_id}",
-      "method": "POST",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 301,
-      "handler_name": "add_tag_to_bookmark",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/{bookmark_id}/tags/{tag_id}",
-      "method": "DELETE",
-      "description": "",
-      "file_path": "services/bookmarks/src/machina/bookmarks/router.py",
-      "line_number": 315,
-      "handler_name": "remove_tag_from_bookmark",
-      "parameters": [],
-      "response_model": ""
-    },
-    {
-      "service": "dem2",
-      "port": 8000,
-      "path": "/{layout_type}/available-items",
+      "path": "/api/v1/bookmarks",
       "method": "GET",
-      "description": "",
-      "file_path": "services/ui-layouts/src/machina/ui_layouts/router.py",
-      "line_number": 14,
-      "handler_name": "get_available_ui_layout_items",
+      "description": "List Bookmarks",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "list_bookmarks_api_v1_bookmarks_get",
+      "parameters": [
+        "q",
+        "types",
+        "group_id",
+        "tags",
+        "chat_id",
+        "page",
+        "size"
+      ],
+      "response_model": "Page_BookmarkOut_"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks",
+      "method": "DELETE",
+      "description": "Delete Bookmarks",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "delete_bookmarks_api_v1_bookmarks_delete",
+      "parameters": [
+        "bookmark_ids"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/by-tag/{tag_id}",
+      "method": "GET",
+      "description": "Get Bookmarks By Tag",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "get_bookmarks_by_tag_api_v1_bookmarks_by_tag__tag_id__get",
+      "parameters": [
+        "tag_id",
+        "page",
+        "size"
+      ],
+      "response_model": "Page_BookmarkOut_"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/count",
+      "method": "GET",
+      "description": "Count Bookmarks",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "count_bookmarks_api_v1_bookmarks_count_get",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/{bookmark_id}",
+      "method": "GET",
+      "description": "Get Bookmark",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "get_bookmark_api_v1_bookmarks__bookmark_id__get",
+      "parameters": [
+        "bookmark_id"
+      ],
+      "response_model": "BookmarkOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/{bookmark_id}",
+      "method": "PATCH",
+      "description": "Update Bookmark",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "update_bookmark_api_v1_bookmarks__bookmark_id__patch",
+      "parameters": [
+        "bookmark_id"
+      ],
+      "response_model": "BookmarkOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/{bookmark_id}/tags/{tag_id}",
+      "method": "POST",
+      "description": "Add Tag To Bookmark",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "add_tag_to_bookmark_api_v1_bookmarks__bookmark_id__tags__tag_id__post",
+      "parameters": [
+        "bookmark_id",
+        "tag_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/bookmarks/{bookmark_id}/tags/{tag_id}",
+      "method": "DELETE",
+      "description": "Remove Tag From Bookmark",
+      "file_path": "bookmarks",
+      "line_number": 0,
+      "handler_name": "remove_tag_from_bookmark_api_v1_bookmarks__bookmark_id__tags__tag_id__delete",
+      "parameters": [
+        "bookmark_id",
+        "tag_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/calendar",
+      "method": "GET",
+      "description": "Get Doctor Events",
+      "file_path": "calendar",
+      "line_number": 0,
+      "handler_name": "get_doctor_events_api_v1_calendar_get",
+      "parameters": [
+        "months_back"
+      ],
+      "response_model": "Response Get Doctor Events Api V1 Calendar Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/process_document",
+      "method": "POST",
+      "description": "Queue document for processing and extract medical data",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "process_document_api_v1_documents_processor_process_document_post",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "ProcessDocumentResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/queue/stats",
+      "method": "GET",
+      "description": "Get queue statistics",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "get_queue_stats_api_v1_documents_processor_queue_stats_get",
+      "parameters": [],
+      "response_model": "QueueStats"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/tasks",
+      "method": "GET",
+      "description": "Get list of processing tasks for current user",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "get_user_tasks_api_v1_documents_processor_tasks_get",
+      "parameters": [],
+      "response_model": "Response Get User Tasks Api V1 Documents Processor Tasks Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/tasks/stream",
+      "method": "GET",
+      "description": "Stream progress events for all user's tasks through a single connection.",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "stream_user_tasks_progress_api_v1_documents_processor_tasks_stream_get",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/tasks/{task_id}",
+      "method": "GET",
+      "description": "Get specific task status",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "get_task_status_api_v1_documents_processor_tasks__task_id__get",
+      "parameters": [
+        "task_id"
+      ],
+      "response_model": "ProcessingTaskResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/documents-processor/test_process_document",
+      "method": "POST",
+      "description": "Queue document for processing and extract medical data",
+      "file_path": "documents-processor",
+      "line_number": 0,
+      "handler_name": "test_process_document_api_v1_documents_processor_test_process_document_post",
+      "parameters": [],
+      "response_model": "ProcessDocumentResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files",
+      "method": "GET",
+      "description": "List Files",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "list_files_api_v1_file_storage_files_get",
+      "parameters": [
+        "page",
+        "size"
+      ],
+      "response_model": "Page_FileRecordOut_"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files/bulk_delete",
+      "method": "POST",
+      "description": "Bulk Delete Files",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "bulk_delete_files_api_v1_file_storage_files_bulk_delete_post",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files/upload",
+      "method": "POST",
+      "description": "Upload File",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "upload_file_api_v1_file_storage_files_upload_post",
+      "parameters": [],
+      "response_model": "FileRecordOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files/upload/bulk",
+      "method": "POST",
+      "description": "Bulk Upload Files",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "bulk_upload_files_api_v1_file_storage_files_upload_bulk_post",
+      "parameters": [],
+      "response_model": "Response Bulk Upload Files Api V1 File Storage Files Upload Bulk Post"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files/{file_id}",
+      "method": "DELETE",
+      "description": "Delete File",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "delete_file_api_v1_file_storage_files__file_id__delete",
+      "parameters": [
+        "file_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/file-storage/files/{file_id}/download",
+      "method": "GET",
+      "description": "Download File",
+      "file_path": "files",
+      "line_number": 0,
+      "handler_name": "download_file_api_v1_file_storage_files__file_id__download_get",
+      "parameters": [
+        "file_id"
+      ],
+      "response_model": "FileDownloadOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/geocoding/geocode/zip",
+      "method": "POST",
+      "description": "Geocode a 5-digit US ZIP code to coordinates.",
+      "file_path": "geocoding",
+      "line_number": 0,
+      "handler_name": "geocode_zip_api_v1_geocoding_geocode_zip_post",
+      "parameters": [],
+      "response_model": "GeocodeResult"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/geocoding/health",
+      "method": "GET",
+      "description": "Simple health probe.",
+      "file_path": "geocoding",
+      "line_number": 0,
+      "handler_name": "health_check_api_v1_geocoding_health_get",
+      "parameters": [],
+      "response_model": "Response Health Check Api V1 Geocoding Health Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/allergy-records",
+      "method": "GET",
+      "description": "Get list of allergy records for a patient with optional filtering.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "list_allergy_records_api_v1_graph_memory_medical_allergy_records_get",
+      "parameters": [
+        "source_type",
+        "clinical_status",
+        "allergy_type",
+        "start_date",
+        "end_date",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Allergy Records Api V1 Graph Memory Medical Allergy Records Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/allergy-records/{record_id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific allergy record including all related reactions and type.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_allergy_record_api_v1_graph_memory_medical_allergy_records__record_id__get",
+      "parameters": [
+        "record_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "AllergyRecordDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/care_network",
+      "method": "GET",
+      "description": "Get network of practitioners and organizations connected through encounters.\n\nReturns:\n- List of practitioners involved in care\n- List of organizations where care was provided\n- Connections showing which practitioners worked with which organizations\n  and how many encounters they shared\n\nIf patient_id is provided (via x-patient-context-id header), returns network\nfor that patient only. Otherwise, returns network across all user's patients.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_care_network_api_v1_graph_memory_medical_care_network_get",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "CareNetworkResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/conditions",
+      "method": "GET",
+      "description": "Get list of condition cases for a patient with optional filtering.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "list_conditions_api_v1_graph_memory_medical_conditions_get",
+      "parameters": [
+        "source_type",
+        "clinical_status",
+        "severity",
+        "start_date",
+        "end_date",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Conditions Api V1 Graph Memory Medical Conditions Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/conditions/{condition_id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific condition case including type.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_condition_api_v1_graph_memory_medical_conditions__condition_id__get",
+      "parameters": [
+        "condition_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "ConditionCaseDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/document_references",
+      "method": "GET",
+      "description": "Get all document references with related entities for a user.\n\nReturns documents with organizations, practitioners, and patients,\nordered by creation date (newest first).",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_document_references_api_v1_graph_memory_medical_document_references_get",
+      "parameters": [
+        "limit"
+      ],
+      "response_model": "Response Get Document References Api V1 Graph Memory Medical Document References Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
+      "method": "GET",
+      "description": "Get a specific document reference by ID.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_document_reference_by_id_api_v1_graph_memory_medical_document_references__document_id__get",
+      "parameters": [
+        "document_id"
+      ],
+      "response_model": "DocumentReferenceResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
+      "method": "DELETE",
+      "description": "Delete a document reference and all nodes extracted from it.\n\nRemoves:\n- The DocumentReference itself\n- All medical data nodes where source_type='document' and source_id=document_id",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_document_reference_api_v1_graph_memory_medical_document_references__document_id__delete",
+      "parameters": [
+        "document_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/document_references/{document_id}/details",
+      "method": "GET",
+      "description": "Get a document reference with all related organizations and practitioners.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_document_reference_details_api_v1_graph_memory_medical_document_references__document_id__details_get",
+      "parameters": [
+        "document_id"
+      ],
+      "response_model": "DocumentReferenceDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/encounters",
+      "method": "GET",
+      "description": "Get encounters with their related practitioners and organizations.\n\nReturns encounters with:\n- Basic encounter information (uuid, name, dates, etc.)\n- List of practitioners involved (via WITH_PRACTITIONER relationship)\n- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)\n\nIf patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.\nOtherwise, returns encounters across all user's patients.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_encounters_api_v1_graph_memory_medical_encounters_get",
+      "parameters": [
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Encounters Api V1 Graph Memory Medical Encounters Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-events",
+      "method": "GET",
+      "description": "Get intake events by date range",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_intake_event_by_date_range_api_v1_graph_memory_medical_medication_intake_events_get",
+      "parameters": [
+        "taken_at",
+        "limit",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Intake Event By Date Range Api V1 Graph Memory Medical Medication Intake Events Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-events",
+      "method": "POST",
+      "description": "Create intake event",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "create_intake_event_api_v1_graph_memory_medical_medication_intake_events_post",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "IntakeEventSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-events/bulk",
+      "method": "POST",
+      "description": "Create intake events for regimens of specified type on date",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "create_bulk_intake_event_api_v1_graph_memory_medical_medication_intake_events_bulk_post",
+      "parameters": [
+        "taken_at",
+        "intake_regimen_type",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Create Bulk Intake Event Api V1 Graph Memory Medical Medication Intake Events Bulk Post"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-events/bulk",
+      "method": "DELETE",
+      "description": "Delete intake events for regimens of specified type on date",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_bulk_intake_event_api_v1_graph_memory_medical_medication_intake_events_bulk_delete",
+      "parameters": [
+        "taken_at",
+        "intake_regimen_type",
+        "x-patient-context-id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-events/{intake_id}",
+      "method": "DELETE",
+      "description": "Delete supplement intake",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_supplement_intake_api_v1_graph_memory_medical_medication_intake_events__intake_id__delete",
+      "parameters": [
+        "intake_id",
+        "x-patient-context-id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-regimens",
+      "method": "POST",
+      "description": "Create intake regimen",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "create_intake_regimen_api_v1_graph_memory_medical_medication_intake_regimens_post",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "IntakeRegimenSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-regimens/list",
+      "method": "GET",
+      "description": "List intake regimens for patient",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "list_intake_regimens_api_v1_graph_memory_medical_medication_intake_regimens_list_get",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Intake Regimens Api V1 Graph Memory Medical Medication Intake Regimens List Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-regimens/{regimen_id}",
+      "method": "DELETE",
+      "description": "Delete intake regimen",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_supplement_regimen_api_v1_graph_memory_medical_medication_intake_regimens__regimen_id__delete",
+      "parameters": [
+        "regimen_id",
+        "x-patient-context-id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/intake-regimens/{regimen_id}",
+      "method": "PATCH",
+      "description": "Update intake regimen",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "update_intake_regimen_api_v1_graph_memory_medical_medication_intake_regimens__regimen_id__patch",
+      "parameters": [
+        "regimen_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "IntakeRegimenSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/medications/by_rxcui",
+      "method": "GET",
+      "description": "Get or enrich medication by RxNorm ID",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_or_enrich_medication_by_name_api_v1_graph_memory_medical_medication_medications_by_rxcui_get",
+      "parameters": [
+        "rxcui",
+        "name"
+      ],
+      "response_model": "MedicationSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/medications/by_uuid",
+      "method": "GET",
+      "description": "Get medication by UUID",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_medication_by_uuid_api_v1_graph_memory_medical_medication_medications_by_uuid_get",
+      "parameters": [
+        "medication_id"
+      ],
+      "response_model": "MedicationSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/medications/search",
+      "method": "GET",
+      "description": "Search medications using RxNorm approximate match API.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "search_medication_api_v1_graph_memory_medical_medication_medications_search_get",
+      "parameters": [
+        "query"
+      ],
+      "response_model": "Response Search Medication Api V1 Graph Memory Medical Medication Medications Search Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/medications/{medication_id}/ingredients",
+      "method": "GET",
+      "description": "Get medication ingredients",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_medication_ingredients_api_v1_graph_memory_medical_medication_medications__medication_id__ingredients_get",
+      "parameters": [
+        "medication_id"
+      ],
+      "response_model": "Response Get Medication Ingredients Api V1 Graph Memory Medical Medication Medications  Medication Id  Ingredients Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/supplements/by_ingr_grp",
+      "method": "GET",
+      "description": "Get or enrich supplement by ODS ingredient group (FOR UNBRANDED SUPPLEMENTS)",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_or_enrich_supplement_by_ingr_grp_api_v1_graph_memory_medical_medication_supplements_by_ingr_grp_get",
+      "parameters": [
+        "ods_ingr_grp_name",
+        "ods_ingr_grp_id"
+      ],
+      "response_model": "SupplementSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/supplements/by_ods_label",
+      "method": "GET",
+      "description": "Get or enrich supplement by ODS label ID (FOR BRANDED SUPPLEMENTS)",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_or_enrich_supplement_by_ods_label_id_api_v1_graph_memory_medical_medication_supplements_by_ods_label_get",
+      "parameters": [
+        "ods_label_id"
+      ],
+      "response_model": "SupplementSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/supplements/by_uuid",
+      "method": "GET",
+      "description": "Get supplement by UUID",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_supplement_by_uuid_api_v1_graph_memory_medical_medication_supplements_by_uuid_get",
+      "parameters": [
+        "supplement_id"
+      ],
+      "response_model": "SupplementSchema"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/supplements/search",
+      "method": "GET",
+      "description": "Search substances using ODS ingredient groups API.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "search_supplement_api_v1_graph_memory_medical_medication_supplements_search_get",
+      "parameters": [
+        "query"
+      ],
+      "response_model": "Response Search Supplement Api V1 Graph Memory Medical Medication Supplements Search Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/medication/supplements/{supplement_id}/ingredients",
+      "method": "GET",
+      "description": "Get supplement ingredients",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_supplement_ingredients_api_v1_graph_memory_medical_medication_supplements__supplement_id__ingredients_get",
+      "parameters": [
+        "supplement_id"
+      ],
+      "response_model": "Response Get Supplement Ingredients Api V1 Graph Memory Medical Medication Supplements  Supplement Id  Ingredients Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/grouped",
+      "method": "GET",
+      "description": "Get observation values for a patient grouped by observation type.\n\nReturns observations ordered by clinical importance (descending).\n\nEach group contains:\n- observation_type: Metadata about the observation type\n- clinical_importance: Weight from TRACKS relationship\n- values: Observation values for this type (ordered by observed_at descending)\n- body_systems: List of body system relationships\n\nSupports filtering by:\n- Body systems: cardiovascular, respiratory, endocrine, etc.\n- LOINC codes: filter by specific LOINC codes\n- Minimum body system weight: only show observations with strong enough body system links\n- Body system impact types: filter by impact type\n- Search query: partial name matching (case-insensitive)\n- Per-type values limit: limit number of values per observation type\n- Out of range: only return values outside normal/optimal reference ranges\n- Value status: filter by document_value_color (red, yellow, green, white)\n- Page number: filter by page number (only values with this page in page_numbers)\n\nWhen out_of_range=true:\n- Checks if the last (most recent by observed_at) or second-to-last value is out of range\n- If either is out of normal/optimal range, returns ALL values for that observation type\n- Prioritizes document_reference_range over standard_reference_range\n- Excludes observation types without reference ranges\n- Excludes groups where both last values are within normal range",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_patient_observations_grouped_api_v1_graph_memory_medical_observations_grouped_get",
+      "parameters": [
+        "body_systems",
+        "codes",
+        "min_body_system_weight",
+        "body_system_impact_types",
+        "q",
+        "per_type_values_limit",
+        "limit",
+        "offset",
+        "out_of_range",
+        "document_value_color",
+        "document_reference_id",
+        "page_number",
+        "x-patient-context-id"
+      ],
+      "response_model": "ObservationsGroupedPaginatedResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/stats",
+      "method": "GET",
+      "description": "Get statistics about observation types grouped by document_value_color.\n\nReturns counts of observation types based on their last 1-2 values' document_value_color:\n- green_count: At least one value with document_value_color = \"green\"\n- yellow_count: At least one value with document_value_color = \"yellow\"\n- red_count: At least one value with document_value_color = \"red\"\n- white_count: Values with document_value_color = \"white\" or null\n- total_count: Total observation types for this patient",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_patient_observation_stats_api_v1_graph_memory_medical_observations_stats_get",
+      "parameters": [
+        "document_reference_id",
+        "page_number",
+        "x-patient-context-id"
+      ],
+      "response_model": "ObservationStatsResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/types/by-uuid/{uuid}",
+      "method": "GET",
+      "description": "Get detailed observation type information by UUID.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_observation_type_by_uuid_api_v1_graph_memory_medical_observations_types_by_uuid__uuid__get",
+      "parameters": [
+        "uuid"
+      ],
+      "response_model": "ObservationTypeDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/types/search",
+      "method": "GET",
+      "description": "Search observation types by semantic similarity using embeddings.\n\nReturns observation types ranked by similarity to the query text.\nUses vector search on observation type embeddings (name, display_name, aliases, LOINC metadata).\n\nExamples:\n- Search for cholesterol: GET /observations/types/search?q=cholesterol\n- Search for vitamin D with high precision: GET /observations/types/search?q=vitamin%20d&min_score=0.8",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "search_observation_types_api_v1_graph_memory_medical_observations_types_search_get",
+      "parameters": [
+        "q",
+        "limit",
+        "min_score"
+      ],
+      "response_model": "Response Search Observation Types Api V1 Graph Memory Medical Observations Types Search Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/types/{code}",
+      "method": "GET",
+      "description": "Get observation types by catalog code.\n\nMultiple observation types can exist for the same code with different units.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_observation_types_by_code_api_v1_graph_memory_medical_observations_types__code__get",
+      "parameters": [
+        "code"
+      ],
+      "response_model": "Response Get Observation Types By Code Api V1 Graph Memory Medical Observations Types  Code  Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/values/{uid}",
+      "method": "PATCH",
+      "description": "Update an observation value by UUID.\n\nUpdates one or more fields of an observation value:\n- value_numeric: Numeric measurement value\n- value_text: Text measurement value\n- observed_at: When the observation was taken\n- interpretation: Clinical interpretation\n\nReturns the updated observation value.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "update_observation_value_api_v1_graph_memory_medical_observations_values__uid__patch",
+      "parameters": [
+        "uid",
+        "x-patient-context-id"
+      ],
+      "response_model": "machina__graph_memory__medical__graph__observation__models__ObservationValueResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/values/{uid}",
+      "method": "DELETE",
+      "description": "Delete an observation value by UUID.\n\nRemoves the observation value and automatically cleans up orphaned\nTRACKS relationships if this was the last value for the observation type.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_observation_value_api_v1_graph_memory_medical_observations_values__uid__delete",
+      "parameters": [
+        "uid",
+        "x-patient-context-id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/observations/{observation_type_uuid}",
+      "method": "DELETE",
+      "description": "Delete all observation values for a type and remove patient tracking.\n\nThis endpoint:\n- Deletes all of the patient's observation values for this type\n- Removes the patient's TRACKS relationship to the observation type\n- Does NOT delete the ObservationTypeNode itself (it's shared across all patients)\n\nReturns counts of deleted items:\n- values_deleted: Number of observation values deleted\n- tracks_deleted: Number of TRACKS relationships removed (0 or 1)",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "delete_observation_type_api_v1_graph_memory_medical_observations__observation_type_uuid__delete",
+      "parameters": [
+        "observation_type_uuid",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Delete Observation Type Api V1 Graph Memory Medical Observations  Observation Type Uuid  Delete"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/symptom-types",
+      "method": "GET",
+      "description": "Get list of symptom types that the patient has episodes for, ordered by most recent.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "list_symptom_types_api_v1_graph_memory_medical_symptom_types_get",
+      "parameters": [
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Symptom Types Api V1 Graph Memory Medical Symptom Types Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/symptom-types/{type_id}",
+      "method": "GET",
+      "description": "Get detailed information about a symptom type including all patient episodes for that type.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_symptom_type_api_v1_graph_memory_medical_symptom_types__type_id__get",
+      "parameters": [
+        "type_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "SymptomTypeDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/symptoms",
+      "method": "GET",
+      "description": "Get list of symptom episodes for a patient with optional filtering.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "list_symptoms_api_v1_graph_memory_medical_symptoms_get",
+      "parameters": [
+        "source_type",
+        "severity",
+        "start_date",
+        "end_date",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Symptoms Api V1 Graph Memory Medical Symptoms Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/graph-memory/medical/symptoms/{symptom_id}",
+      "method": "GET",
+      "description": "Get detailed information about a specific symptom episode including type.",
+      "file_path": "graph-memory",
+      "line_number": 0,
+      "handler_name": "get_symptom_api_v1_graph_memory_medical_symptoms__symptom_id__get",
+      "parameters": [
+        "symptom_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "SymptomEpisodeDetailResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/health",
+      "method": "GET",
+      "description": "Health",
+      "file_path": "(OpenAPI)",
+      "line_number": 0,
+      "handler_name": "health_api_v1_health_get",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/run",
+      "method": "POST",
+      "description": "Run Agent",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "run_agent_api_v1_med_agent_run_post",
+      "parameters": [],
+      "response_model": "Response Run Agent Api V1 Med Agent Run Post"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/run_sse",
+      "method": "POST",
+      "description": "Run Agent Sse",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "run_agent_sse_api_v1_med_agent_run_sse_post",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions",
+      "method": "POST",
+      "description": "Create Session",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "create_session_api_v1_med_agent_users_sessions_post",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "Session"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions",
+      "method": "GET",
+      "description": "List Sessions",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "list_sessions_api_v1_med_agent_users_sessions_get",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "Response List Sessions Api V1 Med Agent Users Sessions Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions/{session_id}",
+      "method": "POST",
+      "description": "Create Session With Id",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "create_session_with_id_api_v1_med_agent_users_sessions__session_id__post",
+      "parameters": [
+        "session_id",
+        "x-patient-context-id"
+      ],
+      "response_model": "Session"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions/{session_id}",
+      "method": "GET",
+      "description": "Get Session",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "get_session_api_v1_med_agent_users_sessions__session_id__get",
+      "parameters": [
+        "session_id"
+      ],
+      "response_model": "Session"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions/{session_id}/feedback",
+      "method": "POST",
+      "description": "Submit Feedback By Invocation",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "submit_feedback_by_invocation_api_v1_med_agent_users_sessions__session_id__feedback_post",
+      "parameters": [
+        "session_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions/{session_id}/name",
+      "method": "POST",
+      "description": "Set Session Name",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "set_session_name_api_v1_med_agent_users_sessions__session_id__name_post",
+      "parameters": [
+        "session_id"
+      ],
+      "response_model": "Session"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/med-agent/users/sessions/{session_id}/summarize",
+      "method": "POST",
+      "description": "Summarize Session Name",
+      "file_path": "med-agent",
+      "line_number": 0,
+      "handler_name": "summarize_session_name_api_v1_med_agent_users_sessions__session_id__summarize_post",
+      "parameters": [
+        "session_id"
+      ],
+      "response_model": "SummarizeOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-engine/test-stream",
+      "method": "POST",
+      "description": "Test Stream",
+      "file_path": "medical-data-engine",
+      "line_number": 0,
+      "handler_name": "test_stream_api_v1_medical_data_engine_test_stream_post",
+      "parameters": [
+        "access_token"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/allergies",
+      "method": "POST",
+      "description": "Create allergy intolerance record",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "create_allergy_intolerance_api_v1_medical_data_storage_allergies_post",
+      "parameters": [
+        "x-patient-context-id"
+      ],
+      "response_model": "AllergyIntoleranceResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/allergies",
+      "method": "GET",
+      "description": "Get patient allergies",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_patient_allergies_api_v1_medical_data_storage_allergies_get",
+      "parameters": [
+        "active_only",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Patient Allergies Api V1 Medical Data Storage Allergies Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/allergies/grouped",
+      "method": "GET",
+      "description": "Get allergies grouped by allergen name with complete timeline history.\n\nThis endpoint groups multiple allergy records for the same allergen\n(e.g., active \u2192 resolved \u2192 active) into a single response with timeline.\n\nUseful for:\n- Avoiding duplicate allergens in UI\n- Showing allergy status history\n- Understanding timeline of allergy changes\n\nIf active_only=True, only returns allergens where the most recent record is active.\nThe timeline will still include all historical status changes for that allergen.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_patient_allergies_grouped_api_v1_medical_data_storage_allergies_grouped_get",
+      "parameters": [
+        "active_only",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Patient Allergies Grouped Api V1 Medical Data Storage Allergies Grouped Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/allergies/{allergy_id}",
+      "method": "DELETE",
+      "description": "Delete allergy intolerance record",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "delete_allergy_api_v1_medical_data_storage_allergies__allergy_id__delete",
+      "parameters": [
+        "allergy_id"
+      ],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/allergies/{allergy_id}/status",
+      "method": "PATCH",
+      "description": "Update allergy clinical status",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "update_allergy_status_api_v1_medical_data_storage_allergies__allergy_id__status_patch",
+      "parameters": [
+        "allergy_id",
+        "clinical_status"
+      ],
+      "response_model": "AllergyIntoleranceResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/cleanup/orphaned_resources",
+      "method": "POST",
+      "description": "Clean up orphaned resources with source_document_deleted=true",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "cleanup_orphaned_resources_api_v1_medical_data_storage_cleanup_orphaned_resources_post",
+      "parameters": [],
+      "response_model": "Response Cleanup Orphaned Resources Api V1 Medical Data Storage Cleanup Orphaned Resources Post"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/document_references",
+      "method": "GET",
+      "description": "Get all document references for the current user",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_document_references_api_v1_medical_data_storage_document_references_get",
+      "parameters": [],
+      "response_model": "Response Get Document References Api V1 Medical Data Storage Document References Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/document_references/{document_id}",
+      "method": "GET",
+      "description": "Get a specific document reference by ID.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_document_reference_by_id_api_v1_medical_data_storage_document_references__document_id__get",
+      "parameters": [
+        "document_id"
+      ],
+      "response_model": "DocumentReference"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/encounters",
+      "method": "GET",
+      "description": "Get encounters with their related practitioners and organizations.\n\nReturns encounters with:\n- Basic encounter information (uuid, name, dates, etc.)\n- List of practitioners involved (via WITH_PRACTITIONER relationship)\n- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)\n\nIf patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.\nOtherwise, returns encounters across all user's patients.\n\nData is retrieved from graph-memory (Neo4j).",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_encounters_api_v1_medical_data_storage_encounters_get",
+      "parameters": [
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Encounters Api V1 Medical Data Storage Encounters Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/observations",
+      "method": "GET",
+      "description": "Get observations grouped by LOINC code with metadata and values.\n\nReturns a dictionary where key is LOINC code and value contains 'meta' and 'values'.\n\nThe 'meta' contains:\n- loinc_code, loinc_name, display_name, unit\n- body_system_impacts (same for all observations of this type)\n\nThe 'values' contains list of observations with:\n- value (numeric or string)\n- effective_date (timestamp)\n- range (reference range with low/high)\n\nSupports filtering by:\n- LOINC codes: specific observation types\n- Body systems: cardiovascular, respiratory, endocrine, etc.\n- Search query: partial name matching\n- Per LOINC limit: limit observations per code (useful for getting latest N values per type)\n\nResults are ordered by effective_date in descending order (newest first).",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_observations_api_v1_medical_data_storage_observations_get",
+      "parameters": [
+        "loinc_codes",
+        "body_systems",
+        "q",
+        "per_loinc_limit",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Observations Api V1 Medical Data Storage Observations Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/observations/body_system/{body_system}",
+      "method": "GET",
+      "description": "DEPRECATED: Use `/observations` instead with body_systems parameter.\n\nThis endpoint will be removed in a future version.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_observations_by_body_system_api_v1_medical_data_storage_observations_body_system__body_system__get",
+      "parameters": [
+        "body_system",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Observations By Body System Api V1 Medical Data Storage Observations Body System  Body System  Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/observations/grouped",
+      "method": "GET",
+      "description": "Get observation values for a patient grouped by observation type.\n\nReturns observations ordered by clinical importance (descending).\n\nEach group contains:\n- observation_type: Metadata about the observation type (code, name, unit, etc.)\n- clinical_importance: Weight from TRACKS relationship (higher = more important)\n- values: Observation values for this type (ordered by observed_at descending)\n- document_reference_range: Latest reference range from patient documents (if any)\n- standard_reference_range: Latest standard reference range (if any)\n\nThe clinical_importance is automatically calculated based on:\n- Body system impacts (weight and impact_type)\n- Maximum weight from all body system relationships\n- Default value of 0.5 if no body system relationships exist\n\nSupports filtering by:\n- Body systems: cardiovascular, respiratory, endocrine, etc.\n- LOINC codes: filter by specific LOINC codes\n- Minimum body system weight: only show observations with strong enough body system links\n- Body system impact types: filter by impact type (primary, secondary, etc.)\n- Search query: partial name or display_name matching (case-insensitive)\n- Per-type values limit: limit number of values per observation type (useful for getting latest N values)\n\nPagination applies to observation types, not individual values.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_patient_observations_grouped_api_v1_medical_data_storage_observations_grouped_get",
+      "parameters": [
+        "body_systems",
+        "loinc_codes",
+        "min_body_system_weight",
+        "body_system_impact_types",
+        "q",
+        "per_type_values_limit",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Patient Observations Grouped Api V1 Medical Data Storage Observations Grouped Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/observations/stats",
+      "method": "GET",
+      "description": "Get observation statistics with trends and reference ranges.\n\nReturns aggregated metrics including:\n- Latest and previous values\n- Trend direction and percentage change\n- Reference ranges\n- Body system impacts\n- Observation counts\n\nSupports filtering by:\n- LOINC codes: specific observation types\n- Body systems: cardiovascular, respiratory, endocrine, etc.\n- Search query: partial name matching",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_observations_stats_v2_api_v1_medical_data_storage_observations_stats_get",
+      "parameters": [
+        "loinc_codes",
+        "body_systems",
+        "q",
+        "limit",
+        "offset",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Observations Stats V2 Api V1 Medical Data Storage Observations Stats Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/observations/values",
+      "method": "GET",
+      "description": "DEPRECATED: Use `/observations` instead with loinc_codes parameter.\n\nThis endpoint will be removed in a future version.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_observations_values_v2_api_v1_medical_data_storage_observations_values_get",
+      "parameters": [
+        "loinc_codes",
+        "x-patient-context-id"
+      ],
+      "response_model": "Response Get Observations Values V2 Api V1 Medical Data Storage Observations Values Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/organizations",
+      "method": "GET",
+      "description": "Get organizations filtered by user_id and optionally patient_id (from header)",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_organizations_api_v1_medical_data_storage_organizations_get",
+      "parameters": [
+        "limit",
+        "offset"
+      ],
+      "response_model": "Response Get Organizations Api V1 Medical Data Storage Organizations Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/patients/statistics",
+      "method": "GET",
+      "description": "Get statistics for all patients",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_patients_statistics_api_v1_medical_data_storage_patients_statistics_get",
+      "parameters": [],
+      "response_model": "PatientsStatistics"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/patients/{patient_uuid}/statistics",
+      "method": "GET",
+      "description": "Get statistics for a specific patient",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_patient_statistics_api_v1_medical_data_storage_patients__patient_uuid__statistics_get",
+      "parameters": [
+        "patient_uuid"
+      ],
+      "response_model": "PatientStatistics"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/practitioners",
+      "method": "GET",
+      "description": "Get practitioners filtered by user_id and optionally patient_id (from header)",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_practitioners_api_v1_medical_data_storage_practitioners_get",
+      "parameters": [
+        "limit",
+        "offset"
+      ],
+      "response_model": "Response Get Practitioners Api V1 Medical Data Storage Practitioners Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/resource_connections",
+      "method": "GET",
+      "description": "Get connections between practitioners and organizations based on shared encounters.\n\nReturns a graph structure showing:\n- All practitioners\n- All organizations\n- Connections between them with encounter count and date range\n\nIf patient_id is provided (via header), filters connections to that patient only.\nOtherwise, returns connections across all user's patients.",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "get_resource_connections_api_v1_medical_data_storage_resource_connections_get",
+      "parameters": [],
+      "response_model": "ResourceConnectionsResponse"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/medical-data-storage/user_data",
+      "method": "DELETE",
+      "description": "Erase User Data",
+      "file_path": "medical-data-storage",
+      "line_number": 0,
+      "handler_name": "erase_user_data_api_v1_medical_data_storage_user_data_delete",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/ui-layouts/{layout_type}/available-items",
+      "method": "GET",
+      "description": "Get Available Ui Layout Items",
+      "file_path": "ui_layouts",
+      "line_number": 0,
+      "handler_name": "get_available_ui_layout_items_api_v1_ui_layouts__layout_type__available_items_get",
       "parameters": [],
       "response_model": "AvailableUiLayoutItemsOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/{layout_type}/stored",
+      "path": "/api/v1/ui-layouts/{layout_type}/stored",
       "method": "GET",
-      "description": "",
-      "file_path": "services/ui-layouts/src/machina/ui_layouts/router.py",
-      "line_number": 22,
-      "handler_name": "get_user_ui_layout",
+      "description": "Get User Ui Layout",
+      "file_path": "ui_layouts",
+      "line_number": 0,
+      "handler_name": "get_user_ui_layout_api_v1_ui_layouts__layout_type__stored_get",
       "parameters": [],
       "response_model": "UserUiLayoutOut"
     },
     {
       "service": "dem2",
       "port": 8000,
-      "path": "/{layout_type}/stored",
+      "path": "/api/v1/ui-layouts/{layout_type}/stored",
       "method": "PUT",
-      "description": "",
-      "file_path": "services/ui-layouts/src/machina/ui_layouts/router.py",
-      "line_number": 30,
-      "handler_name": "store_user_ui_layout",
+      "description": "Store User Ui Layout",
+      "file_path": "ui_layouts",
+      "line_number": 0,
+      "handler_name": "store_user_ui_layout_api_v1_ui_layouts__layout_type__stored_put",
       "parameters": [],
       "response_model": "UserUiLayoutOut"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/user/onboarding/complete",
+      "method": "POST",
+      "description": "Store Onboarding Answers",
+      "file_path": "onboarding",
+      "line_number": 0,
+      "handler_name": "store_onboarding_answers_api_v1_user_onboarding_complete_post",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/user/onboarding/survey/answers",
+      "method": "PUT",
+      "description": "Submit Answers",
+      "file_path": "onboarding",
+      "line_number": 0,
+      "handler_name": "submit_answers_api_v1_user_onboarding_survey_answers_put",
+      "parameters": [],
+      "response_model": ""
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/api/v1/user/onboarding/survey/questions",
+      "method": "GET",
+      "description": "Get Questions",
+      "file_path": "onboarding",
+      "line_number": 0,
+      "handler_name": "get_questions_api_v1_user_onboarding_survey_questions_get",
+      "parameters": [],
+      "response_model": "Response Get Questions Api V1 User Onboarding Survey Questions Get"
+    },
+    {
+      "service": "dem2",
+      "port": 8000,
+      "path": "/health",
+      "method": "GET",
+      "description": "Health",
+      "file_path": "(OpenAPI)",
+      "line_number": 0,
+      "handler_name": "health_health_get",
+      "parameters": [],
+      "response_model": ""
     },
     {
       "service": "dem2-webui",
@@ -1848,10 +2120,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/derivatives/enrich",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_derivatives.py",
-      "line_number": 223,
-      "handler_name": "enrich_derivatives",
+      "description": "Start derivative enrichment process from cached derivatives or provided names.\n\nIf derivative_names is provided, creates artificial entries and processes them.\nOtherwise, processes cached RATIO/SUM/PERCENT derived measurements that were\nidentified during biomarker categorization.\n\nParses derivative names, resolves base biomarker IDs, and stores enriched derivatives.\n\nProcess runs in background. Check logs for progress and completion.",
+      "file_path": "biomarker-derivatives",
+      "line_number": 0,
+      "handler_name": "enrich_derivatives_api_v1_biomarkers_derivatives_enrich_post",
       "parameters": [],
       "response_model": "DerivativeEnrichmentResponse"
     },
@@ -1860,10 +2132,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/derivatives/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_derivatives.py",
-      "line_number": 30,
-      "handler_name": "search_derivatives_batch",
+      "description": "Batch search for biomarker test derivatives using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by test_name (case-insensitive)\n2. Match by aliases (case-insensitive)\n3. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
+      "file_path": "biomarker-derivatives",
+      "line_number": 0,
+      "handler_name": "search_derivatives_batch_api_v1_biomarkers_derivatives_search_post",
       "parameters": [],
       "response_model": "DerivativeSearchResponse"
     },
@@ -1872,10 +2144,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/derivatives/search-by-aliases",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_derivatives.py",
-      "line_number": 126,
-      "handler_name": "search_derivatives_by_aliases",
+      "description": "Batch search derivatives by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is.\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
+      "file_path": "biomarker-derivatives",
+      "line_number": 0,
+      "handler_name": "search_derivatives_by_aliases_api_v1_biomarkers_derivatives_search_by_aliases_post",
       "parameters": [],
       "response_model": "DerivativeAliasSearchResponse"
     },
@@ -1884,10 +2156,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/enrich",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router.py",
-      "line_number": 235,
-      "handler_name": "enrich_biomarkers",
+      "description": "Start biomarker enrichment process by biomarker names.\n\nCreates BiomarkerDatasetMeta objects from provided names and\nenriches them through the full pipeline.\n\nProcess runs in background. Check logs for progress and completion.",
+      "file_path": "biomarkers",
+      "line_number": 0,
+      "handler_name": "enrich_biomarkers_api_v1_biomarkers_enrich_post",
       "parameters": [],
       "response_model": "BiomarkerEnrichmentResponse"
     },
@@ -1896,10 +2168,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/enrich2",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_unified.py",
-      "line_number": 191,
-      "handler_name": "enrich_unified",
+      "description": "Start unified enrichment process using BiomarkerPipeline.\n\nFirst checks which names already exist in storage. If all exist,\nreturns immediately with status 'skipped'. Otherwise starts\nbackground task for remaining names.\n\nUse the returned task_id to check status via GET /enrich2/status/{task_id}.",
+      "file_path": "biomarkers-unified",
+      "line_number": 0,
+      "handler_name": "enrich_unified_api_v1_biomarkers_enrich2_post",
       "parameters": [],
       "response_model": "UnifiedEnrichmentResponse"
     },
@@ -1908,11 +2180,13 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/enrich2/status/{task_id}",
       "method": "GET",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_unified.py",
-      "line_number": 294,
-      "handler_name": "get_enrichment_status",
-      "parameters": [],
+      "description": "Get status of an enrichment task by ID.\n\nReturns current status (pending/completed/failed) and processing statistics.",
+      "file_path": "biomarkers-unified",
+      "line_number": 0,
+      "handler_name": "get_enrichment_status_api_v1_biomarkers_enrich2_status__task_id__get",
+      "parameters": [
+        "task_id"
+      ],
       "response_model": "EnrichmentTaskStatusResponse"
     },
     {
@@ -1920,10 +2194,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router.py",
-      "line_number": 27,
-      "handler_name": "search_biomarkers_batch",
+      "description": "Batch search for biomarkers using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by short_name (case-insensitive)\n2. Match by aliases (case-insensitive)\n3. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
+      "file_path": "biomarkers",
+      "line_number": 0,
+      "handler_name": "search_biomarkers_batch_api_v1_biomarkers_search_post",
       "parameters": [],
       "response_model": "BiomarkerSearchResponse"
     },
@@ -1932,10 +2206,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/search-by-aliases",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router.py",
-      "line_number": 125,
-      "handler_name": "search_biomarkers_by_aliases",
+      "description": "Batch search biomarkers by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is (lowercased).\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
+      "file_path": "biomarkers",
+      "line_number": 0,
+      "handler_name": "search_biomarkers_by_aliases_api_v1_biomarkers_search_by_aliases_post",
       "parameters": [],
       "response_model": "BiomarkerAliasSearchResponse"
     },
@@ -1944,10 +2218,10 @@
       "port": 8001,
       "path": "/api/v1/biomarkers/search2",
       "method": "POST",
-      "description": "",
-      "file_path": "src/biomarkers/api/router_unified.py",
-      "line_number": 36,
-      "handler_name": "search_unified_by_aliases",
+      "description": "Unified batch search for both biomarkers and derivatives by alias groups.\n\nSearches BOTH biomarkers and derivatives collections in parallel.\nReturns separate lists for each entity type per alias group.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
+      "file_path": "biomarkers-unified",
+      "line_number": 0,
+      "handler_name": "search_unified_by_aliases_api_v1_biomarkers_search2_post",
       "parameters": [],
       "response_model": "UnifiedAliasSearchResponse"
     },
@@ -1957,9 +2231,9 @@
       "path": "/api/v1/catalog/metadata",
       "method": "GET",
       "description": "Get aggregated metadata for catalog filters.",
-      "file_path": "src/catalog/api/router.py",
-      "line_number": 49,
-      "handler_name": "get_catalog_metadata",
+      "file_path": "catalog",
+      "line_number": 0,
+      "handler_name": "get_catalog_metadata_api_v1_catalog_metadata_get",
       "parameters": [],
       "response_model": "CatalogMetadata"
     },
@@ -1968,10 +2242,10 @@
       "port": 8001,
       "path": "/api/v1/catalog/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/catalog/api/router.py",
-      "line_number": 69,
-      "handler_name": "semantic_search",
+      "description": "Perform semantic search with embedding generation.",
+      "file_path": "catalog",
+      "line_number": 0,
+      "handler_name": "semantic_search_api_v1_catalog_search_post",
       "parameters": [],
       "response_model": ""
     },
@@ -1980,10 +2254,10 @@
       "port": 8001,
       "path": "/api/v1/conditions/enrich",
       "method": "POST",
-      "description": "",
-      "file_path": "src/conditions/api/router.py",
-      "line_number": 154,
-      "handler_name": "enrich_conditions",
+      "description": "Start condition enrichment process by condition names.\n\nEnriches provided condition names through the full pipeline\n(LLM metadata generation, embedding creation, etc.).\n\nProcess runs in background. Check logs for progress and completion.",
+      "file_path": "conditions",
+      "line_number": 0,
+      "handler_name": "enrich_conditions_api_v1_conditions_enrich_post",
       "parameters": [],
       "response_model": "ConditionEnrichmentResponse"
     },
@@ -1992,35 +2266,39 @@
       "port": 8001,
       "path": "/api/v1/conditions/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/conditions/api/router.py",
-      "line_number": 26,
-      "handler_name": "search_conditions_batch",
+      "description": "Batch search for conditions using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by name (case-insensitive)\n2. Match by infermedica_id\n3. Match by ICD-10 code\n4. Match by SNOMED CT code\n5. Match by synonyms (case-insensitive)\n6. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
+      "file_path": "conditions",
+      "line_number": 0,
+      "handler_name": "search_conditions_batch_api_v1_conditions_search_post",
       "parameters": [],
       "response_model": "ConditionSearchResponse"
     },
     {
       "service": "medical-catalog",
       "port": 8001,
-      "path": "/api/v1/qdrant/{path:path}",
+      "path": "/api/v1/qdrant/{path}",
       "method": "GET",
-      "description": "",
-      "file_path": "src/catalog/api/router.py",
-      "line_number": 103,
-      "handler_name": "qdrant_proxy_get",
-      "parameters": [],
+      "description": "Proxy GET requests to Qdrant.",
+      "file_path": "catalog",
+      "line_number": 0,
+      "handler_name": "qdrant_proxy_get_api_v1_qdrant__path__get",
+      "parameters": [
+        "path"
+      ],
       "response_model": ""
     },
     {
       "service": "medical-catalog",
       "port": 8001,
-      "path": "/api/v1/qdrant/{path:path}",
+      "path": "/api/v1/qdrant/{path}",
       "method": "POST",
-      "description": "",
-      "file_path": "src/catalog/api/router.py",
-      "line_number": 137,
-      "handler_name": "qdrant_proxy_post",
-      "parameters": [],
+      "description": "Proxy POST requests to Qdrant.",
+      "file_path": "catalog",
+      "line_number": 0,
+      "handler_name": "qdrant_proxy_post_api_v1_qdrant__path__post",
+      "parameters": [
+        "path"
+      ],
       "response_model": ""
     },
     {
@@ -2028,11 +2306,13 @@
       "port": 8001,
       "path": "/api/v1/substances/enrich",
       "method": "POST",
-      "description": "",
-      "file_path": "src/substances/api/router.py",
-      "line_number": 29,
-      "handler_name": "enrich_substance",
-      "parameters": [],
+      "description": "Enrich Substance",
+      "file_path": "substances",
+      "line_number": 0,
+      "handler_name": "enrich_substance_api_v1_substances_enrich_post",
+      "parameters": [
+        "name"
+      ],
       "response_model": "SubstanceQdrantEntry"
     },
     {
@@ -2040,22 +2320,24 @@
       "port": 8001,
       "path": "/api/v1/substances/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/substances/api/router.py",
-      "line_number": 19,
-      "handler_name": "search_substance",
-      "parameters": [],
-      "response_model": "list[SubstanceQdrantEntry]"
+      "description": "Search Substance",
+      "file_path": "substances",
+      "line_number": 0,
+      "handler_name": "search_substance_api_v1_substances_search_post",
+      "parameters": [
+        "name"
+      ],
+      "response_model": "Response Search Substance Api V1 Substances Search Post"
     },
     {
       "service": "medical-catalog",
       "port": 8001,
       "path": "/api/v1/symptoms/enrich",
       "method": "POST",
-      "description": "",
-      "file_path": "src/symptoms/api/router.py",
-      "line_number": 224,
-      "handler_name": "enrich_symptoms",
+      "description": "Start symptom enrichment process by symptom names.\n\nEnriches provided symptom names through the full pipeline\n(categorization, description generation, etc.).\n\nProcess runs in background. Check logs for progress and completion.",
+      "file_path": "symptoms",
+      "line_number": 0,
+      "handler_name": "enrich_symptoms_api_v1_symptoms_enrich_post",
       "parameters": [],
       "response_model": "SymptomEnrichmentResponse"
     },
@@ -2064,10 +2346,10 @@
       "port": 8001,
       "path": "/api/v1/symptoms/search",
       "method": "POST",
-      "description": "",
-      "file_path": "src/symptoms/api/router.py",
-      "line_number": 26,
-      "handler_name": "search_symptoms_batch",
+      "description": "Batch search for symptoms using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by name (case-insensitive)\n2. Match by infermedica_id\n3. Match by aliases (case-insensitive)\n4. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
+      "file_path": "symptoms",
+      "line_number": 0,
+      "handler_name": "search_symptoms_batch_api_v1_symptoms_search_post",
       "parameters": [],
       "response_model": "SymptomSearchResponse"
     },
@@ -2076,12 +2358,24 @@
       "port": 8001,
       "path": "/api/v1/symptoms/search-by-aliases",
       "method": "POST",
-      "description": "",
-      "file_path": "src/symptoms/api/router.py",
-      "line_number": 127,
-      "handler_name": "search_symptoms_by_aliases",
+      "description": "Batch search symptoms by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is (lowercased).\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
+      "file_path": "symptoms",
+      "line_number": 0,
+      "handler_name": "search_symptoms_by_aliases_api_v1_symptoms_search_by_aliases_post",
       "parameters": [],
       "response_model": "SymptomAliasSearchResponse"
+    },
+    {
+      "service": "medical-catalog",
+      "port": 8001,
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check endpoint with database connectivity test.\n\nTests Qdrant connectivity by searching for sample biomarkers.\nReturns detailed status including database check results.",
+      "file_path": "(OpenAPI)",
+      "line_number": 0,
+      "handler_name": "health_check_health_get",
+      "parameters": [],
+      "response_model": "Response Health Check Health Get"
     }
   ]
 }
