@@ -1,0 +1,14 @@
+{
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "include": [
+    "repos/dem2/**/*.py",
+    "repos/medical-catalog/**/*.py"
+  ],
+  "exclude": [
+    "**/.venv",
+    "**/node_modules",
+    "**/__pycache__"
+  ]
+}

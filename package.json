@@ -9,6 +9,7 @@
     "pyright:version": "pyright --version"
   },
   "devDependencies": {
+    "@ast-grep/cli": "^0.40.3",
     "pyright": "^1.1.390"
   },
   "engines": {
