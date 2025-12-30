@@ -24,7 +24,7 @@ def generate_routes_table(routes: list[dict[str, Any]]) -> str:
         port = route["port"]
         method = route["method"]
         path = route["path"]
-        description = route["description"] or "(No description)"
+        description = route.get("description", "") or "(No description)"
 
         # Generate example based on method and port
         example = generate_example(service, port, method, path)
@@ -74,18 +74,24 @@ def generate_service_section(
     lines = []
 
     port = service_data["port"]
-    files = service_data["files"]
+    components = service_data["components"]
 
-    # Flatten routes from all files
+    # Flatten routes from all components
     service_routes = []
-    for file_path, file_data in files.items():
-        for route in file_data["routes"]:
-            service_routes.append({
+    for component_path, component_data in components.items():
+        for route in component_data["routes"]:
+            # Add defaults for fields that might be omitted in JSON
+            route_with_defaults = {
                 **route,
                 "service": service_name,
                 "port": port,
-                "file_path": file_path
-            })
+                "file_path": component_path,
+                "method": route.get("method", "GET"),  # Default to GET if omitted
+                "parameters": route.get("parameters", []),
+                "response_model": "",
+                "line_number": 0,
+            }
+            service_routes.append(route_with_defaults)
 
     if not service_routes:
         return ""
@@ -163,8 +169,8 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     lines.append("|---------|--------|")
 
     for service_name in service_names:
-        files = services[service_name]["files"]
-        count = sum(len(file_data["routes"]) for file_data in files.values())
+        components = services[service_name]["components"]
+        count = sum(len(component_data["routes"]) for component_data in components.values())
         lines.append(f"| {service_name} | {count} |")
 
     lines.append("")
@@ -177,9 +183,9 @@ def generate_routes_md(data: dict[str, Any]) -> str:
 
     method_counts = {}
     for service_data in services.values():
-        for file_data in service_data["files"].values():
-            for route in file_data["routes"]:
-                method = route["method"]
+        for component_data in service_data["components"].values():
+            for route in component_data["routes"]:
+                method = route.get("method", "GET")  # Default to GET if omitted
                 method_counts[method] = method_counts.get(method, 0) + 1
 
     for method in sorted(method_counts.keys()):

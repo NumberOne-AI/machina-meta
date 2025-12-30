@@ -343,29 +343,42 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
         if route.service not in services_data:
             services_data[route.service] = {
                 "port": route.port,
-                "files": {}
+                "components": {}
             }
 
         file_path = route.file_path
-        if file_path not in services_data[route.service]["files"]:
-            services_data[route.service]["files"][file_path] = {
+        if file_path not in services_data[route.service]["components"]:
+            services_data[route.service]["components"][file_path] = {
                 "routes": []
             }
 
-        services_data[route.service]["files"][file_path]["routes"].append({
+        # Build route object with optional fields
+        route_obj = {
             "path": route.path,
-            "method": route.method,
-            "description": route.description,
-            "line_number": route.line_number,
-            "handler_name": route.handler_name,
-            "parameters": route.parameters,
-            "response_model": route.response_model,
-        })
+        }
 
-    # Sort routes within each file by path
+        # Only include method if it's not GET (default)
+        if route.method != "GET":
+            route_obj["method"] = route.method
+
+        # Include description if present
+        if route.description:
+            route_obj["description"] = route.description
+
+        # Include handler_name if present
+        if route.handler_name:
+            route_obj["handler_name"] = route.handler_name
+
+        # Only include parameters if non-empty
+        if route.parameters:
+            route_obj["parameters"] = route.parameters
+
+        services_data[route.service]["components"][file_path]["routes"].append(route_obj)
+
+    # Sort routes within each component by path
     for service_data in services_data.values():
-        for file_data in service_data["files"].values():
-            file_data["routes"].sort(key=lambda r: r["path"])
+        for component_data in service_data["components"].values():
+            component_data["routes"].sort(key=lambda r: r["path"])
 
     # Build final structure
     routes_data = {
