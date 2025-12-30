@@ -2,7 +2,7 @@
 
 Comprehensive listing of all API routes and pages across all services in the machina-meta workspace.
 
-**Generated**: 2025-12-30T10:35:30.514603
+**Generated**: 2025-12-30T10:46:35.825433
 **Total Routes**: 172
 **Services**: dem2, dem2-webui, medical-catalog
 
@@ -57,12 +57,6 @@ Comprehensive listing of all API routes and pages across all services in the mac
 | dem2 | 8000 | POST | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Add Tag To Bookmark | `curl -X POST http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id} -d '{}'` |
 | dem2 | 8000 | DELETE | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Remove Tag From Bookmark | `curl http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id}` |
 | dem2 | 8000 | GET | /api/v1/calendar | Get Doctor Events | `curl http://localhost:8000/api/v1/calendar` |
-| dem2 | 8000 | POST | /api/v1/documents-processor/process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/process_document -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/documents-processor/queue/stats | Get queue statistics | `curl http://localhost:8000/api/v1/documents-processor/queue/stats` |
-| dem2 | 8000 | GET | /api/v1/documents-processor/tasks | Get list of processing tasks for current user | `curl http://localhost:8000/api/v1/documents-processor/tasks` |
-| dem2 | 8000 | GET | /api/v1/documents-processor/tasks/stream | Stream progress events for all user's tasks through a single connection. | `curl http://localhost:8000/api/v1/documents-processor/tasks/stream` |
-| dem2 | 8000 | GET | /api/v1/documents-processor/tasks/{task_id} | Get specific task status | `curl http://localhost:8000/api/v1/documents-processor/tasks/{task_id}` |
-| dem2 | 8000 | POST | /api/v1/documents-processor/test_process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/test_process_document -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/file-storage/files | List Files | `curl http://localhost:8000/api/v1/file-storage/files` |
 | dem2 | 8000 | POST | /api/v1/file-storage/files/bulk_delete | Bulk Delete Files | `curl -X POST http://localhost:8000/api/v1/file-storage/files/bulk_delete -d '{}'` |
 | dem2 | 8000 | POST | /api/v1/file-storage/files/upload | Upload File | `curl -X POST http://localhost:8000/api/v1/file-storage/files/upload -d '{}'` |
@@ -71,6 +65,124 @@ Comprehensive listing of all API routes and pages across all services in the mac
 | dem2 | 8000 | GET | /api/v1/file-storage/files/{file_id}/download | Download File | `curl http://localhost:8000/api/v1/file-storage/files/{file_id}/download` |
 | dem2 | 8000 | POST | /api/v1/geocoding/geocode/zip | Geocode a 5-digit US ZIP code to coordinates. | `curl -X POST http://localhost:8000/api/v1/geocoding/geocode/zip -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/geocoding/health | Simple health probe. | `curl http://localhost:8000/api/v1/geocoding/health` |
+| dem2 | 8000 | POST | /api/v1/med-agent/run | Run Agent | `curl -X POST http://localhost:8000/api/v1/med-agent/run -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/med-agent/run_sse | Run Agent Sse | `curl -X POST http://localhost:8000/api/v1/med-agent/run_sse -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions | Create Session | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/med-agent/users/sessions | List Sessions | `curl http://localhost:8000/api/v1/med-agent/users/sessions` |
+| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id} | Create Session With Id | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123 -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/med-agent/users/sessions/{session_id} | Get Session | `curl http://localhost:8000/api/v1/med-agent/users/sessions/abc123` |
+| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/feedback | Submit Feedback By Invocation | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/feedback -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/name | Set Session Name | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/name -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/summarize | Summarize Session Name | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/summarize -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/medical-data-storage/allergies | Create allergy intolerance record | `curl -X POST http://localhost:8000/api/v1/medical-data-storage/allergies -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/allergies | Get patient allergies | `curl http://localhost:8000/api/v1/medical-data-storage/allergies` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/allergies/grouped | Get allergies grouped by allergen name with complete timeline history.
+
+This endpoint groups multiple allergy records for the same allergen
+(e.g., active → resolved → active) into a single response with timeline.
+
+Useful for:
+- Avoiding duplicate allergens in UI
+- Showing allergy status history
+- Understanding timeline of allergy changes
+
+If active_only=True, only returns allergens where the most recent record is active.
+The timeline will still include all historical status changes for that allergen. | `curl http://localhost:8000/api/v1/medical-data-storage/allergies/grouped` |
+| dem2 | 8000 | DELETE | /api/v1/medical-data-storage/allergies/{allergy_id} | Delete allergy intolerance record | `curl http://localhost:8000/api/v1/medical-data-storage/allergies/alg-789` |
+| dem2 | 8000 | PATCH | /api/v1/medical-data-storage/allergies/{allergy_id}/status | Update allergy clinical status | `curl -X PATCH http://localhost:8000/api/v1/medical-data-storage/allergies/alg-789/status -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/medical-data-storage/cleanup/orphaned_resources | Clean up orphaned resources with source_document_deleted=true | `curl -X POST http://localhost:8000/api/v1/medical-data-storage/cleanup/orphaned_resources -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/document_references | Get all document references for the current user | `curl http://localhost:8000/api/v1/medical-data-storage/document_references` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/document_references/{document_id} | Get a specific document reference by ID. | `curl http://localhost:8000/api/v1/medical-data-storage/document_references/{document_id}` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/encounters | Get encounters with their related practitioners and organizations.
+
+Returns encounters with:
+- Basic encounter information (uuid, name, dates, etc.)
+- List of practitioners involved (via WITH_PRACTITIONER relationship)
+- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)
+
+If patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.
+Otherwise, returns encounters across all user's patients.
+
+Data is retrieved from graph-memory (Neo4j). | `curl http://localhost:8000/api/v1/medical-data-storage/encounters` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations | Get observations grouped by LOINC code with metadata and values.
+
+Returns a dictionary where key is LOINC code and value contains 'meta' and 'values'.
+
+The 'meta' contains:
+- loinc_code, loinc_name, display_name, unit
+- body_system_impacts (same for all observations of this type)
+
+The 'values' contains list of observations with:
+- value (numeric or string)
+- effective_date (timestamp)
+- range (reference range with low/high)
+
+Supports filtering by:
+- LOINC codes: specific observation types
+- Body systems: cardiovascular, respiratory, endocrine, etc.
+- Search query: partial name matching
+- Per LOINC limit: limit observations per code (useful for getting latest N values per type)
+
+Results are ordered by effective_date in descending order (newest first). | `curl http://localhost:8000/api/v1/medical-data-storage/observations` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/body_system/{body_system} | DEPRECATED: Use `/observations` instead with body_systems parameter.
+
+This endpoint will be removed in a future version. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/body_system/{body_system}` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/grouped | Get observation values for a patient grouped by observation type.
+
+Returns observations ordered by clinical importance (descending).
+
+Each group contains:
+- observation_type: Metadata about the observation type (code, name, unit, etc.)
+- clinical_importance: Weight from TRACKS relationship (higher = more important)
+- values: Observation values for this type (ordered by observed_at descending)
+- document_reference_range: Latest reference range from patient documents (if any)
+- standard_reference_range: Latest standard reference range (if any)
+
+The clinical_importance is automatically calculated based on:
+- Body system impacts (weight and impact_type)
+- Maximum weight from all body system relationships
+- Default value of 0.5 if no body system relationships exist
+
+Supports filtering by:
+- Body systems: cardiovascular, respiratory, endocrine, etc.
+- LOINC codes: filter by specific LOINC codes
+- Minimum body system weight: only show observations with strong enough body system links
+- Body system impact types: filter by impact type (primary, secondary, etc.)
+- Search query: partial name or display_name matching (case-insensitive)
+- Per-type values limit: limit number of values per observation type (useful for getting latest N values)
+
+Pagination applies to observation types, not individual values. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/grouped` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/stats | Get observation statistics with trends and reference ranges.
+
+Returns aggregated metrics including:
+- Latest and previous values
+- Trend direction and percentage change
+- Reference ranges
+- Body system impacts
+- Observation counts
+
+Supports filtering by:
+- LOINC codes: specific observation types
+- Body systems: cardiovascular, respiratory, endocrine, etc.
+- Search query: partial name matching | `curl http://localhost:8000/api/v1/medical-data-storage/observations/stats` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/values | DEPRECATED: Use `/observations` instead with loinc_codes parameter.
+
+This endpoint will be removed in a future version. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/values` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/organizations | Get organizations filtered by user_id and optionally patient_id (from header) | `curl http://localhost:8000/api/v1/medical-data-storage/organizations` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/patients/statistics | Get statistics for all patients | `curl http://localhost:8000/api/v1/medical-data-storage/patients/statistics` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/patients/{patient_uuid}/statistics | Get statistics for a specific patient | `curl http://localhost:8000/api/v1/medical-data-storage/patients/{patient_uuid}/statistics` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/practitioners | Get practitioners filtered by user_id and optionally patient_id (from header) | `curl http://localhost:8000/api/v1/medical-data-storage/practitioners` |
+| dem2 | 8000 | GET | /api/v1/medical-data-storage/resource_connections | Get connections between practitioners and organizations based on shared encounters.
+
+Returns a graph structure showing:
+- All practitioners
+- All organizations
+- Connections between them with encounter count and date range
+
+If patient_id is provided (via header), filters connections to that patient only.
+Otherwise, returns connections across all user's patients. | `curl http://localhost:8000/api/v1/medical-data-storage/resource_connections` |
+| dem2 | 8000 | DELETE | /api/v1/medical-data-storage/user_data | Erase User Data | `curl http://localhost:8000/api/v1/medical-data-storage/user_data` |
+| dem2 | 8000 | POST | /api/v1/medical-data-engine/test-stream | Test Stream | `curl -X POST http://localhost:8000/api/v1/medical-data-engine/test-stream -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records | Get list of allergy records for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records/{record_id} | Get detailed information about a specific allergy record including all related reactions and type. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records/{record_id}` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/care_network | Get network of practitioners and organizations connected through encounters.
@@ -197,131 +309,19 @@ Returns counts of deleted items:
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptom-types/{type_id} | Get detailed information about a symptom type including all patient episodes for that type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptom-types/{type_id}` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms | Get list of symptom episodes for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms/{symptom_id} | Get detailed information about a specific symptom episode including type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms/{symptom_id}` |
-| dem2 | 8000 | GET | /api/v1/health | Health | `curl http://localhost:8000/api/v1/health` |
-| dem2 | 8000 | POST | /api/v1/med-agent/run | Run Agent | `curl -X POST http://localhost:8000/api/v1/med-agent/run -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/med-agent/run_sse | Run Agent Sse | `curl -X POST http://localhost:8000/api/v1/med-agent/run_sse -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions | Create Session | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/med-agent/users/sessions | List Sessions | `curl http://localhost:8000/api/v1/med-agent/users/sessions` |
-| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id} | Create Session With Id | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123 -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/med-agent/users/sessions/{session_id} | Get Session | `curl http://localhost:8000/api/v1/med-agent/users/sessions/abc123` |
-| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/feedback | Submit Feedback By Invocation | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/feedback -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/name | Set Session Name | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/name -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/med-agent/users/sessions/{session_id}/summarize | Summarize Session Name | `curl -X POST http://localhost:8000/api/v1/med-agent/users/sessions/abc123/summarize -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/medical-data-engine/test-stream | Test Stream | `curl -X POST http://localhost:8000/api/v1/medical-data-engine/test-stream -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/medical-data-storage/allergies | Create allergy intolerance record | `curl -X POST http://localhost:8000/api/v1/medical-data-storage/allergies -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/allergies | Get patient allergies | `curl http://localhost:8000/api/v1/medical-data-storage/allergies` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/allergies/grouped | Get allergies grouped by allergen name with complete timeline history.
-
-This endpoint groups multiple allergy records for the same allergen
-(e.g., active → resolved → active) into a single response with timeline.
-
-Useful for:
-- Avoiding duplicate allergens in UI
-- Showing allergy status history
-- Understanding timeline of allergy changes
-
-If active_only=True, only returns allergens where the most recent record is active.
-The timeline will still include all historical status changes for that allergen. | `curl http://localhost:8000/api/v1/medical-data-storage/allergies/grouped` |
-| dem2 | 8000 | DELETE | /api/v1/medical-data-storage/allergies/{allergy_id} | Delete allergy intolerance record | `curl http://localhost:8000/api/v1/medical-data-storage/allergies/alg-789` |
-| dem2 | 8000 | PATCH | /api/v1/medical-data-storage/allergies/{allergy_id}/status | Update allergy clinical status | `curl -X PATCH http://localhost:8000/api/v1/medical-data-storage/allergies/alg-789/status -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/medical-data-storage/cleanup/orphaned_resources | Clean up orphaned resources with source_document_deleted=true | `curl -X POST http://localhost:8000/api/v1/medical-data-storage/cleanup/orphaned_resources -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/document_references | Get all document references for the current user | `curl http://localhost:8000/api/v1/medical-data-storage/document_references` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/document_references/{document_id} | Get a specific document reference by ID. | `curl http://localhost:8000/api/v1/medical-data-storage/document_references/{document_id}` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/encounters | Get encounters with their related practitioners and organizations.
-
-Returns encounters with:
-- Basic encounter information (uuid, name, dates, etc.)
-- List of practitioners involved (via WITH_PRACTITIONER relationship)
-- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)
-
-If patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.
-Otherwise, returns encounters across all user's patients.
-
-Data is retrieved from graph-memory (Neo4j). | `curl http://localhost:8000/api/v1/medical-data-storage/encounters` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations | Get observations grouped by LOINC code with metadata and values.
-
-Returns a dictionary where key is LOINC code and value contains 'meta' and 'values'.
-
-The 'meta' contains:
-- loinc_code, loinc_name, display_name, unit
-- body_system_impacts (same for all observations of this type)
-
-The 'values' contains list of observations with:
-- value (numeric or string)
-- effective_date (timestamp)
-- range (reference range with low/high)
-
-Supports filtering by:
-- LOINC codes: specific observation types
-- Body systems: cardiovascular, respiratory, endocrine, etc.
-- Search query: partial name matching
-- Per LOINC limit: limit observations per code (useful for getting latest N values per type)
-
-Results are ordered by effective_date in descending order (newest first). | `curl http://localhost:8000/api/v1/medical-data-storage/observations` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/body_system/{body_system} | DEPRECATED: Use `/observations` instead with body_systems parameter.
-
-This endpoint will be removed in a future version. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/body_system/{body_system}` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/grouped | Get observation values for a patient grouped by observation type.
-
-Returns observations ordered by clinical importance (descending).
-
-Each group contains:
-- observation_type: Metadata about the observation type (code, name, unit, etc.)
-- clinical_importance: Weight from TRACKS relationship (higher = more important)
-- values: Observation values for this type (ordered by observed_at descending)
-- document_reference_range: Latest reference range from patient documents (if any)
-- standard_reference_range: Latest standard reference range (if any)
-
-The clinical_importance is automatically calculated based on:
-- Body system impacts (weight and impact_type)
-- Maximum weight from all body system relationships
-- Default value of 0.5 if no body system relationships exist
-
-Supports filtering by:
-- Body systems: cardiovascular, respiratory, endocrine, etc.
-- LOINC codes: filter by specific LOINC codes
-- Minimum body system weight: only show observations with strong enough body system links
-- Body system impact types: filter by impact type (primary, secondary, etc.)
-- Search query: partial name or display_name matching (case-insensitive)
-- Per-type values limit: limit number of values per observation type (useful for getting latest N values)
-
-Pagination applies to observation types, not individual values. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/grouped` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/stats | Get observation statistics with trends and reference ranges.
-
-Returns aggregated metrics including:
-- Latest and previous values
-- Trend direction and percentage change
-- Reference ranges
-- Body system impacts
-- Observation counts
-
-Supports filtering by:
-- LOINC codes: specific observation types
-- Body systems: cardiovascular, respiratory, endocrine, etc.
-- Search query: partial name matching | `curl http://localhost:8000/api/v1/medical-data-storage/observations/stats` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/observations/values | DEPRECATED: Use `/observations` instead with loinc_codes parameter.
-
-This endpoint will be removed in a future version. | `curl http://localhost:8000/api/v1/medical-data-storage/observations/values` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/organizations | Get organizations filtered by user_id and optionally patient_id (from header) | `curl http://localhost:8000/api/v1/medical-data-storage/organizations` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/patients/statistics | Get statistics for all patients | `curl http://localhost:8000/api/v1/medical-data-storage/patients/statistics` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/patients/{patient_uuid}/statistics | Get statistics for a specific patient | `curl http://localhost:8000/api/v1/medical-data-storage/patients/{patient_uuid}/statistics` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/practitioners | Get practitioners filtered by user_id and optionally patient_id (from header) | `curl http://localhost:8000/api/v1/medical-data-storage/practitioners` |
-| dem2 | 8000 | GET | /api/v1/medical-data-storage/resource_connections | Get connections between practitioners and organizations based on shared encounters.
-
-Returns a graph structure showing:
-- All practitioners
-- All organizations
-- Connections between them with encounter count and date range
-
-If patient_id is provided (via header), filters connections to that patient only.
-Otherwise, returns connections across all user's patients. | `curl http://localhost:8000/api/v1/medical-data-storage/resource_connections` |
-| dem2 | 8000 | DELETE | /api/v1/medical-data-storage/user_data | Erase User Data | `curl http://localhost:8000/api/v1/medical-data-storage/user_data` |
+| dem2 | 8000 | POST | /api/v1/documents-processor/process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/process_document -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/documents-processor/queue/stats | Get queue statistics | `curl http://localhost:8000/api/v1/documents-processor/queue/stats` |
+| dem2 | 8000 | GET | /api/v1/documents-processor/tasks | Get list of processing tasks for current user | `curl http://localhost:8000/api/v1/documents-processor/tasks` |
+| dem2 | 8000 | GET | /api/v1/documents-processor/tasks/stream | Stream progress events for all user's tasks through a single connection. | `curl http://localhost:8000/api/v1/documents-processor/tasks/stream` |
+| dem2 | 8000 | GET | /api/v1/documents-processor/tasks/{task_id} | Get specific task status | `curl http://localhost:8000/api/v1/documents-processor/tasks/{task_id}` |
+| dem2 | 8000 | POST | /api/v1/documents-processor/test_process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/test_process_document -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/ui-layouts/{layout_type}/available-items | Get Available Ui Layout Items | `curl http://localhost:8000/api/v1/ui-layouts/{layout_type}/available-items` |
 | dem2 | 8000 | GET | /api/v1/ui-layouts/{layout_type}/stored | Get User Ui Layout | `curl http://localhost:8000/api/v1/ui-layouts/{layout_type}/stored` |
 | dem2 | 8000 | PUT | /api/v1/ui-layouts/{layout_type}/stored | Store User Ui Layout | `curl -X PUT http://localhost:8000/api/v1/ui-layouts/{layout_type}/stored -d '{}'` |
 | dem2 | 8000 | POST | /api/v1/user/onboarding/complete | Store Onboarding Answers | `curl -X POST http://localhost:8000/api/v1/user/onboarding/complete -d '{}'` |
 | dem2 | 8000 | PUT | /api/v1/user/onboarding/survey/answers | Submit Answers | `curl -X PUT http://localhost:8000/api/v1/user/onboarding/survey/answers -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/user/onboarding/survey/questions | Get Questions | `curl http://localhost:8000/api/v1/user/onboarding/survey/questions` |
+| dem2 | 8000 | GET | /api/v1/health | Health | `curl http://localhost:8000/api/v1/health` |
 | dem2 | 8000 | GET | /health | Health | `curl http://localhost:8000/health` |
 
 ---
@@ -343,28 +343,28 @@ Otherwise, returns connections across all user's patients. | `curl http://localh
 | Service | Port | Method | Path | Description | Example |
 |---------|------|--------|------|-------------|---------|
 | dem2-webui | 3000 | PAGE | / | Index Page (Server Component) | `http://localhost:3000/` |
-| dem2-webui | 3000 | PAGE | /allergies | Allergies & Intolerances (Client Component) | `http://localhost:3000/allergies` |
-| dem2-webui | 3000 | PAGE | /appointments | My Appointments Page (Client Component) | `http://localhost:3000/appointments` |
-| dem2-webui | 3000 | PAGE | /auth | Server Component | `http://localhost:3000/auth` |
-| dem2-webui | 3000 | PAGE | /body | Body (Client Component) | `http://localhost:3000/body` |
-| dem2-webui | 3000 | PAGE | /bookmarks | My Bookmarks (Client Component) | `http://localhost:3000/bookmarks` |
-| dem2-webui | 3000 | PAGE | /conditions | Conditions (Client Component) | `http://localhost:3000/conditions` |
-| dem2-webui | 3000 | PAGE | /encounters | Encounters Page (Client Component) | `http://localhost:3000/encounters` |
-| dem2-webui | 3000 | PAGE | /healthcare-network | Healthcare Network (Client Component) | `http://localhost:3000/healthcare-network` |
-| dem2-webui | 3000 | PAGE | /home | Home Page (Client Component) | `http://localhost:3000/home` |
-| dem2-webui | 3000 | PAGE | /markers | Health Markers (Server Component) | `http://localhost:3000/markers` |
-| dem2-webui | 3000 | PAGE | /medications | My Medications Page (Client Component) | `http://localhost:3000/medications` |
-| dem2-webui | 3000 | PAGE | /onboarding | Onboarding Wizard (Client Component) | `http://localhost:3000/onboarding` |
-| dem2-webui | 3000 | PAGE | /reports | Medical Reports (Server Component) | `http://localhost:3000/reports` |
-| dem2-webui | 3000 | PAGE | /research | AI Research (Server Component) | `http://localhost:3000/research` |
 | dem2-webui | 3000 | PAGE | /sentry-example-page | Page (Client Component) | `http://localhost:3000/sentry-example-page` |
-| dem2-webui | 3000 | PAGE | /settings | User Settings Page (Server Component) | `http://localhost:3000/settings` |
-| dem2-webui | 3000 | PAGE | /settings/account | Account Settings Page (Client Component) | `http://localhost:3000/settings/account` |
-| dem2-webui | 3000 | PAGE | /settings/onboarding | Onboarding Settings Page (Client Component) | `http://localhost:3000/settings/onboarding` |
-| dem2-webui | 3000 | PAGE | /settings/patient-profiles | Patient Profiles Settings Page (Client Component) | `http://localhost:3000/settings/patient-profiles` |
-| dem2-webui | 3000 | PAGE | /settings/preferences | Preferences Settings Page (Server Component) | `http://localhost:3000/settings/preferences` |
-| dem2-webui | 3000 | PAGE | /supplements | My Supplements Page (Client Component) | `http://localhost:3000/supplements` |
+| dem2-webui | 3000 | PAGE | /auth | Server Component | `http://localhost:3000/auth` |
+| dem2-webui | 3000 | PAGE | /onboarding | Onboarding Wizard (Client Component) | `http://localhost:3000/onboarding` |
 | dem2-webui | 3000 | PAGE | /symptoms | Symptoms (Client Component) | `http://localhost:3000/symptoms` |
+| dem2-webui | 3000 | PAGE | /reports | Medical Reports (Server Component) | `http://localhost:3000/reports` |
+| dem2-webui | 3000 | PAGE | /home | Home Page (Client Component) | `http://localhost:3000/home` |
+| dem2-webui | 3000 | PAGE | /healthcare-network | Healthcare Network (Client Component) | `http://localhost:3000/healthcare-network` |
+| dem2-webui | 3000 | PAGE | /research | AI Research (Server Component) | `http://localhost:3000/research` |
+| dem2-webui | 3000 | PAGE | /markers | Health Markers (Server Component) | `http://localhost:3000/markers` |
+| dem2-webui | 3000 | PAGE | /appointments | My Appointments Page (Client Component) | `http://localhost:3000/appointments` |
+| dem2-webui | 3000 | PAGE | /allergies | Allergies & Intolerances (Client Component) | `http://localhost:3000/allergies` |
+| dem2-webui | 3000 | PAGE | /bookmarks | My Bookmarks (Client Component) | `http://localhost:3000/bookmarks` |
+| dem2-webui | 3000 | PAGE | /body | Body (Client Component) | `http://localhost:3000/body` |
+| dem2-webui | 3000 | PAGE | /conditions | Conditions (Client Component) | `http://localhost:3000/conditions` |
+| dem2-webui | 3000 | PAGE | /medications | My Medications Page (Client Component) | `http://localhost:3000/medications` |
+| dem2-webui | 3000 | PAGE | /encounters | Encounters Page (Client Component) | `http://localhost:3000/encounters` |
+| dem2-webui | 3000 | PAGE | /settings | User Settings Page (Server Component) | `http://localhost:3000/settings` |
+| dem2-webui | 3000 | PAGE | /supplements | My Supplements Page (Client Component) | `http://localhost:3000/supplements` |
+| dem2-webui | 3000 | PAGE | /settings/preferences | Preferences Settings Page (Server Component) | `http://localhost:3000/settings/preferences` |
+| dem2-webui | 3000 | PAGE | /settings/account | Account Settings Page (Client Component) | `http://localhost:3000/settings/account` |
+| dem2-webui | 3000 | PAGE | /settings/patient-profiles | Patient Profiles Settings Page (Client Component) | `http://localhost:3000/settings/patient-profiles` |
+| dem2-webui | 3000 | PAGE | /settings/onboarding | Onboarding Settings Page (Client Component) | `http://localhost:3000/settings/onboarding` |
 
 ---
 
@@ -377,6 +377,33 @@ Otherwise, returns connections across all user's patients. | `curl http://localh
 
 | Service | Port | Method | Path | Description | Example |
 |---------|------|--------|------|-------------|---------|
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich | Start biomarker enrichment process by biomarker names.
+
+Creates BiomarkerDatasetMeta objects from provided names and
+enriches them through the full pipeline.
+
+Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/biomarkers/enrich -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/search | Batch search for biomarkers using cascading strategy.
+
+Search order for each query (fail-fast):
+1. Exact match by short_name (case-insensitive)
+2. Match by aliases (case-insensitive)
+3. Semantic search by embedding similarity
+
+Returns partial success results - successful queries return results,
+failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/biomarkers/search -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/search-by-aliases | Batch search biomarkers by alias groups with parallel execution.
+
+Searches the aliases_search array field for ANY match with the provided aliases.
+Uses Qdrant's MatchAny filter for efficient array-to-array matching.
+Processes multiple alias groups in parallel using asyncio.gather.
+
+This endpoint does NOT normalize aliases - searches them as-is (lowercased).
+All results return with MatchType.ALIAS.
+
+Limits:
+- Max 100 alias groups
+- Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/search-by-aliases -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/derivatives/enrich | Start derivative enrichment process from cached derivatives or provided names.
 
 If derivative_names is provided, creates artificial entries and processes them.
@@ -407,12 +434,6 @@ All results return with MatchType.ALIAS.
 Limits:
 - Max 100 alias groups
 - Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/derivatives/search-by-aliases -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich | Start biomarker enrichment process by biomarker names.
-
-Creates BiomarkerDatasetMeta objects from provided names and
-enriches them through the full pipeline.
-
-Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/biomarkers/enrich -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich2 | Start unified enrichment process using BiomarkerPipeline.
 
 First checks which names already exist in storage. If all exist,
@@ -423,27 +444,6 @@ Use the returned task_id to check status via GET /enrich2/status/{task_id}. | `c
 | medical-catalog | 8001 | GET | /api/v1/biomarkers/enrich2/status/{task_id} | Get status of an enrichment task by ID.
 
 Returns current status (pending/completed/failed) and processing statistics. | `curl http://localhost:8001/api/v1/biomarkers/enrich2/status/{task_id}` |
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/search | Batch search for biomarkers using cascading strategy.
-
-Search order for each query (fail-fast):
-1. Exact match by short_name (case-insensitive)
-2. Match by aliases (case-insensitive)
-3. Semantic search by embedding similarity
-
-Returns partial success results - successful queries return results,
-failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/biomarkers/search -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/search-by-aliases | Batch search biomarkers by alias groups with parallel execution.
-
-Searches the aliases_search array field for ANY match with the provided aliases.
-Uses Qdrant's MatchAny filter for efficient array-to-array matching.
-Processes multiple alias groups in parallel using asyncio.gather.
-
-This endpoint does NOT normalize aliases - searches them as-is (lowercased).
-All results return with MatchType.ALIAS.
-
-Limits:
-- Max 100 alias groups
-- Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/search-by-aliases -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/search2 | Unified batch search for both biomarkers and derivatives by alias groups.
 
 Searches BOTH biomarkers and derivatives collections in parallel.
@@ -454,28 +454,8 @@ Limits:
 - Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/search2 -d '{}'` |
 | medical-catalog | 8001 | GET | /api/v1/catalog/metadata | Get aggregated metadata for catalog filters. | `curl http://localhost:8001/api/v1/catalog/metadata` |
 | medical-catalog | 8001 | POST | /api/v1/catalog/search | Perform semantic search with embedding generation. | `curl -X POST http://localhost:8001/api/v1/catalog/search -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/conditions/enrich | Start condition enrichment process by condition names.
-
-Enriches provided condition names through the full pipeline
-(LLM metadata generation, embedding creation, etc.).
-
-Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/conditions/enrich -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/conditions/search | Batch search for conditions using cascading strategy.
-
-Search order for each query (fail-fast):
-1. Exact match by name (case-insensitive)
-2. Match by infermedica_id
-3. Match by ICD-10 code
-4. Match by SNOMED CT code
-5. Match by synonyms (case-insensitive)
-6. Semantic search by embedding similarity
-
-Returns partial success results - successful queries return results,
-failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/conditions/search -d '{}'` |
 | medical-catalog | 8001 | GET | /api/v1/qdrant/{path} | Proxy GET requests to Qdrant. | `curl http://localhost:8001/api/v1/qdrant/{path}` |
 | medical-catalog | 8001 | POST | /api/v1/qdrant/{path} | Proxy POST requests to Qdrant. | `curl -X POST http://localhost:8001/api/v1/qdrant/{path} -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/substances/enrich | Enrich Substance | `curl -X POST http://localhost:8001/api/v1/substances/enrich -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/substances/search | Search Substance | `curl -X POST http://localhost:8001/api/v1/substances/search -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/symptoms/enrich | Start symptom enrichment process by symptom names.
 
 Enriches provided symptom names through the full pipeline
@@ -504,6 +484,26 @@ All results return with MatchType.ALIAS.
 Limits:
 - Max 100 alias groups
 - Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/symptoms/search-by-aliases -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/conditions/enrich | Start condition enrichment process by condition names.
+
+Enriches provided condition names through the full pipeline
+(LLM metadata generation, embedding creation, etc.).
+
+Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/conditions/enrich -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/conditions/search | Batch search for conditions using cascading strategy.
+
+Search order for each query (fail-fast):
+1. Exact match by name (case-insensitive)
+2. Match by infermedica_id
+3. Match by ICD-10 code
+4. Match by SNOMED CT code
+5. Match by synonyms (case-insensitive)
+6. Semantic search by embedding similarity
+
+Returns partial success results - successful queries return results,
+failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/conditions/search -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/substances/enrich | Enrich Substance | `curl -X POST http://localhost:8001/api/v1/substances/enrich -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/substances/search | Search Substance | `curl -X POST http://localhost:8001/api/v1/substances/search -d '{}'` |
 | medical-catalog | 8001 | GET | /health | Health check endpoint with database connectivity test.
 
 Tests Qdrant connectivity by searching for sample biomarkers.

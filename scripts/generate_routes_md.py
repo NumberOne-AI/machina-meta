@@ -74,7 +74,18 @@ def generate_service_section(
     lines = []
 
     port = service_data["port"]
-    service_routes = service_data["routes"]
+    files = service_data["files"]
+
+    # Flatten routes from all files
+    service_routes = []
+    for file_path, file_data in files.items():
+        for route in file_data["routes"]:
+            service_routes.append({
+                **route,
+                "service": service_name,
+                "port": port,
+                "file_path": file_path
+            })
 
     if not service_routes:
         return ""
@@ -85,15 +96,9 @@ def generate_service_section(
     lines.append(f"**Total Routes**: {len(service_routes)}")
     lines.append("")
 
-    # Add service name to each route for table generation
-    routes_with_service = [
-        {**route, "service": service_name, "port": port}
-        for route in service_routes
-    ]
-
     # Group routes by type
-    api_routes = [r for r in routes_with_service if r["method"] != "PAGE"]
-    page_routes = [r for r in routes_with_service if r["method"] == "PAGE"]
+    api_routes = [r for r in service_routes if r["method"] != "PAGE"]
+    page_routes = [r for r in service_routes if r["method"] == "PAGE"]
 
     if api_routes:
         lines.append("### API Routes")
@@ -158,7 +163,8 @@ def generate_routes_md(data: dict[str, Any]) -> str:
     lines.append("|---------|--------|")
 
     for service_name in service_names:
-        count = len(services[service_name]["routes"])
+        files = services[service_name]["files"]
+        count = sum(len(file_data["routes"]) for file_data in files.values())
         lines.append(f"| {service_name} | {count} |")
 
     lines.append("")
@@ -171,9 +177,10 @@ def generate_routes_md(data: dict[str, Any]) -> str:
 
     method_counts = {}
     for service_data in services.values():
-        for route in service_data["routes"]:
-            method = route["method"]
-            method_counts[method] = method_counts.get(method, 0) + 1
+        for file_data in service_data["files"].values():
+            for route in file_data["routes"]:
+                method = route["method"]
+                method_counts[method] = method_counts.get(method, 0) + 1
 
     for method in sorted(method_counts.keys()):
         count = method_counts[method]

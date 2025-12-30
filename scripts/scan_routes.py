@@ -337,29 +337,35 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
             service_routes = scanner.scan()
             routes.extend(service_routes)
 
-    # Group routes by service
+    # Group routes by service, then by file_path
     services_data = {}
     for route in routes:
         if route.service not in services_data:
             services_data[route.service] = {
                 "port": route.port,
+                "files": {}
+            }
+
+        file_path = route.file_path
+        if file_path not in services_data[route.service]["files"]:
+            services_data[route.service]["files"][file_path] = {
                 "routes": []
             }
 
-        services_data[route.service]["routes"].append({
+        services_data[route.service]["files"][file_path]["routes"].append({
             "path": route.path,
             "method": route.method,
             "description": route.description,
-            "file_path": route.file_path,
             "line_number": route.line_number,
             "handler_name": route.handler_name,
             "parameters": route.parameters,
             "response_model": route.response_model,
         })
 
-    # Sort routes within each service by path
+    # Sort routes within each file by path
     for service_data in services_data.values():
-        service_data["routes"].sort(key=lambda r: r["path"])
+        for file_data in service_data["files"].values():
+            file_data["routes"].sort(key=lambda r: r["path"])
 
     # Build final structure
     routes_data = {
