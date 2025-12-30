@@ -97,7 +97,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Extracts complete route metadata: descriptions, parameters, response models
     - Provides helpful error messages if services are not running
     - Next.js scanner uses file-based detection for pages and API routes
-  - Commits: ed93bb3, (pending: OpenAPI integration)
+  - Commits: ed93bb3, cdcc7b3
   - Status: Updated to use OpenAPI JSON, awaiting user review and approval
 
 ---
