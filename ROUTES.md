@@ -2,7 +2,7 @@
 
 Comprehensive listing of all API routes and pages across all services in the machina-meta workspace.
 
-**Generated**: 2025-12-30T10:57:25.163442
+**Generated**: 2025-12-30T13:37:39.436955
 **Total Routes**: 172
 **Services**: dem2, dem2-webui, medical-catalog
 
@@ -36,6 +36,15 @@ Comprehensive listing of all API routes and pages across all services in the mac
 | dem2 | 8000 | DELETE | /api/v1/auth/users/me/patients/{patient_id}/data | Delete Patient Data | `curl http://localhost:8000/api/v1/auth/users/me/patients/pat-123/data` |
 | dem2 | 8000 | GET | /api/v1/auth/users/me/settings | Get User Settings | `curl http://localhost:8000/api/v1/auth/users/me/settings` |
 | dem2 | 8000 | PATCH | /api/v1/auth/users/me/settings | Update User Settings | `curl -X PATCH http://localhost:8000/api/v1/auth/users/me/settings -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/bookmarks | Create Bookmark | `curl -X POST http://localhost:8000/api/v1/bookmarks -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/bookmarks | List Bookmarks | `curl http://localhost:8000/api/v1/bookmarks` |
+| dem2 | 8000 | DELETE | /api/v1/bookmarks | Delete Bookmarks | `curl http://localhost:8000/api/v1/bookmarks` |
+| dem2 | 8000 | GET | /api/v1/bookmarks/by-tag/{tag_id} | Get Bookmarks By Tag | `curl http://localhost:8000/api/v1/bookmarks/by-tag/{tag_id}` |
+| dem2 | 8000 | GET | /api/v1/bookmarks/count | Count Bookmarks | `curl http://localhost:8000/api/v1/bookmarks/count` |
+| dem2 | 8000 | GET | /api/v1/bookmarks/{bookmark_id} | Get Bookmark | `curl http://localhost:8000/api/v1/bookmarks/bmk-456` |
+| dem2 | 8000 | PATCH | /api/v1/bookmarks/{bookmark_id} | Update Bookmark | `curl -X PATCH http://localhost:8000/api/v1/bookmarks/bmk-456 -d '{}'` |
+| dem2 | 8000 | POST | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Add Tag To Bookmark | `curl -X POST http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id} -d '{}'` |
+| dem2 | 8000 | DELETE | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Remove Tag From Bookmark | `curl http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id}` |
 | dem2 | 8000 | POST | /api/v1/bookmark-groups | Create Group | `curl -X POST http://localhost:8000/api/v1/bookmark-groups -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/bookmark-groups | List Groups | `curl http://localhost:8000/api/v1/bookmark-groups` |
 | dem2 | 8000 | GET | /api/v1/bookmark-groups/{group_id} | Get Group | `curl http://localhost:8000/api/v1/bookmark-groups/{group_id}` |
@@ -47,15 +56,6 @@ Comprehensive listing of all API routes and pages across all services in the mac
 | dem2 | 8000 | GET | /api/v1/bookmark-tags/{tag_id} | Get Tag | `curl http://localhost:8000/api/v1/bookmark-tags/{tag_id}` |
 | dem2 | 8000 | PATCH | /api/v1/bookmark-tags/{tag_id} | Update Tag | `curl -X PATCH http://localhost:8000/api/v1/bookmark-tags/{tag_id} -d '{}'` |
 | dem2 | 8000 | DELETE | /api/v1/bookmark-tags/{tag_id} | Delete Tag | `curl http://localhost:8000/api/v1/bookmark-tags/{tag_id}` |
-| dem2 | 8000 | POST | /api/v1/bookmarks | Create Bookmark | `curl -X POST http://localhost:8000/api/v1/bookmarks -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/bookmarks | List Bookmarks | `curl http://localhost:8000/api/v1/bookmarks` |
-| dem2 | 8000 | DELETE | /api/v1/bookmarks | Delete Bookmarks | `curl http://localhost:8000/api/v1/bookmarks` |
-| dem2 | 8000 | GET | /api/v1/bookmarks/by-tag/{tag_id} | Get Bookmarks By Tag | `curl http://localhost:8000/api/v1/bookmarks/by-tag/{tag_id}` |
-| dem2 | 8000 | GET | /api/v1/bookmarks/count | Count Bookmarks | `curl http://localhost:8000/api/v1/bookmarks/count` |
-| dem2 | 8000 | GET | /api/v1/bookmarks/{bookmark_id} | Get Bookmark | `curl http://localhost:8000/api/v1/bookmarks/bmk-456` |
-| dem2 | 8000 | PATCH | /api/v1/bookmarks/{bookmark_id} | Update Bookmark | `curl -X PATCH http://localhost:8000/api/v1/bookmarks/bmk-456 -d '{}'` |
-| dem2 | 8000 | POST | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Add Tag To Bookmark | `curl -X POST http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id} -d '{}'` |
-| dem2 | 8000 | DELETE | /api/v1/bookmarks/{bookmark_id}/tags/{tag_id} | Remove Tag From Bookmark | `curl http://localhost:8000/api/v1/bookmarks/bmk-456/tags/{tag_id}` |
 | dem2 | 8000 | GET | /api/v1/calendar | Get Doctor Events | `curl http://localhost:8000/api/v1/calendar` |
 | dem2 | 8000 | GET | /api/v1/file-storage/files | List Files | `curl http://localhost:8000/api/v1/file-storage/files` |
 | dem2 | 8000 | POST | /api/v1/file-storage/files/bulk_delete | Bulk Delete Files | `curl -X POST http://localhost:8000/api/v1/file-storage/files/bulk_delete -d '{}'` |
@@ -183,8 +183,15 @@ If patient_id is provided (via header), filters connections to that patient only
 Otherwise, returns connections across all user's patients. | `curl http://localhost:8000/api/v1/medical-data-storage/resource_connections` |
 | dem2 | 8000 | DELETE | /api/v1/medical-data-storage/user_data | Erase User Data | `curl http://localhost:8000/api/v1/medical-data-storage/user_data` |
 | dem2 | 8000 | POST | /api/v1/medical-data-engine/test-stream | Test Stream | `curl -X POST http://localhost:8000/api/v1/medical-data-engine/test-stream -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records | Get list of allergy records for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records/{record_id} | Get detailed information about a specific allergy record including all related reactions and type. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records/{record_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/encounters | Get encounters with their related practitioners and organizations.
+
+Returns encounters with:
+- Basic encounter information (uuid, name, dates, etc.)
+- List of practitioners involved (via WITH_PRACTITIONER relationship)
+- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)
+
+If patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.
+Otherwise, returns encounters across all user's patients. | `curl http://localhost:8000/api/v1/graph-memory/medical/encounters` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/care_network | Get network of practitioners and organizations connected through encounters.
 
 Returns:
@@ -195,28 +202,6 @@ Returns:
 
 If patient_id is provided (via x-patient-context-id header), returns network
 for that patient only. Otherwise, returns network across all user's patients. | `curl http://localhost:8000/api/v1/graph-memory/medical/care_network` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/conditions | Get list of condition cases for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/conditions` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/conditions/{condition_id} | Get detailed information about a specific condition case including type. | `curl http://localhost:8000/api/v1/graph-memory/medical/conditions/{condition_id}` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references | Get all document references with related entities for a user.
-
-Returns documents with organizations, practitioners, and patients,
-ordered by creation date (newest first). | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references/{document_id} | Get a specific document reference by ID. | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}` |
-| dem2 | 8000 | DELETE | /api/v1/graph-memory/medical/document_references/{document_id} | Delete a document reference and all nodes extracted from it.
-
-Removes:
-- The DocumentReference itself
-- All medical data nodes where source_type='document' and source_id=document_id | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references/{document_id}/details | Get a document reference with all related organizations and practitioners. | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}/details` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/encounters | Get encounters with their related practitioners and organizations.
-
-Returns encounters with:
-- Basic encounter information (uuid, name, dates, etc.)
-- List of practitioners involved (via WITH_PRACTITIONER relationship)
-- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)
-
-If patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.
-Otherwise, returns encounters across all user's patients. | `curl http://localhost:8000/api/v1/graph-memory/medical/encounters` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/medication/intake-events | Get intake events by date range | `curl http://localhost:8000/api/v1/graph-memory/medical/medication/intake-events` |
 | dem2 | 8000 | POST | /api/v1/graph-memory/medical/medication/intake-events | Create intake event | `curl -X POST http://localhost:8000/api/v1/graph-memory/medical/medication/intake-events -d '{}'` |
 | dem2 | 8000 | POST | /api/v1/graph-memory/medical/medication/intake-events/bulk | Create intake events for regimens of specified type on date | `curl -X POST http://localhost:8000/api/v1/graph-memory/medical/medication/intake-events/bulk -d '{}'` |
@@ -235,6 +220,14 @@ Otherwise, returns encounters across all user's patients. | `curl http://localho
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/medication/supplements/by_uuid | Get supplement by UUID | `curl http://localhost:8000/api/v1/graph-memory/medical/medication/supplements/by_uuid` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/medication/supplements/search | Search substances using ODS ingredient groups API. | `curl http://localhost:8000/api/v1/graph-memory/medical/medication/supplements/search` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/medication/supplements/{supplement_id}/ingredients | Get supplement ingredients | `curl http://localhost:8000/api/v1/graph-memory/medical/medication/supplements/{supplement_id}/ingredients` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/conditions | Get list of condition cases for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/conditions` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/conditions/{condition_id} | Get detailed information about a specific condition case including type. | `curl http://localhost:8000/api/v1/graph-memory/medical/conditions/{condition_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms | Get list of symptom episodes for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms/{symptom_id} | Get detailed information about a specific symptom episode including type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms/{symptom_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptom-types | Get list of symptom types that the patient has episodes for, ordered by most recent. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptom-types` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptom-types/{type_id} | Get detailed information about a symptom type including all patient episodes for that type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptom-types/{type_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records | Get list of allergy records for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/allergy-records/{record_id} | Get detailed information about a specific allergy record including all related reactions and type. | `curl http://localhost:8000/api/v1/graph-memory/medical/allergy-records/{record_id}` |
 | dem2 | 8000 | GET | /api/v1/graph-memory/medical/observations/grouped | Get observation values for a patient grouped by observation type.
 
 Returns observations ordered by clinical importance (descending).
@@ -305,16 +298,23 @@ This endpoint:
 Returns counts of deleted items:
 - values_deleted: Number of observation values deleted
 - tracks_deleted: Number of TRACKS relationships removed (0 or 1) | `curl http://localhost:8000/api/v1/graph-memory/medical/observations/{observation_type_uuid}` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptom-types | Get list of symptom types that the patient has episodes for, ordered by most recent. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptom-types` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptom-types/{type_id} | Get detailed information about a symptom type including all patient episodes for that type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptom-types/{type_id}` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms | Get list of symptom episodes for a patient with optional filtering. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms` |
-| dem2 | 8000 | GET | /api/v1/graph-memory/medical/symptoms/{symptom_id} | Get detailed information about a specific symptom episode including type. | `curl http://localhost:8000/api/v1/graph-memory/medical/symptoms/{symptom_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references | Get all document references with related entities for a user.
+
+Returns documents with organizations, practitioners, and patients,
+ordered by creation date (newest first). | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references/{document_id} | Get a specific document reference by ID. | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}` |
+| dem2 | 8000 | DELETE | /api/v1/graph-memory/medical/document_references/{document_id} | Delete a document reference and all nodes extracted from it.
+
+Removes:
+- The DocumentReference itself
+- All medical data nodes where source_type='document' and source_id=document_id | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}` |
+| dem2 | 8000 | GET | /api/v1/graph-memory/medical/document_references/{document_id}/details | Get a document reference with all related organizations and practitioners. | `curl http://localhost:8000/api/v1/graph-memory/medical/document_references/{document_id}/details` |
 | dem2 | 8000 | POST | /api/v1/documents-processor/process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/process_document -d '{}'` |
-| dem2 | 8000 | GET | /api/v1/documents-processor/queue/stats | Get queue statistics | `curl http://localhost:8000/api/v1/documents-processor/queue/stats` |
+| dem2 | 8000 | POST | /api/v1/documents-processor/test_process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/test_process_document -d '{}'` |
 | dem2 | 8000 | GET | /api/v1/documents-processor/tasks | Get list of processing tasks for current user | `curl http://localhost:8000/api/v1/documents-processor/tasks` |
 | dem2 | 8000 | GET | /api/v1/documents-processor/tasks/stream | Stream progress events for all user's tasks through a single connection. | `curl http://localhost:8000/api/v1/documents-processor/tasks/stream` |
 | dem2 | 8000 | GET | /api/v1/documents-processor/tasks/{task_id} | Get specific task status | `curl http://localhost:8000/api/v1/documents-processor/tasks/{task_id}` |
-| dem2 | 8000 | POST | /api/v1/documents-processor/test_process_document | Queue document for processing and extract medical data | `curl -X POST http://localhost:8000/api/v1/documents-processor/test_process_document -d '{}'` |
+| dem2 | 8000 | GET | /api/v1/documents-processor/queue/stats | Get queue statistics | `curl http://localhost:8000/api/v1/documents-processor/queue/stats` |
 | dem2 | 8000 | GET | /api/v1/ui-layouts/{layout_type}/available-items | Get Available Ui Layout Items | `curl http://localhost:8000/api/v1/ui-layouts/{layout_type}/available-items` |
 | dem2 | 8000 | GET | /api/v1/ui-layouts/{layout_type}/stored | Get User Ui Layout | `curl http://localhost:8000/api/v1/ui-layouts/{layout_type}/stored` |
 | dem2 | 8000 | PUT | /api/v1/ui-layouts/{layout_type}/stored | Store User Ui Layout | `curl -X PUT http://localhost:8000/api/v1/ui-layouts/{layout_type}/stored -d '{}'` |
@@ -360,11 +360,11 @@ Returns counts of deleted items:
 | dem2-webui | 3000 | PAGE | /medications | My Medications Page (Client Component) | `http://localhost:3000/medications` |
 | dem2-webui | 3000 | PAGE | /encounters | Encounters Page (Client Component) | `http://localhost:3000/encounters` |
 | dem2-webui | 3000 | PAGE | /settings | User Settings Page (Server Component) | `http://localhost:3000/settings` |
-| dem2-webui | 3000 | PAGE | /supplements | My Supplements Page (Client Component) | `http://localhost:3000/supplements` |
-| dem2-webui | 3000 | PAGE | /settings/preferences | Preferences Settings Page (Server Component) | `http://localhost:3000/settings/preferences` |
 | dem2-webui | 3000 | PAGE | /settings/account | Account Settings Page (Client Component) | `http://localhost:3000/settings/account` |
-| dem2-webui | 3000 | PAGE | /settings/patient-profiles | Patient Profiles Settings Page (Client Component) | `http://localhost:3000/settings/patient-profiles` |
 | dem2-webui | 3000 | PAGE | /settings/onboarding | Onboarding Settings Page (Client Component) | `http://localhost:3000/settings/onboarding` |
+| dem2-webui | 3000 | PAGE | /settings/patient-profiles | Patient Profiles Settings Page (Client Component) | `http://localhost:3000/settings/patient-profiles` |
+| dem2-webui | 3000 | PAGE | /settings/preferences | Preferences Settings Page (Server Component) | `http://localhost:3000/settings/preferences` |
+| dem2-webui | 3000 | PAGE | /supplements | My Supplements Page (Client Component) | `http://localhost:3000/supplements` |
 
 ---
 
@@ -377,33 +377,6 @@ Returns counts of deleted items:
 
 | Service | Port | Method | Path | Description | Example |
 |---------|------|--------|------|-------------|---------|
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich | Start biomarker enrichment process by biomarker names.
-
-Creates BiomarkerDatasetMeta objects from provided names and
-enriches them through the full pipeline.
-
-Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/biomarkers/enrich -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/search | Batch search for biomarkers using cascading strategy.
-
-Search order for each query (fail-fast):
-1. Exact match by short_name (case-insensitive)
-2. Match by aliases (case-insensitive)
-3. Semantic search by embedding similarity
-
-Returns partial success results - successful queries return results,
-failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/biomarkers/search -d '{}'` |
-| medical-catalog | 8001 | POST | /api/v1/biomarkers/search-by-aliases | Batch search biomarkers by alias groups with parallel execution.
-
-Searches the aliases_search array field for ANY match with the provided aliases.
-Uses Qdrant's MatchAny filter for efficient array-to-array matching.
-Processes multiple alias groups in parallel using asyncio.gather.
-
-This endpoint does NOT normalize aliases - searches them as-is (lowercased).
-All results return with MatchType.ALIAS.
-
-Limits:
-- Max 100 alias groups
-- Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/search-by-aliases -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/derivatives/enrich | Start derivative enrichment process from cached derivatives or provided names.
 
 If derivative_names is provided, creates artificial entries and processes them.
@@ -434,6 +407,12 @@ All results return with MatchType.ALIAS.
 Limits:
 - Max 100 alias groups
 - Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/derivatives/search-by-aliases -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich | Start biomarker enrichment process by biomarker names.
+
+Creates BiomarkerDatasetMeta objects from provided names and
+enriches them through the full pipeline.
+
+Process runs in background. Check logs for progress and completion. | `curl -X POST http://localhost:8001/api/v1/biomarkers/enrich -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/enrich2 | Start unified enrichment process using BiomarkerPipeline.
 
 First checks which names already exist in storage. If all exist,
@@ -444,6 +423,27 @@ Use the returned task_id to check status via GET /enrich2/status/{task_id}. | `c
 | medical-catalog | 8001 | GET | /api/v1/biomarkers/enrich2/status/{task_id} | Get status of an enrichment task by ID.
 
 Returns current status (pending/completed/failed) and processing statistics. | `curl http://localhost:8001/api/v1/biomarkers/enrich2/status/{task_id}` |
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/search | Batch search for biomarkers using cascading strategy.
+
+Search order for each query (fail-fast):
+1. Exact match by short_name (case-insensitive)
+2. Match by aliases (case-insensitive)
+3. Semantic search by embedding similarity
+
+Returns partial success results - successful queries return results,
+failed queries return error messages. | `curl -X POST http://localhost:8001/api/v1/biomarkers/search -d '{}'` |
+| medical-catalog | 8001 | POST | /api/v1/biomarkers/search-by-aliases | Batch search biomarkers by alias groups with parallel execution.
+
+Searches the aliases_search array field for ANY match with the provided aliases.
+Uses Qdrant's MatchAny filter for efficient array-to-array matching.
+Processes multiple alias groups in parallel using asyncio.gather.
+
+This endpoint does NOT normalize aliases - searches them as-is (lowercased).
+All results return with MatchType.ALIAS.
+
+Limits:
+- Max 100 alias groups
+- Max 5 aliases per group (automatically truncated if exceeded) | `curl -X POST http://localhost:8001/api/v1/biomarkers/search-by-aliases -d '{}'` |
 | medical-catalog | 8001 | POST | /api/v1/biomarkers/search2 | Unified batch search for both biomarkers and derivatives by alias groups.
 
 Searches BOTH biomarkers and derivatives collections in parallel.

@@ -97,8 +97,10 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Extracts complete route metadata: descriptions, parameters, response models
     - Provides helpful error messages if services are not running
     - Next.js scanner uses file-based detection for pages and API routes
+    - Component extraction groups routes by REST URL path prefix (e.g., /api/v1/auth)
+    - Hierarchical JSON structure with 48% size reduction through optimization
   - Commits: ed93bb3, cdcc7b3, b7265ee, 140f1c4, d5fd8db
-  - Status: Applied JSON optimizations to reduce redundancy, awaiting user review and approval
+  - Status: Fixed component extraction to use REST URL path prefixes instead of file paths. Routes now properly grouped (e.g., /api/v1/auth contains 13 auth-related routes). Awaiting user review and approval.
 
 ---
 

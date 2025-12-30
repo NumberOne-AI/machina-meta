@@ -1,11 +1,11 @@
 {
-  "scan_date": "2025-12-30T10:57:25.163442",
+  "scan_date": "2025-12-30T13:37:39.436955",
   "total_routes": 172,
   "services": {
     "dem2": {
       "port": 8000,
       "components": {
-        "auth": {
+        "/api/v1/auth": {
           "routes": [
             {
               "path": "/api/v1/auth/google/callback",
@@ -113,100 +113,8 @@
             }
           ]
         },
-        "bookmarks": {
+        "/api/v1/bookmarks": {
           "routes": [
-            {
-              "path": "/api/v1/bookmark-groups",
-              "method": "POST",
-              "description": "Create Group",
-              "handler_name": "create_group_api_v1_bookmark_groups_post"
-            },
-            {
-              "path": "/api/v1/bookmark-groups",
-              "description": "List Groups",
-              "handler_name": "list_groups_api_v1_bookmark_groups_get",
-              "parameters": [
-                "page",
-                "size"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-groups/{group_id}",
-              "description": "Get Group",
-              "handler_name": "get_group_api_v1_bookmark_groups__group_id__get",
-              "parameters": [
-                "group_id"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-groups/{group_id}",
-              "method": "PATCH",
-              "description": "Update Group",
-              "handler_name": "update_group_api_v1_bookmark_groups__group_id__patch",
-              "parameters": [
-                "group_id"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-groups/{group_id}",
-              "method": "DELETE",
-              "description": "Delete Group",
-              "handler_name": "delete_group_api_v1_bookmark_groups__group_id__delete",
-              "parameters": [
-                "group_id"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-tags",
-              "method": "POST",
-              "description": "Create Tag",
-              "handler_name": "create_tag_api_v1_bookmark_tags_post"
-            },
-            {
-              "path": "/api/v1/bookmark-tags",
-              "description": "List Tags",
-              "handler_name": "list_tags_api_v1_bookmark_tags_get",
-              "parameters": [
-                "page",
-                "size"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-tags/search",
-              "description": "Search Tags",
-              "handler_name": "search_tags_api_v1_bookmark_tags_search_get",
-              "parameters": [
-                "q",
-                "page",
-                "size"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-tags/{tag_id}",
-              "description": "Get Tag",
-              "handler_name": "get_tag_api_v1_bookmark_tags__tag_id__get",
-              "parameters": [
-                "tag_id"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-tags/{tag_id}",
-              "method": "PATCH",
-              "description": "Update Tag",
-              "handler_name": "update_tag_api_v1_bookmark_tags__tag_id__patch",
-              "parameters": [
-                "tag_id"
-              ]
-            },
-            {
-              "path": "/api/v1/bookmark-tags/{tag_id}",
-              "method": "DELETE",
-              "description": "Delete Tag",
-              "handler_name": "delete_tag_api_v1_bookmark_tags__tag_id__delete",
-              "parameters": [
-                "tag_id"
-              ]
-            },
             {
               "path": "/api/v1/bookmarks",
               "method": "POST",
@@ -290,7 +198,107 @@
             }
           ]
         },
-        "calendar": {
+        "/api/v1/bookmark-groups": {
+          "routes": [
+            {
+              "path": "/api/v1/bookmark-groups",
+              "method": "POST",
+              "description": "Create Group",
+              "handler_name": "create_group_api_v1_bookmark_groups_post"
+            },
+            {
+              "path": "/api/v1/bookmark-groups",
+              "description": "List Groups",
+              "handler_name": "list_groups_api_v1_bookmark_groups_get",
+              "parameters": [
+                "page",
+                "size"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-groups/{group_id}",
+              "description": "Get Group",
+              "handler_name": "get_group_api_v1_bookmark_groups__group_id__get",
+              "parameters": [
+                "group_id"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-groups/{group_id}",
+              "method": "PATCH",
+              "description": "Update Group",
+              "handler_name": "update_group_api_v1_bookmark_groups__group_id__patch",
+              "parameters": [
+                "group_id"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-groups/{group_id}",
+              "method": "DELETE",
+              "description": "Delete Group",
+              "handler_name": "delete_group_api_v1_bookmark_groups__group_id__delete",
+              "parameters": [
+                "group_id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/bookmark-tags": {
+          "routes": [
+            {
+              "path": "/api/v1/bookmark-tags",
+              "method": "POST",
+              "description": "Create Tag",
+              "handler_name": "create_tag_api_v1_bookmark_tags_post"
+            },
+            {
+              "path": "/api/v1/bookmark-tags",
+              "description": "List Tags",
+              "handler_name": "list_tags_api_v1_bookmark_tags_get",
+              "parameters": [
+                "page",
+                "size"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-tags/search",
+              "description": "Search Tags",
+              "handler_name": "search_tags_api_v1_bookmark_tags_search_get",
+              "parameters": [
+                "q",
+                "page",
+                "size"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-tags/{tag_id}",
+              "description": "Get Tag",
+              "handler_name": "get_tag_api_v1_bookmark_tags__tag_id__get",
+              "parameters": [
+                "tag_id"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-tags/{tag_id}",
+              "method": "PATCH",
+              "description": "Update Tag",
+              "handler_name": "update_tag_api_v1_bookmark_tags__tag_id__patch",
+              "parameters": [
+                "tag_id"
+              ]
+            },
+            {
+              "path": "/api/v1/bookmark-tags/{tag_id}",
+              "method": "DELETE",
+              "description": "Delete Tag",
+              "handler_name": "delete_tag_api_v1_bookmark_tags__tag_id__delete",
+              "parameters": [
+                "tag_id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/calendar": {
           "routes": [
             {
               "path": "/api/v1/calendar",
@@ -302,7 +310,7 @@
             }
           ]
         },
-        "files": {
+        "/api/v1/file-storage": {
           "routes": [
             {
               "path": "/api/v1/file-storage/files",
@@ -350,7 +358,7 @@
             }
           ]
         },
-        "geocoding": {
+        "/api/v1/geocoding": {
           "routes": [
             {
               "path": "/api/v1/geocoding/geocode/zip",
@@ -365,7 +373,7 @@
             }
           ]
         },
-        "med-agent": {
+        "/api/v1/med-agent": {
           "routes": [
             {
               "path": "/api/v1/med-agent/run",
@@ -443,7 +451,7 @@
             }
           ]
         },
-        "medical-data-storage": {
+        "/api/v1/medical-data-storage": {
           "routes": [
             {
               "path": "/api/v1/medical-data-storage/allergies",
@@ -627,7 +635,7 @@
             }
           ]
         },
-        "medical-data-engine": {
+        "/api/v1/medical-data-engine/test-stream": {
           "routes": [
             {
               "path": "/api/v1/medical-data-engine/test-stream",
@@ -640,97 +648,8 @@
             }
           ]
         },
-        "graph-memory": {
+        "/api/v1/graph-memory/medical/encounters": {
           "routes": [
-            {
-              "path": "/api/v1/graph-memory/medical/allergy-records",
-              "description": "Get list of allergy records for a patient with optional filtering.",
-              "handler_name": "list_allergy_records_api_v1_graph_memory_medical_allergy_records_get",
-              "parameters": [
-                "source_type",
-                "clinical_status",
-                "allergy_type",
-                "start_date",
-                "end_date",
-                "limit",
-                "offset",
-                "x-patient-context-id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/allergy-records/{record_id}",
-              "description": "Get detailed information about a specific allergy record including all related reactions and type.",
-              "handler_name": "get_allergy_record_api_v1_graph_memory_medical_allergy_records__record_id__get",
-              "parameters": [
-                "record_id",
-                "x-patient-context-id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/care_network",
-              "description": "Get network of practitioners and organizations connected through encounters.\n\nReturns:\n- List of practitioners involved in care\n- List of organizations where care was provided\n- Connections showing which practitioners worked with which organizations\n  and how many encounters they shared\n\nIf patient_id is provided (via x-patient-context-id header), returns network\nfor that patient only. Otherwise, returns network across all user's patients.",
-              "handler_name": "get_care_network_api_v1_graph_memory_medical_care_network_get",
-              "parameters": [
-                "x-patient-context-id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/conditions",
-              "description": "Get list of condition cases for a patient with optional filtering.",
-              "handler_name": "list_conditions_api_v1_graph_memory_medical_conditions_get",
-              "parameters": [
-                "source_type",
-                "clinical_status",
-                "severity",
-                "start_date",
-                "end_date",
-                "limit",
-                "offset",
-                "x-patient-context-id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/conditions/{condition_id}",
-              "description": "Get detailed information about a specific condition case including type.",
-              "handler_name": "get_condition_api_v1_graph_memory_medical_conditions__condition_id__get",
-              "parameters": [
-                "condition_id",
-                "x-patient-context-id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/document_references",
-              "description": "Get all document references with related entities for a user.\n\nReturns documents with organizations, practitioners, and patients,\nordered by creation date (newest first).",
-              "handler_name": "get_document_references_api_v1_graph_memory_medical_document_references_get",
-              "parameters": [
-                "limit"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
-              "description": "Get a specific document reference by ID.",
-              "handler_name": "get_document_reference_by_id_api_v1_graph_memory_medical_document_references__document_id__get",
-              "parameters": [
-                "document_id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
-              "method": "DELETE",
-              "description": "Delete a document reference and all nodes extracted from it.\n\nRemoves:\n- The DocumentReference itself\n- All medical data nodes where source_type='document' and source_id=document_id",
-              "handler_name": "delete_document_reference_api_v1_graph_memory_medical_document_references__document_id__delete",
-              "parameters": [
-                "document_id"
-              ]
-            },
-            {
-              "path": "/api/v1/graph-memory/medical/document_references/{document_id}/details",
-              "description": "Get a document reference with all related organizations and practitioners.",
-              "handler_name": "get_document_reference_details_api_v1_graph_memory_medical_document_references__document_id__details_get",
-              "parameters": [
-                "document_id"
-              ]
-            },
             {
               "path": "/api/v1/graph-memory/medical/encounters",
               "description": "Get encounters with their related practitioners and organizations.\n\nReturns encounters with:\n- Basic encounter information (uuid, name, dates, etc.)\n- List of practitioners involved (via WITH_PRACTITIONER relationship)\n- List of organizations where encounter occurred (via AT_ORGANIZATION relationship)\n\nIf patient_id is provided (via x-patient-context-id header), filters encounters to that patient only.\nOtherwise, returns encounters across all user's patients.",
@@ -740,7 +659,23 @@
                 "offset",
                 "x-patient-context-id"
               ]
-            },
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/care_network": {
+          "routes": [
+            {
+              "path": "/api/v1/graph-memory/medical/care_network",
+              "description": "Get network of practitioners and organizations connected through encounters.\n\nReturns:\n- List of practitioners involved in care\n- List of organizations where care was provided\n- Connections showing which practitioners worked with which organizations\n  and how many encounters they shared\n\nIf patient_id is provided (via x-patient-context-id header), returns network\nfor that patient only. Otherwise, returns network across all user's patients.",
+              "handler_name": "get_care_network_api_v1_graph_memory_medical_care_network_get",
+              "parameters": [
+                "x-patient-context-id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/medication": {
+          "routes": [
             {
               "path": "/api/v1/graph-memory/medical/medication/intake-events",
               "description": "Get intake events by date range",
@@ -902,7 +837,117 @@
               "parameters": [
                 "supplement_id"
               ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/conditions": {
+          "routes": [
+            {
+              "path": "/api/v1/graph-memory/medical/conditions",
+              "description": "Get list of condition cases for a patient with optional filtering.",
+              "handler_name": "list_conditions_api_v1_graph_memory_medical_conditions_get",
+              "parameters": [
+                "source_type",
+                "clinical_status",
+                "severity",
+                "start_date",
+                "end_date",
+                "limit",
+                "offset",
+                "x-patient-context-id"
+              ]
             },
+            {
+              "path": "/api/v1/graph-memory/medical/conditions/{condition_id}",
+              "description": "Get detailed information about a specific condition case including type.",
+              "handler_name": "get_condition_api_v1_graph_memory_medical_conditions__condition_id__get",
+              "parameters": [
+                "condition_id",
+                "x-patient-context-id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/symptoms": {
+          "routes": [
+            {
+              "path": "/api/v1/graph-memory/medical/symptoms",
+              "description": "Get list of symptom episodes for a patient with optional filtering.",
+              "handler_name": "list_symptoms_api_v1_graph_memory_medical_symptoms_get",
+              "parameters": [
+                "source_type",
+                "severity",
+                "start_date",
+                "end_date",
+                "limit",
+                "offset",
+                "x-patient-context-id"
+              ]
+            },
+            {
+              "path": "/api/v1/graph-memory/medical/symptoms/{symptom_id}",
+              "description": "Get detailed information about a specific symptom episode including type.",
+              "handler_name": "get_symptom_api_v1_graph_memory_medical_symptoms__symptom_id__get",
+              "parameters": [
+                "symptom_id",
+                "x-patient-context-id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/symptom-types": {
+          "routes": [
+            {
+              "path": "/api/v1/graph-memory/medical/symptom-types",
+              "description": "Get list of symptom types that the patient has episodes for, ordered by most recent.",
+              "handler_name": "list_symptom_types_api_v1_graph_memory_medical_symptom_types_get",
+              "parameters": [
+                "limit",
+                "offset",
+                "x-patient-context-id"
+              ]
+            },
+            {
+              "path": "/api/v1/graph-memory/medical/symptom-types/{type_id}",
+              "description": "Get detailed information about a symptom type including all patient episodes for that type.",
+              "handler_name": "get_symptom_type_api_v1_graph_memory_medical_symptom_types__type_id__get",
+              "parameters": [
+                "type_id",
+                "x-patient-context-id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/allergy-records": {
+          "routes": [
+            {
+              "path": "/api/v1/graph-memory/medical/allergy-records",
+              "description": "Get list of allergy records for a patient with optional filtering.",
+              "handler_name": "list_allergy_records_api_v1_graph_memory_medical_allergy_records_get",
+              "parameters": [
+                "source_type",
+                "clinical_status",
+                "allergy_type",
+                "start_date",
+                "end_date",
+                "limit",
+                "offset",
+                "x-patient-context-id"
+              ]
+            },
+            {
+              "path": "/api/v1/graph-memory/medical/allergy-records/{record_id}",
+              "description": "Get detailed information about a specific allergy record including all related reactions and type.",
+              "handler_name": "get_allergy_record_api_v1_graph_memory_medical_allergy_records__record_id__get",
+              "parameters": [
+                "record_id",
+                "x-patient-context-id"
+              ]
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/observations": {
+          "routes": [
             {
               "path": "/api/v1/graph-memory/medical/observations/grouped",
               "description": "Get observation values for a patient grouped by observation type.\n\nReturns observations ordered by clinical importance (descending).\n\nEach group contains:\n- observation_type: Metadata about the observation type\n- clinical_importance: Weight from TRACKS relationship\n- values: Observation values for this type (ordered by observed_at descending)\n- body_systems: List of body system relationships\n\nSupports filtering by:\n- Body systems: cardiovascular, respiratory, endocrine, etc.\n- LOINC codes: filter by specific LOINC codes\n- Minimum body system weight: only show observations with strong enough body system links\n- Body system impact types: filter by impact type\n- Search query: partial name matching (case-insensitive)\n- Per-type values limit: limit number of values per observation type\n- Out of range: only return values outside normal/optimal reference ranges\n- Value status: filter by document_value_color (red, yellow, green, white)\n- Page number: filter by page number (only values with this page in page_numbers)\n\nWhen out_of_range=true:\n- Checks if the last (most recent by observed_at) or second-to-last value is out of range\n- If either is out of normal/optimal range, returns ALL values for that observation type\n- Prioritizes document_reference_range over standard_reference_range\n- Excludes observation types without reference ranges\n- Excludes groups where both last values are within normal range",
@@ -988,52 +1033,47 @@
                 "observation_type_uuid",
                 "x-patient-context-id"
               ]
-            },
+            }
+          ]
+        },
+        "/api/v1/graph-memory/medical/document_references": {
+          "routes": [
             {
-              "path": "/api/v1/graph-memory/medical/symptom-types",
-              "description": "Get list of symptom types that the patient has episodes for, ordered by most recent.",
-              "handler_name": "list_symptom_types_api_v1_graph_memory_medical_symptom_types_get",
+              "path": "/api/v1/graph-memory/medical/document_references",
+              "description": "Get all document references with related entities for a user.\n\nReturns documents with organizations, practitioners, and patients,\nordered by creation date (newest first).",
+              "handler_name": "get_document_references_api_v1_graph_memory_medical_document_references_get",
               "parameters": [
-                "limit",
-                "offset",
-                "x-patient-context-id"
+                "limit"
               ]
             },
             {
-              "path": "/api/v1/graph-memory/medical/symptom-types/{type_id}",
-              "description": "Get detailed information about a symptom type including all patient episodes for that type.",
-              "handler_name": "get_symptom_type_api_v1_graph_memory_medical_symptom_types__type_id__get",
+              "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
+              "description": "Get a specific document reference by ID.",
+              "handler_name": "get_document_reference_by_id_api_v1_graph_memory_medical_document_references__document_id__get",
               "parameters": [
-                "type_id",
-                "x-patient-context-id"
+                "document_id"
               ]
             },
             {
-              "path": "/api/v1/graph-memory/medical/symptoms",
-              "description": "Get list of symptom episodes for a patient with optional filtering.",
-              "handler_name": "list_symptoms_api_v1_graph_memory_medical_symptoms_get",
+              "path": "/api/v1/graph-memory/medical/document_references/{document_id}",
+              "method": "DELETE",
+              "description": "Delete a document reference and all nodes extracted from it.\n\nRemoves:\n- The DocumentReference itself\n- All medical data nodes where source_type='document' and source_id=document_id",
+              "handler_name": "delete_document_reference_api_v1_graph_memory_medical_document_references__document_id__delete",
               "parameters": [
-                "source_type",
-                "severity",
-                "start_date",
-                "end_date",
-                "limit",
-                "offset",
-                "x-patient-context-id"
+                "document_id"
               ]
             },
             {
-              "path": "/api/v1/graph-memory/medical/symptoms/{symptom_id}",
-              "description": "Get detailed information about a specific symptom episode including type.",
-              "handler_name": "get_symptom_api_v1_graph_memory_medical_symptoms__symptom_id__get",
+              "path": "/api/v1/graph-memory/medical/document_references/{document_id}/details",
+              "description": "Get a document reference with all related organizations and practitioners.",
+              "handler_name": "get_document_reference_details_api_v1_graph_memory_medical_document_references__document_id__details_get",
               "parameters": [
-                "symptom_id",
-                "x-patient-context-id"
+                "document_id"
               ]
             }
           ]
         },
-        "documents-processor": {
+        "/api/v1/documents-processor/process_document": {
           "routes": [
             {
               "path": "/api/v1/documents-processor/process_document",
@@ -1043,12 +1083,21 @@
               "parameters": [
                 "x-patient-context-id"
               ]
-            },
+            }
+          ]
+        },
+        "/api/v1/documents-processor/test_process_document": {
+          "routes": [
             {
-              "path": "/api/v1/documents-processor/queue/stats",
-              "description": "Get queue statistics",
-              "handler_name": "get_queue_stats_api_v1_documents_processor_queue_stats_get"
-            },
+              "path": "/api/v1/documents-processor/test_process_document",
+              "method": "POST",
+              "description": "Queue document for processing and extract medical data",
+              "handler_name": "test_process_document_api_v1_documents_processor_test_process_document_post"
+            }
+          ]
+        },
+        "/api/v1/documents-processor/tasks": {
+          "routes": [
             {
               "path": "/api/v1/documents-processor/tasks",
               "description": "Get list of processing tasks for current user",
@@ -1066,16 +1115,19 @@
               "parameters": [
                 "task_id"
               ]
-            },
-            {
-              "path": "/api/v1/documents-processor/test_process_document",
-              "method": "POST",
-              "description": "Queue document for processing and extract medical data",
-              "handler_name": "test_process_document_api_v1_documents_processor_test_process_document_post"
             }
           ]
         },
-        "ui_layouts": {
+        "/api/v1/documents-processor/queue": {
+          "routes": [
+            {
+              "path": "/api/v1/documents-processor/queue/stats",
+              "description": "Get queue statistics",
+              "handler_name": "get_queue_stats_api_v1_documents_processor_queue_stats_get"
+            }
+          ]
+        },
+        "/api/v1/ui-layouts": {
           "routes": [
             {
               "path": "/api/v1/ui-layouts/{layout_type}/available-items",
@@ -1095,7 +1147,7 @@
             }
           ]
         },
-        "onboarding": {
+        "/api/v1/user": {
           "routes": [
             {
               "path": "/api/v1/user/onboarding/complete",
@@ -1116,13 +1168,17 @@
             }
           ]
         },
-        "(OpenAPI)": {
+        "/api/v1/health": {
           "routes": [
             {
               "path": "/api/v1/health",
               "description": "Health",
               "handler_name": "health_api_v1_health_get"
-            },
+            }
+          ]
+        },
+        "/health": {
+          "routes": [
             {
               "path": "/health",
               "description": "Health",
@@ -1135,29 +1191,7 @@
     "medical-catalog": {
       "port": 8001,
       "components": {
-        "biomarkers": {
-          "routes": [
-            {
-              "path": "/api/v1/biomarkers/enrich",
-              "method": "POST",
-              "description": "Start biomarker enrichment process by biomarker names.\n\nCreates BiomarkerDatasetMeta objects from provided names and\nenriches them through the full pipeline.\n\nProcess runs in background. Check logs for progress and completion.",
-              "handler_name": "enrich_biomarkers_api_v1_biomarkers_enrich_post"
-            },
-            {
-              "path": "/api/v1/biomarkers/search",
-              "method": "POST",
-              "description": "Batch search for biomarkers using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by short_name (case-insensitive)\n2. Match by aliases (case-insensitive)\n3. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
-              "handler_name": "search_biomarkers_batch_api_v1_biomarkers_search_post"
-            },
-            {
-              "path": "/api/v1/biomarkers/search-by-aliases",
-              "method": "POST",
-              "description": "Batch search biomarkers by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is (lowercased).\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
-              "handler_name": "search_biomarkers_by_aliases_api_v1_biomarkers_search_by_aliases_post"
-            }
-          ]
-        },
-        "biomarker-derivatives": {
+        "/api/v1/biomarkers": {
           "routes": [
             {
               "path": "/api/v1/biomarkers/derivatives/enrich",
@@ -1176,11 +1210,13 @@
               "method": "POST",
               "description": "Batch search derivatives by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is.\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
               "handler_name": "search_derivatives_by_aliases_api_v1_biomarkers_derivatives_search_by_aliases_post"
-            }
-          ]
-        },
-        "biomarkers-unified": {
-          "routes": [
+            },
+            {
+              "path": "/api/v1/biomarkers/enrich",
+              "method": "POST",
+              "description": "Start biomarker enrichment process by biomarker names.\n\nCreates BiomarkerDatasetMeta objects from provided names and\nenriches them through the full pipeline.\n\nProcess runs in background. Check logs for progress and completion.",
+              "handler_name": "enrich_biomarkers_api_v1_biomarkers_enrich_post"
+            },
             {
               "path": "/api/v1/biomarkers/enrich2",
               "method": "POST",
@@ -1196,6 +1232,18 @@
               ]
             },
             {
+              "path": "/api/v1/biomarkers/search",
+              "method": "POST",
+              "description": "Batch search for biomarkers using cascading strategy.\n\nSearch order for each query (fail-fast):\n1. Exact match by short_name (case-insensitive)\n2. Match by aliases (case-insensitive)\n3. Semantic search by embedding similarity\n\nReturns partial success results - successful queries return results,\nfailed queries return error messages.",
+              "handler_name": "search_biomarkers_batch_api_v1_biomarkers_search_post"
+            },
+            {
+              "path": "/api/v1/biomarkers/search-by-aliases",
+              "method": "POST",
+              "description": "Batch search biomarkers by alias groups with parallel execution.\n\nSearches the aliases_search array field for ANY match with the provided aliases.\nUses Qdrant's MatchAny filter for efficient array-to-array matching.\nProcesses multiple alias groups in parallel using asyncio.gather.\n\nThis endpoint does NOT normalize aliases - searches them as-is (lowercased).\nAll results return with MatchType.ALIAS.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
+              "handler_name": "search_biomarkers_by_aliases_api_v1_biomarkers_search_by_aliases_post"
+            },
+            {
               "path": "/api/v1/biomarkers/search2",
               "method": "POST",
               "description": "Unified batch search for both biomarkers and derivatives by alias groups.\n\nSearches BOTH biomarkers and derivatives collections in parallel.\nReturns separate lists for each entity type per alias group.\n\nLimits:\n- Max 100 alias groups\n- Max 5 aliases per group (automatically truncated if exceeded)",
@@ -1203,7 +1251,7 @@
             }
           ]
         },
-        "catalog": {
+        "/api/v1/catalog": {
           "routes": [
             {
               "path": "/api/v1/catalog/metadata",
@@ -1215,7 +1263,11 @@
               "method": "POST",
               "description": "Perform semantic search with embedding generation.",
               "handler_name": "semantic_search_api_v1_catalog_search_post"
-            },
+            }
+          ]
+        },
+        "/api/v1/qdrant": {
+          "routes": [
             {
               "path": "/api/v1/qdrant/{path}",
               "description": "Proxy GET requests to Qdrant.",
@@ -1235,7 +1287,7 @@
             }
           ]
         },
-        "symptoms": {
+        "/api/v1/symptoms": {
           "routes": [
             {
               "path": "/api/v1/symptoms/enrich",
@@ -1257,7 +1309,7 @@
             }
           ]
         },
-        "conditions": {
+        "/api/v1/conditions": {
           "routes": [
             {
               "path": "/api/v1/conditions/enrich",
@@ -1273,7 +1325,7 @@
             }
           ]
         },
-        "substances": {
+        "/api/v1/substances": {
           "routes": [
             {
               "path": "/api/v1/substances/enrich",
@@ -1295,7 +1347,7 @@
             }
           ]
         },
-        "(OpenAPI)": {
+        "/health": {
           "routes": [
             {
               "path": "/health",
@@ -1309,17 +1361,13 @@
     "dem2-webui": {
       "port": 3000,
       "components": {
-        "src/app/api/logout/route.ts": {
+        "/api": {
           "routes": [
             {
               "path": "/api/logout",
               "method": "POST",
               "handler_name": "POST"
-            }
-          ]
-        },
-        "src/app/api/sentry-example-api/route.ts": {
-          "routes": [
+            },
             {
               "path": "/api/sentry-example-api",
               "description": "A faulty API route to test Sentry's error monitoring",
@@ -1327,7 +1375,7 @@
             }
           ]
         },
-        "src/app/page.tsx": {
+        "/": {
           "routes": [
             {
               "path": "/",
@@ -1336,7 +1384,7 @@
             }
           ]
         },
-        "src/app/sentry-example-page/page.tsx": {
+        "/sentry-example-page": {
           "routes": [
             {
               "path": "/sentry-example-page",
@@ -1345,7 +1393,7 @@
             }
           ]
         },
-        "src/app/auth/page.tsx": {
+        "/auth": {
           "routes": [
             {
               "path": "/auth",
@@ -1354,7 +1402,7 @@
             }
           ]
         },
-        "src/app/onboarding/page.tsx": {
+        "/onboarding": {
           "routes": [
             {
               "path": "/onboarding",
@@ -1363,7 +1411,7 @@
             }
           ]
         },
-        "src/app/(app)/symptoms/page.tsx": {
+        "/symptoms": {
           "routes": [
             {
               "path": "/symptoms",
@@ -1372,7 +1420,7 @@
             }
           ]
         },
-        "src/app/(app)/reports/page.tsx": {
+        "/reports": {
           "routes": [
             {
               "path": "/reports",
@@ -1381,7 +1429,7 @@
             }
           ]
         },
-        "src/app/(app)/home/page.tsx": {
+        "/home": {
           "routes": [
             {
               "path": "/home",
@@ -1390,7 +1438,7 @@
             }
           ]
         },
-        "src/app/(app)/healthcare-network/page.tsx": {
+        "/healthcare-network": {
           "routes": [
             {
               "path": "/healthcare-network",
@@ -1399,7 +1447,7 @@
             }
           ]
         },
-        "src/app/(app)/research/page.tsx": {
+        "/research": {
           "routes": [
             {
               "path": "/research",
@@ -1408,7 +1456,7 @@
             }
           ]
         },
-        "src/app/(app)/markers/page.tsx": {
+        "/markers": {
           "routes": [
             {
               "path": "/markers",
@@ -1417,7 +1465,7 @@
             }
           ]
         },
-        "src/app/(app)/appointments/page.tsx": {
+        "/appointments": {
           "routes": [
             {
               "path": "/appointments",
@@ -1426,7 +1474,7 @@
             }
           ]
         },
-        "src/app/(app)/allergies/page.tsx": {
+        "/allergies": {
           "routes": [
             {
               "path": "/allergies",
@@ -1435,7 +1483,7 @@
             }
           ]
         },
-        "src/app/(app)/bookmarks/page.tsx": {
+        "/bookmarks": {
           "routes": [
             {
               "path": "/bookmarks",
@@ -1444,7 +1492,7 @@
             }
           ]
         },
-        "src/app/(app)/body/page.tsx": {
+        "/body": {
           "routes": [
             {
               "path": "/body",
@@ -1453,7 +1501,7 @@
             }
           ]
         },
-        "src/app/(app)/conditions/page.tsx": {
+        "/conditions": {
           "routes": [
             {
               "path": "/conditions",
@@ -1462,7 +1510,7 @@
             }
           ]
         },
-        "src/app/(app)/medications/page.tsx": {
+        "/medications": {
           "routes": [
             {
               "path": "/medications",
@@ -1471,7 +1519,7 @@
             }
           ]
         },
-        "src/app/(app)/encounters/page.tsx": {
+        "/encounters": {
           "routes": [
             {
               "path": "/encounters",
@@ -1480,26 +1528,28 @@
             }
           ]
         },
-        "src/app/(app)/settings/page.tsx": {
+        "/settings": {
           "routes": [
             {
               "path": "/settings",
               "method": "PAGE",
               "description": "User Settings Page (Server Component)"
-            }
-          ]
-        },
-        "src/app/(app)/supplements/page.tsx": {
-          "routes": [
+            },
             {
-              "path": "/supplements",
+              "path": "/settings/account",
               "method": "PAGE",
-              "description": "My Supplements Page (Client Component)"
-            }
-          ]
-        },
-        "src/app/(app)/settings/preferences/page.tsx": {
-          "routes": [
+              "description": "Account Settings Page (Client Component)"
+            },
+            {
+              "path": "/settings/onboarding",
+              "method": "PAGE",
+              "description": "Onboarding Settings Page (Client Component)"
+            },
+            {
+              "path": "/settings/patient-profiles",
+              "method": "PAGE",
+              "description": "Patient Profiles Settings Page (Client Component)"
+            },
             {
               "path": "/settings/preferences",
               "method": "PAGE",
@@ -1507,30 +1557,12 @@
             }
           ]
         },
-        "src/app/(app)/settings/account/page.tsx": {
+        "/supplements": {
           "routes": [
             {
-              "path": "/settings/account",
+              "path": "/supplements",
               "method": "PAGE",
-              "description": "Account Settings Page (Client Component)"
-            }
-          ]
-        },
-        "src/app/(app)/settings/patient-profiles/page.tsx": {
-          "routes": [
-            {
-              "path": "/settings/patient-profiles",
-              "method": "PAGE",
-              "description": "Patient Profiles Settings Page (Client Component)"
-            }
-          ]
-        },
-        "src/app/(app)/settings/onboarding/page.tsx": {
-          "routes": [
-            {
-              "path": "/settings/onboarding",
-              "method": "PAGE",
-              "description": "Onboarding Settings Page (Client Component)"
+              "description": "My Supplements Page (Client Component)"
             }
           ]
         }

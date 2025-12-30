@@ -24,6 +24,51 @@ except ImportError:
     sys.exit(1)
 
 
+def extract_component_from_path(path: str) -> str:
+    """Extract component (common REST path prefix) from a route path.
+
+    Groups routes by their main resource/service area.
+
+    Examples:
+        /api/v1/auth/google/callback -> /api/v1/auth
+        /api/v1/auth/users/me -> /api/v1/auth
+        /api/v1/graph-memory/medical/observations -> /api/v1/graph-memory/medical/observations
+        /api/v1/bookmarks/count -> /api/v1/bookmarks
+        /files/upload -> /files
+    """
+    parts = [p for p in path.split("/") if p]
+
+    # Remove path parameters (segments with {})
+    parts = [p for p in parts if not (p.startswith("{") and p.endswith("}"))]
+
+    # For paths starting with /api/v1/ or /api/v2/
+    if len(parts) >= 2 and parts[0] == "api" and parts[1] in ["v1", "v2"]:
+        # Take exactly 3 segments for standard resources: /api/v1/{resource}
+        # Exception: for compound service names like "graph-memory", check if next segments form a deeper path
+        if len(parts) >= 5 and "-" not in parts[2]:
+            # Multi-segment resource like: /api/v1/graph-memory/medical/observations
+            # But only if parts[2] doesn't contain a dash (not a compound name)
+            pass
+
+        # Special handling for compound service paths (e.g., medical-data-engine, graph-memory)
+        if len(parts) >= 4 and parts[2] in ["medical-data-engine", "graph-memory", "medical-sources", "documents-processor"]:
+            # For these services, include one more level to distinguish sub-resources
+            if parts[2] == "graph-memory" and len(parts) >= 5:
+                # /api/v1/graph-memory/medical/observations
+                component_parts = parts[:5]
+            else:
+                # /api/v1/medical-data-engine/events
+                component_parts = parts[:4]
+        else:
+            # Standard resource: /api/v1/auth, /api/v1/bookmarks, etc.
+            component_parts = parts[:3]
+    else:
+        # For non-API paths (/files, etc.), take first segment only
+        component_parts = parts[:1]
+
+    return "/" + "/".join(component_parts)
+
+
 @dataclass
 class RouteInfo:
     """Information about a single API route or page."""
@@ -337,7 +382,7 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
             service_routes = scanner.scan()
             routes.extend(service_routes)
 
-    # Group routes by service, then by file_path
+    # Group routes by service, then by REST path prefix (component)
     services_data = {}
     for route in routes:
         if route.service not in services_data:
@@ -346,9 +391,11 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
                 "components": {}
             }
 
-        file_path = route.file_path
-        if file_path not in services_data[route.service]["components"]:
-            services_data[route.service]["components"][file_path] = {
+        # Extract component from REST path
+        component = extract_component_from_path(route.path)
+
+        if component not in services_data[route.service]["components"]:
+            services_data[route.service]["components"][component] = {
                 "routes": []
             }
 
@@ -373,7 +420,7 @@ def scan_all_services(workspace_root: Path) -> dict[str, Any]:
         if route.parameters:
             route_obj["parameters"] = route.parameters
 
-        services_data[route.service]["components"][file_path]["routes"].append(route_obj)
+        services_data[route.service]["components"][component]["routes"].append(route_obj)
 
     # Sort routes within each component by path
     for service_data in services_data.values():
