@@ -102,8 +102,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - Commits: ed93bb3, cdcc7b3, b7265ee, 140f1c4, d5fd8db
   - Status: Fixed component extraction to use REST URL path prefixes instead of file paths. Routes now properly grouped (e.g., /api/v1/auth contains 13 auth-related routes). Awaiting user review and approval.
 
-- [REVIEW] **Create comprehensive Google ADK agent architecture documentation** - Document MachinaMed's multi-agent system
-  - Impact: HIGH | Added: 2025-12-31
+- [DONE] **Create comprehensive Google ADK agent architecture documentation** - Document MachinaMed's multi-agent system
+  - Impact: HIGH | Added: 2025-12-31 | Completed: 2025-12-31
   - Examined actual agent implementation code across medical-agent service
   - Documented all 11 agent types and their purposes
   - Analyzed 1469 lines of agent configuration files
@@ -118,6 +118,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - shared/medical_agent/state.py (MachinaMedState definition)
   - Files created:
     - docs/AGENTS.md (comprehensive architecture documentation with verified code examples)
+  - Files modified:
+    - CLAUDE.md (added documentation maintenance section for keeping AGENTS.md up to date)
   - Key sections:
     - Agent hierarchy (ParallelAgent root with TriageAgent + ParallelDataExtractor)
     - 11 agent types with purposes and models
@@ -129,7 +131,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Model selection strategy (Gemini 2.5 Flash for routing/extraction, Gemini 2.5 Pro for medical reasoning)
     - Callback system (before_agent_callback, after_agent_callback)
     - Error handling (three-tier with fallback responses)
-  - Status: All information verified from actual source code. No hypothetical patterns. Awaiting user review and approval.
+  - Commit: ffcdcce - "docs: create comprehensive Google ADK agent architecture documentation"
 
 ---
 
