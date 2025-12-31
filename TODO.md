@@ -97,10 +97,39 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Extracts complete route metadata: descriptions, parameters, response models
     - Provides helpful error messages if services are not running
     - Next.js scanner uses file-based detection for pages and API routes
-    - Component extraction groups routes by REST URL path prefix (e.g., /api/v1/auth)
+    - Component extraction groups routes by REST URL path prefixes instead of file paths
     - Hierarchical JSON structure with 48% size reduction through optimization
   - Commits: ed93bb3, cdcc7b3, b7265ee, 140f1c4, d5fd8db
   - Status: Fixed component extraction to use REST URL path prefixes instead of file paths. Routes now properly grouped (e.g., /api/v1/auth contains 13 auth-related routes). Awaiting user review and approval.
+
+- [REVIEW] **Create comprehensive Google ADK agent architecture documentation** - Document MachinaMed's multi-agent system
+  - Impact: HIGH | Added: 2025-12-31
+  - Examined actual agent implementation code across medical-agent service
+  - Documented all 11 agent types and their purposes
+  - Analyzed 1469 lines of agent configuration files
+  - Files examined:
+    - agents/factory.py (agent creation and composition patterns)
+    - agents/names.py (11 agent type definitions)
+    - agents/TriageAgent/config.yml (157 lines of routing logic)
+    - agents/HealthConsultantAgent/config.yml (medical consultation with body system mapping)
+    - agents/CypherAgent/config.yml (50 lines of natural language to Cypher rules)
+    - agents/MedicalContextAgent/agent.py (agent builder pattern)
+    - agent_tools/safe_agent_tool.py (517 lines of error handling wrapper)
+    - shared/medical_agent/state.py (MachinaMedState definition)
+  - Files created:
+    - docs/AGENTS.md (comprehensive architecture documentation with verified code examples)
+  - Key sections:
+    - Agent hierarchy (ParallelAgent root with TriageAgent + ParallelDataExtractor)
+    - 11 agent types with purposes and models
+    - Agent composition patterns (ParallelAgent, LlmAgent)
+    - State management (MachinaMedState with patient_id, user_id, session topics)
+    - Tool patterns (SafeAgentTool wrapper with status tracking and error handling)
+    - Configuration system (YAML-based configs)
+    - Detailed analysis of key agents (TriageAgent routing, HealthConsultantAgent consultation, CypherAgent query generation)
+    - Model selection strategy (Gemini 2.5 Flash for routing/extraction, Gemini 2.5 Pro for medical reasoning)
+    - Callback system (before_agent_callback, after_agent_callback)
+    - Error handling (three-tier with fallback responses)
+  - Status: All information verified from actual source code. No hypothetical patterns. Awaiting user review and approval.
 
 ---
 

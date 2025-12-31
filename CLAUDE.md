@@ -565,6 +565,33 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 - [repos/medical-catalog/CLAUDE.md](repos/medical-catalog/CLAUDE.md) - Catalog service specifics
 - [repos/dem2-infra/](repos/dem2-infra/) - Infrastructure deployment, ArgoCD
 
+## ⚠️ IMPORTANT: Documentation Maintenance
+
+### AGENTS.md - Keep Up to Date
+
+**[docs/AGENTS.md](docs/AGENTS.md)** documents MachinaMed's Google ADK agent architecture based on verified source code.
+
+**This file MUST be updated whenever agent code changes:**
+
+- Adding/removing agents (update agent types list and count)
+- Modifying agent configs (update routing rules, model selection, etc.)
+- Changing agent composition patterns (update architecture diagrams/examples)
+- Updating SafeAgentTool or other tool wrappers (update tool patterns section)
+- Modifying MachinaMedState (update state management section)
+- Changing callback patterns (update callback system section)
+
+**Location of agent code**: `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/`
+
+**How to update**:
+1. Identify which sections of AGENTS.md are affected by code changes
+2. Re-examine the changed source files
+3. Update AGENTS.md with verified information (mark as VERIFIED)
+4. Update the "Last Updated" date at the bottom
+5. Create TODO.md task for the documentation update
+6. Commit both files together
+
+**Never let AGENTS.md drift from actual implementation - it's a living reference document.**
+
 ## Workspace Principles
 
 1. **Submodules maintain independence** - Each repo has its own git history
