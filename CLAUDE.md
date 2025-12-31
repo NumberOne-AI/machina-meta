@@ -2,6 +2,62 @@
 
 This file provides guidance to Claude Code when working with the **machina-meta** workspace.
 
+## ⚠️ CRITICAL: Architecture Analysis Protocol
+
+**Before proposing ANY architectural change or creating extensive documentation (>200 lines):**
+
+### 1. Verify First, Propose Second
+- **Read the actual source code** - Don't assume, verify
+- **Map current architecture** - Document what EXISTS, not what you think exists
+- **Trace data flows** - Follow from entry point to implementation
+- **Check existing APIs/endpoints** - Verify what's already exposed vs internal
+
+### 2. State Assumptions Explicitly
+- **List all assumptions** you're making about the system
+- **Mark each as VERIFIED or UNVERIFIED**
+- **Ask user to confirm BEFORE building on unverified assumptions**
+
+Example format:
+```
+ASSUMPTIONS:
+❌ UNVERIFIED: Component X is exposed via HTTP
+❌ UNVERIFIED: Proposed solution Y addresses problem Z
+→ Ask: "Let me verify: Is X currently accessible via HTTP, or only internal?"
+```
+
+### 3. Watch for Red Flags (Validate Immediately)
+
+Stop and validate if you notice:
+- 🚩 **Wrapper around wrapper** (converting A→B→A) - likely architectural misunderstanding
+- 🚩 **Unclear value proposition** - can't articulate why the change is needed
+- 🚩 **Haven't seen the code** for what you're proposing to modify
+- 🚩 **Building something that should already exist** - ask why it doesn't
+- 🚩 **>1 hour of analysis without user validation** - checkpoint every 30-60 min
+
+### 4. Incremental Validation Checkpoints
+
+After major discovery phases, STOP and validate:
+```
+✋ CHECKPOINT: "Here's what I found about current architecture: [summary]
+Does this match your understanding before I proceed?"
+
+[WAIT FOR USER CONFIRMATION]
+```
+
+### 5. Quick Validation Checklist
+
+Before extensive analysis:
+```
+□ Read actual source code?
+□ Verified assumptions with evidence (code/docs)?
+□ Stated assumptions explicitly to user?
+□ Asked clarifying questions about the goal?
+□ Checked for circular logic in proposal?
+□ User validated direction?
+```
+
+**If ANY box unchecked → STOP and validate first**
+
 ## ⚠️ CRITICAL: Git Push Policy
 
 **NEVER push to git repositories unless explicitly requested or confirmed by the user.**
