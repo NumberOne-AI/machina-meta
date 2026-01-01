@@ -133,6 +133,42 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Error handling (three-tier with fallback responses)
   - Commit: ffcdcce - "docs: create comprehensive Google ADK agent architecture documentation"
 
+- [REVIEW] **Create comprehensive data flow documentation** - Document complete system data flows with diagrams
+  - Impact: HIGH | Added: 2025-12-31
+  - Created master DATAFLOW.md with comprehensive INPUT/OUTPUT/PROCESSING documentation
+  - Included 10+ Mermaid diagrams covering all architecture layers:
+    - System architecture with all components and services
+    - Service-level data flow (dem2, medical-catalog, webui)
+    - Frontend-backend communication (HTTP REST + WebSocket)
+    - Agent hierarchy showing TusdiAI → TriageAgent + ParallelDataExtractor
+    - Agent tool execution flow (internal Python calls, NOT HTTP)
+    - Database layer (PostgreSQL, Neo4j, Redis, Qdrant)
+    - Container communication via Docker network
+    - Authentication flow (Google SSO + JWT)
+    - Real-time WebSocket chat flow
+    - Complete end-to-end sequence diagram (24 steps)
+  - Created 4 Graphviz .dot files for detailed diagrams:
+    - DATAFLOW_system_architecture.dot (complete component and data flow)
+    - DATAFLOW_agent_hierarchy.dot (agent composition and tool calling pattern)
+    - DATAFLOW_database_layer.dot (multi-database architecture with Instance→Type pattern)
+    - DATAFLOW_container_network.dot (Docker service connectivity and port mapping)
+  - Verified all diagrams from actual source code
+  - Key findings documented:
+    - Agents call Python functions directly, NOT HTTP endpoints
+    - Frontend uses 126 OpenAPI endpoints via wretch HTTP client
+    - Multi-database architecture with clear separation of concerns
+    - Neo4j Instance→Type pattern for multi-tenant scoping
+  - Performance characteristics included (3-5s end-to-end processing)
+  - Security considerations and monitoring stack documented
+  - Files created:
+    - docs/DATAFLOW.md (946 lines with Mermaid diagrams)
+    - docs/DATAFLOW_system_architecture.dot
+    - docs/DATAFLOW_agent_hierarchy.dot
+    - docs/DATAFLOW_database_layer.dot
+    - docs/DATAFLOW_container_network.dot
+  - Commit: 110d6da - "docs: complete DATAFLOW.md with Graphviz diagrams"
+  - Status: All requested documentation completed (covers all services, all containers, frontend/backend, agents, Mermaid inline + Graphviz output). Awaiting user review and approval.
+
 ---
 
 ## Repository-Specific TODOs
