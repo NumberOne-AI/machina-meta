@@ -135,9 +135,9 @@ graph LR
 
     UI -->|User Actions| Store
     Store -->|State Changes| API
-    API -->|POST /api/v1/medical-agent/session/{id}/send| Router
-    API -->|GET /api/v1/graph-memory/medical/*| Router
-    API -->|POST /api/v1/auth/*| Router
+    API -->|"POST /api/v1/medical-agent/session/{id}/send"| Router
+    API -->|"GET /api/v1/graph-memory/medical/*"| Router
+    API -->|"POST /api/v1/auth/*"| Router
 
     Router -->|Route Handler| Service
     Service -->|Create/Run| AgentMgr
