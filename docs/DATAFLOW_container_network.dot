@@ -1,0 +1,151 @@
+// Container Network Communication
+// Docker Compose service connectivity
+digraph ContainerNetwork {
+    rankdir=TB;
+    node [shape=component, style=filled];
+
+    // External access
+    external [label="External Access\n(Host Network)", fillcolor=lightblue, shape=cloud];
+
+    // Docker network
+    subgraph cluster_docker_network {
+        label="Docker Network: dem2_default\n(Bridge network)";
+        fillcolor=lightgray;
+        style=filled;
+
+        // Frontend container
+        subgraph cluster_frontend_container {
+            label="Container: dem2-webui\nPort 3000:3000";
+            fillcolor=lightyellow;
+            style=filled;
+
+            nextjs [label="Next.js Server\nNode.js 20", fillcolor=yellow, shape=box];
+        }
+
+        // Backend container
+        subgraph cluster_backend_container {
+            label="Container: dem2\nPort 8000:8000";
+            fillcolor=lightgreen;
+            style=filled;
+
+            fastapi [label="FastAPI Server\nPython 3.13\nUvicorn ASGI", fillcolor=green, shape=box];
+            agent_system [label="Agent System\n23 agents", fillcolor=lightgreen, shape=box];
+        }
+
+        // Medical Catalog container
+        subgraph cluster_catalog_container {
+            label="Container: medical-catalog\nPort 8001:8001";
+            fillcolor=lightpink;
+            style=filled;
+
+            catalog_api [label="Catalog API\nPython 3.13\nFastAPI", fillcolor=pink, shape=box];
+        }
+
+        // PostgreSQL container
+        subgraph cluster_postgres_container {
+            label="Container: postgres\nPort 5432:5432";
+            fillcolor=lightblue;
+            style=filled;
+
+            postgres [label="PostgreSQL 17\n\nDatabase: dem2\nUser: postgres", fillcolor=skyblue, shape=cylinder];
+        }
+
+        // Neo4j container
+        subgraph cluster_neo4j_container {
+            label="Container: neo4j\nPorts 7474:7474, 7687:7687";
+            fillcolor=lightblue;
+            style=filled;
+
+            neo4j [label="Neo4j 5.x\n\n7474: HTTP\n7687: Bolt", fillcolor=skyblue, shape=cylinder];
+        }
+
+        // Redis container
+        subgraph cluster_redis_container {
+            label="Container: redis\nPort 6379:6379";
+            fillcolor=lightblue;
+            style=filled;
+
+            redis [label="Redis 7.x\n\nCache + Pub/Sub", fillcolor=skyblue, shape=cylinder];
+        }
+
+        // Qdrant container
+        subgraph cluster_qdrant_container {
+            label="Container: qdrant\nPort 6333:6333";
+            fillcolor=lightblue;
+            style=filled;
+
+            qdrant [label="Qdrant 1.x\n\nVector DB", fillcolor=skyblue, shape=cylinder];
+        }
+
+        // RedisInsight container (dev tool)
+        subgraph cluster_redisinsight_container {
+            label="Container: redisinsight\nPort 5540:5540";
+            fillcolor=lightgray;
+            style=filled;
+
+            redisinsight [label="RedisInsight\n\nDev Tool", fillcolor=gray, shape=box];
+        }
+
+        // Network connections
+        // User to frontend
+        external -> nextjs [label="HTTP\nlocalhost:3000"];
+
+        // Frontend to backend
+        nextjs -> fastapi [label="HTTP REST\nhttp://dem2:8000/api/v1/*\n\n126 OpenAPI endpoints\nJWT auth headers"];
+
+        // Backend to databases
+        fastapi -> postgres [label="PostgreSQL protocol\npostgres:5432\n\nSQLAlchemy ORM"];
+        fastapi -> neo4j [label="Bolt protocol\nneo4j:7687\n\nNeo4j driver"];
+        fastapi -> redis [label="Redis protocol\nredis:6379\n\nPub/Sub + Cache"];
+
+        // Backend to medical catalog (optional)
+        fastapi -> catalog_api [label="HTTP REST\nhttp://medical-catalog:8001\n\n(Optional)"];
+
+        // Medical catalog to Qdrant
+        catalog_api -> qdrant [label="gRPC/HTTP\nqdrant:6333\n\nVector search"];
+
+        // Agent system to databases (internal to dem2 container)
+        agent_system -> postgres [label="PostgreSQL\nvia internal services"];
+        agent_system -> neo4j [label="Bolt\nvia internal services"];
+
+        // Dev tool connections
+        external -> redisinsight [label="HTTP\nlocalhost:5540"];
+        redisinsight -> redis [label="Redis protocol\nredis:6379\n\nMonitoring"];
+
+        // Direct database access from host
+        external -> postgres [label="PostgreSQL\nlocalhost:5432\n\n(Dev only)"];
+        external -> neo4j [label="HTTP/Bolt\nlocalhost:7474/7687\n\n(Dev only)"];
+        external -> redis [label="Redis\nlocalhost:6379\n\n(Dev only)"];
+    }
+
+    // External services (outside Docker network)
+    subgraph cluster_external_services {
+        label="External Services (Internet)";
+        fillcolor=lavender;
+        style=filled;
+
+        gemini_api [label="Google Gemini API\n\nAgent LLM inference", fillcolor=plum, shape=cloud];
+        google_sso [label="Google SSO\n\nAuthentication", fillcolor=plum, shape=cloud];
+        medical_apis [label="Medical Data APIs\n\nRupaHealth, etc.", fillcolor=plum, shape=cloud];
+    }
+
+    // Backend to external services
+    fastapi -> google_sso [label="HTTPS\nOAuth 2.0"];
+    agent_system -> gemini_api [label="HTTPS\nREST API"];
+    agent_system -> medical_apis [label="HTTPS\nREST API"];
+
+    // Networking notes
+    subgraph cluster_network_config {
+        label="Network Configuration";
+        fillcolor=white;
+        style=filled;
+
+        note1 [label="Docker Compose Network:\n- Network: dem2_default (bridge)\n- DNS: Service names resolve\n- Isolation: Containers can only\n  communicate within network", fillcolor=white, shape=note];
+
+        note2 [label="Port Mapping:\n- Host:Container format\n- 3000:3000 (Frontend)\n- 8000:8000 (Backend API)\n- 5432:5432 (PostgreSQL)\n- 7474:7474, 7687:7687 (Neo4j)\n- 6379:6379 (Redis)\n- 6333:6333 (Qdrant)", fillcolor=white, shape=note];
+
+        note3 [label="Service Discovery:\n- Use container names as hostnames\n- Example: http://dem2:8000\n- Example: postgres:5432\n- No hardcoded IPs", fillcolor=white, shape=note];
+
+        note4 [label="Hot-Reload Mode:\n- Just databases in Docker\n- Apps run on host (just run, pnpm dev)\n- Apps connect via localhost:PORT\n- Faster development cycle", fillcolor=white, shape=note];
+    }
+}

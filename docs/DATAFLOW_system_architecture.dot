@@ -1,0 +1,129 @@
+// MachinaMed System Architecture
+// Complete component and data flow diagram
+digraph SystemArchitecture {
+    rankdir=TB;
+    compound=true;
+    node [shape=box, style=filled];
+
+    // User layer
+    user [label="User (Browser)", fillcolor=lightblue];
+
+    // Frontend cluster
+    subgraph cluster_frontend {
+        label="Frontend Layer (Port 3000)";
+        fillcolor=lightyellow;
+        style=filled;
+
+        webui [label="dem2-webui\n(Next.js 15 + React 19)", fillcolor=yellow];
+        wretch [label="Wretch HTTP Client\n(API calls)", fillcolor=wheat];
+    }
+
+    // Backend cluster
+    subgraph cluster_backend {
+        label="Backend Layer (Port 8000)";
+        fillcolor=lightgreen;
+        style=filled;
+
+        fastapi [label="FastAPI Server\n(126 endpoints)", fillcolor=green];
+        auth_service [label="Auth Service\n(JWT + Google SSO)", fillcolor=lightgreen];
+
+        subgraph cluster_agents {
+            label="Agent System";
+            fillcolor=lightcyan;
+            style=filled;
+
+            tusdi_ai [label="TusdiAI\n(ParallelAgent Root)", fillcolor=cyan];
+            triage [label="TriageAgent\n(Routing)", fillcolor=lightcyan];
+            data_extractor [label="ParallelDataExtractor\n(23 agents)", fillcolor=lightcyan];
+            health_consultant [label="HealthConsultantAgent\n(Medical reasoning)", fillcolor=lightcyan];
+            cypher [label="CypherAgent\n(NL → Cypher)", fillcolor=lightcyan];
+        }
+
+        agent_tools [label="Agent Tools\n(Python functions)", fillcolor=palegreen];
+        graph_service [label="Graph Service\n(Neo4j operations)", fillcolor=palegreen];
+        med_data_service [label="Medical Data Service\n(CRUD operations)", fillcolor=palegreen];
+    }
+
+    // Medical Catalog Service
+    subgraph cluster_medical_catalog {
+        label="Medical Catalog Service (Port 8001)";
+        fillcolor=lightpink;
+        style=filled;
+
+        catalog_api [label="Catalog API\n(21 endpoints)", fillcolor=pink];
+        catalog_search [label="Biomarker Search", fillcolor=lightpink];
+    }
+
+    // Database layer
+    subgraph cluster_databases {
+        label="Database Layer";
+        fillcolor=lightgray;
+        style=filled;
+
+        postgres [label="PostgreSQL\n(Port 5432)\nUser data, sessions", fillcolor=gray];
+        neo4j [label="Neo4j\n(Port 7474, 7687)\nGraph data", fillcolor=gray];
+        redis [label="Redis\n(Port 6379)\nCache, Pub/Sub", fillcolor=gray];
+        qdrant [label="Qdrant\n(Port 6333)\nVector embeddings", fillcolor=gray];
+    }
+
+    // External services
+    subgraph cluster_external {
+        label="External Services";
+        fillcolor=lavender;
+        style=filled;
+
+        gemini [label="Google Gemini API\n(Flash + Pro)", fillcolor=plum];
+        google_sso [label="Google SSO", fillcolor=plum];
+        medical_apis [label="Medical Data APIs\n(RupaHealth, etc.)", fillcolor=plum];
+    }
+
+    // User interactions
+    user -> webui [label="HTTP/WebSocket"];
+
+    // Frontend to backend
+    webui -> wretch [label="API calls"];
+    wretch -> fastapi [label="HTTP REST\n(126 endpoints)"];
+
+    // Authentication flow
+    fastapi -> auth_service [label="Auth middleware"];
+    auth_service -> google_sso [label="SSO verification"];
+    auth_service -> postgres [label="Session storage"];
+    auth_service -> redis [label="Token cache"];
+
+    // Agent system flow
+    fastapi -> tusdi_ai [label="Query input"];
+    tusdi_ai -> triage [label="Parallel execution"];
+    tusdi_ai -> data_extractor [label="Parallel execution"];
+    triage -> health_consultant [label="Route to specialist"];
+    triage -> cypher [label="Route to query gen"];
+
+    // Agent to tools (internal Python calls)
+    health_consultant -> agent_tools [label="Direct function call\n(NOT HTTP)", style=bold, color=red];
+    cypher -> agent_tools [label="Direct function call\n(NOT HTTP)", style=bold, color=red];
+
+    // Tools to services
+    agent_tools -> graph_service [label="Internal service"];
+    agent_tools -> med_data_service [label="Internal service"];
+
+    // Service to database
+    graph_service -> neo4j [label="Cypher queries"];
+    med_data_service -> postgres [label="SQL queries"];
+    fastapi -> redis [label="Pub/Sub for WebSocket"];
+
+    // Medical catalog integration
+    fastapi -> catalog_api [label="HTTP REST\n(optional)"];
+    catalog_api -> catalog_search [label="Internal"];
+    catalog_search -> qdrant [label="Vector search"];
+
+    // Agent to external services
+    health_consultant -> gemini [label="LLM inference"];
+    cypher -> gemini [label="LLM inference"];
+    triage -> gemini [label="LLM inference"];
+
+    // Data extraction
+    data_extractor -> medical_apis [label="External data fetch"];
+    data_extractor -> postgres [label="Store extracted data"];
+
+    // Response path (simplified)
+    fastapi -> webui [label="HTTP/WebSocket response", style=dashed, dir=back];
+}

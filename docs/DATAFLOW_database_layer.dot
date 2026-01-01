@@ -1,0 +1,117 @@
+// Database Layer Architecture
+// Multi-database system with Neo4j Instance→Type pattern
+digraph DatabaseLayer {
+    rankdir=LR;
+    node [shape=cylinder, style=filled];
+
+    // PostgreSQL
+    subgraph cluster_postgres {
+        label="PostgreSQL (Port 5432)\nRelational Database";
+        fillcolor=lightblue;
+        style=filled;
+
+        pg_users [label="users\n\nuser_id, email,\ngoogle_id, profile", fillcolor=skyblue];
+        pg_sessions [label="sessions\n\nsession_id, user_id,\ntoken, expires_at", fillcolor=skyblue];
+        pg_patients [label="patients\n\npatient_id, user_id,\nfirst_name, last_name,\ndob", fillcolor=skyblue];
+        pg_measurements [label="measurements\n\nid, patient_id,\nbiomarker_id,\nvalue, unit, timestamp", fillcolor=skyblue];
+        pg_documents [label="documents\n\ndoc_id, patient_id,\ntype, s3_url,\nprocessing_status", fillcolor=skyblue];
+        pg_alembic [label="alembic_version\n\nSchema migrations", fillcolor=lightgray];
+    }
+
+    // Neo4j
+    subgraph cluster_neo4j {
+        label="Neo4j (Port 7474, 7687)\nGraph Database\n\nInstance→Type Pattern for Multi-tenancy";
+        fillcolor=lightgreen;
+        style=filled;
+
+        // Instance nodes (tenant-specific)
+        neo_patient_inst [label="PatientInstance\n\nTenant-scoped\nLinks to type nodes", fillcolor=green];
+        neo_biomarker_inst [label="BiomarkerInstance\n\nPatient-specific\nbiomarker values", fillcolor=green];
+        neo_condition_inst [label="ConditionInstance\n\nPatient-specific\nconditions", fillcolor=green];
+        neo_medication_inst [label="MedicationInstance\n\nPatient-specific\nmedications", fillcolor=green];
+
+        // Type nodes (shared across tenants)
+        neo_biomarker_type [label="BiomarkerType\n\nShared definitions\nglucose, cholesterol", fillcolor=lightgreen];
+        neo_condition_type [label="ConditionType\n\nShared definitions\ndiabetes, hypertension", fillcolor=lightgreen];
+        neo_medication_type [label="MedicationType\n\nShared definitions\nmetformin, lisinopril", fillcolor=lightgreen];
+        neo_body_system [label="BodySystemType\n\nShared hierarchy\ncardiovascular,\nendocrine", fillcolor=lightgreen];
+
+        // Relationships
+        neo_patient_inst -> neo_biomarker_inst [label="HAS_MEASUREMENT"];
+        neo_patient_inst -> neo_condition_inst [label="HAS_CONDITION"];
+        neo_patient_inst -> neo_medication_inst [label="TAKES_MEDICATION"];
+
+        neo_biomarker_inst -> neo_biomarker_type [label="INSTANCE_OF"];
+        neo_condition_inst -> neo_condition_type [label="INSTANCE_OF"];
+        neo_medication_inst -> neo_medication_type [label="INSTANCE_OF"];
+
+        neo_biomarker_type -> neo_body_system [label="AFFECTS"];
+        neo_condition_type -> neo_body_system [label="AFFECTS"];
+        neo_medication_type -> neo_body_system [label="TREATS"];
+    }
+
+    // Redis
+    subgraph cluster_redis {
+        label="Redis (Port 6379)\nCache & Pub/Sub";
+        fillcolor=lightyellow;
+        style=filled;
+
+        redis_sessions [label="session:{user_id}\n\nJWT token cache\nTTL: 15min", fillcolor=yellow];
+        redis_patient_ctx [label="patient_ctx:{patient_id}\n\nPatient context cache\nTTL: 5min", fillcolor=yellow];
+        redis_pubsub [label="medical_events\n\nPub/Sub channel\nWebSocket events", fillcolor=yellow];
+        redis_rate_limit [label="rate_limit:{user_id}\n\nAPI rate limiting", fillcolor=yellow];
+    }
+
+    // Qdrant
+    subgraph cluster_qdrant {
+        label="Qdrant (Port 6333)\nVector Database";
+        fillcolor=lightpink;
+        style=filled;
+
+        qdrant_biomarkers [label="biomarkers_collection\n\nVector embeddings\nfor biomarker search", fillcolor=pink];
+        qdrant_conditions [label="conditions_collection\n\nVector embeddings\nfor condition search", fillcolor=pink];
+        qdrant_medications [label="medications_collection\n\nVector embeddings\nfor medication search", fillcolor=pink];
+    }
+
+    // Service connections
+    subgraph cluster_services {
+        label="Backend Services";
+        fillcolor=white;
+        style=filled;
+
+        auth_svc [label="Auth Service", fillcolor=lightgray, shape=box];
+        graph_svc [label="Graph Service", fillcolor=lightgray, shape=box];
+        med_data_svc [label="Medical Data Service", fillcolor=lightgray, shape=box];
+        catalog_svc [label="Medical Catalog Service", fillcolor=lightgray, shape=box];
+        websocket_svc [label="WebSocket Service", fillcolor=lightgray, shape=box];
+    }
+
+    // Service to database connections
+    auth_svc -> pg_users [label="Read/Write"];
+    auth_svc -> pg_sessions [label="Read/Write"];
+    auth_svc -> redis_sessions [label="Cache"];
+    auth_svc -> redis_rate_limit [label="Rate limit"];
+
+    graph_svc -> neo_patient_inst [label="Cypher queries"];
+    graph_svc -> redis_patient_ctx [label="Cache"];
+
+    med_data_svc -> pg_patients [label="Read/Write"];
+    med_data_svc -> pg_measurements [label="Read/Write"];
+    med_data_svc -> pg_documents [label="Read/Write"];
+    med_data_svc -> neo_biomarker_inst [label="Graph relations"];
+
+    catalog_svc -> qdrant_biomarkers [label="Vector search"];
+    catalog_svc -> qdrant_conditions [label="Vector search"];
+    catalog_svc -> qdrant_medications [label="Vector search"];
+
+    websocket_svc -> redis_pubsub [label="Pub/Sub"];
+
+    // Data flow annotations
+    note1 [label="PostgreSQL:\n- User authentication\n- Session management\n- Structured medical data\n- Document metadata", fillcolor=white, shape=note];
+
+    note2 [label="Neo4j Instance→Type:\n- Instance nodes: Patient-specific\n- Type nodes: Shared definitions\n- Multi-tenant isolation\n- Rich relationships", fillcolor=white, shape=note];
+
+    note3 [label="Redis:\n- Hot cache (5-15min TTL)\n- Real-time Pub/Sub\n- Rate limiting\n- Session tokens", fillcolor=white, shape=note];
+
+    note4 [label="Qdrant:\n- Semantic search\n- Biomarker lookup\n- Medical term matching\n- Vector embeddings", fillcolor=white, shape=note];
+}

@@ -1,0 +1,94 @@
+// Agent Hierarchy and Tool Execution Flow
+// Shows internal Python function calling pattern (NOT HTTP)
+digraph AgentHierarchy {
+    rankdir=TB;
+    node [shape=box, style=filled];
+
+    // Root agent
+    tusdi_ai [label="TusdiAI\n(ParallelAgent)\n\nRuns sub-agents in parallel", fillcolor=cyan, shape=box3d];
+
+    // First-level agents
+    triage [label="TriageAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: Route to specialists\nConfig: 157 lines YAML", fillcolor=lightcyan];
+    parallel_extractor [label="ParallelDataExtractor\n(ParallelAgent)\n\n23 concurrent agents", fillcolor=lightcyan];
+
+    // Specialist agents (called by TriageAgent)
+    health_consultant [label="HealthConsultantAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Pro\nPurpose: Medical consultation\nBody system mapping", fillcolor=lightgreen];
+    health_consultant_lite [label="HealthConsultantLiteAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: Quick medical Q&A", fillcolor=lightgreen];
+    cypher_agent [label="CypherAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: NL → Cypher\nConfig: 50 lines of rules", fillcolor=lightgreen];
+    google_search [label="GoogleSearchAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: Web search", fillcolor=lightgreen];
+    url_handler [label="UrlHandlerAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: Process URLs", fillcolor=lightgreen];
+    ask_tai [label="AskTusdiAIHandlerAgent\n(LlmAgent)\n\nModel: Gemini 2.5 Flash\nPurpose: Meta-queries", fillcolor=lightgreen];
+
+    // Data extraction agents (run by ParallelDataExtractor)
+    medical_context [label="MedicalContextAgent\n(23 instances)\n\nExtract: Vitals, Labs,\nMedications, Conditions", fillcolor=wheat];
+
+    // Tool layer (Python functions)
+    subgraph cluster_tools {
+        label="Agent Tools (Python Functions - NOT HTTP)";
+        fillcolor=lightyellow;
+        style=filled;
+
+        query_graph_tool [label="query_graph()\n\nDirect Python call\nParams: NL query, ToolContext\nReturns: str", fillcolor=yellow];
+        store_medical_data_tool [label="store_medical_data()\n\nDirect Python call\nParams: data, patient_id\nReturns: UUID", fillcolor=yellow];
+        search_biomarkers_tool [label="search_biomarkers()\n\nDirect Python call\nParams: query, filters\nReturns: list", fillcolor=yellow];
+        get_patient_context_tool [label="get_patient_context()\n\nDirect Python call\nParams: patient_id\nReturns: dict", fillcolor=yellow];
+    }
+
+    // Internal services (called by tools)
+    subgraph cluster_services {
+        label="Internal Services";
+        fillcolor=lightgray;
+        style=filled;
+
+        graph_service [label="GraphTraversalService\n\nInternal Python class\nNo HTTP interface", fillcolor=gray];
+        med_data_service [label="MedicalDataService\n\nInternal Python class\nNo HTTP interface", fillcolor=gray];
+        cypher_query_executor [label="CypherQueryExecutor\n\nInternal Python class\nDirect Neo4j driver", fillcolor=gray];
+    }
+
+    // Hierarchy edges
+    tusdi_ai -> triage [label="parallel"];
+    tusdi_ai -> parallel_extractor [label="parallel"];
+
+    // Routing edges
+    triage -> health_consultant [label="route:\nmedical question"];
+    triage -> health_consultant_lite [label="route:\nquick Q&A"];
+    triage -> cypher_agent [label="route:\ngraph query"];
+    triage -> google_search [label="route:\nweb search"];
+    triage -> url_handler [label="route:\nURL content"];
+    triage -> ask_tai [label="route:\nmeta query"];
+
+    // Extraction edges
+    parallel_extractor -> medical_context [label="spawn 23\ninstances"];
+
+    // Tool calling edges (CRITICAL: These are Python function calls)
+    health_consultant -> query_graph_tool [label="DIRECT CALL\n(NOT HTTP)", style=bold, color=red];
+    health_consultant -> get_patient_context_tool [label="DIRECT CALL\n(NOT HTTP)", style=bold, color=red];
+    cypher_agent -> query_graph_tool [label="DIRECT CALL\n(NOT HTTP)", style=bold, color=red];
+    medical_context -> store_medical_data_tool [label="DIRECT CALL\n(NOT HTTP)", style=bold, color=red];
+    medical_context -> search_biomarkers_tool [label="DIRECT CALL\n(NOT HTTP)", style=bold, color=red];
+
+    // Tool to service edges (internal Python calls)
+    query_graph_tool -> cypher_query_executor [label="internal call"];
+    query_graph_tool -> graph_service [label="internal call"];
+    store_medical_data_tool -> med_data_service [label="internal call"];
+    get_patient_context_tool -> graph_service [label="internal call"];
+
+    // Service to database (only layer that uses network)
+    graph_service -> neo4j [label="Neo4j driver\n(Bolt protocol)", fillcolor=black, shape=cylinder];
+    cypher_query_executor -> neo4j [label="Neo4j driver\n(Bolt protocol)", fillcolor=black, shape=cylinder];
+    med_data_service -> postgres [label="SQLAlchemy\n(PostgreSQL)", fillcolor=black, shape=cylinder];
+
+    // Databases
+    neo4j [label="Neo4j\nGraph Database", fillcolor=lightblue, shape=cylinder];
+    postgres [label="PostgreSQL\nRelational Database", fillcolor=lightblue, shape=cylinder];
+
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        fillcolor=white;
+        style=filled;
+
+        legend_direct [label="Red bold arrows:\nDirect Python function calls\n(NO HTTP, NO network)", fillcolor=white, shape=plaintext];
+        legend_network [label="Black arrows to cylinders:\nNetwork calls (Neo4j Bolt, PostgreSQL)", fillcolor=white, shape=plaintext];
+    }
+}
