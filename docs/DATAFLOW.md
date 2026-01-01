@@ -467,9 +467,9 @@ graph LR
     end
 
     subgraph "Type Layer (Shared Definitions)"
-        CT[ConditionType<br/>name: "Diabetes"]
-        OT[ObservationType<br/>name: "Cholesterol"<br/>loinc_code]
-        ST[SymptomType<br/>name: "Headache"]
+        CT[ConditionType<br/>name: Diabetes]
+        OT[ObservationType<br/>name: Cholesterol<br/>loinc_code]
+        ST[SymptomType<br/>name: Headache]
     end
 
     Patient -->|HAS_CONDITION| CC
