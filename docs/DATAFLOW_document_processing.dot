@@ -2,6 +2,7 @@
 // Complete pipeline from upload to graph storage
 digraph DocumentProcessing {
     rankdir=TB;
+    bgcolor="#f5f5f5";  // Light gray background for contrast
     compound=true;
 
     // Font settings for readability

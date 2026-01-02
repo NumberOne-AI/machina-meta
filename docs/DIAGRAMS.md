@@ -2,11 +2,11 @@
 
 This document defines the **standard visual style** for all diagrams in MachinaMed documentation, including Mermaid (inline in Markdown) and Graphviz (.dot files). Following these guidelines ensures consistent, professional, and accessible diagrams across all documentation.
 
-## Core Principle
+## Core Principles
 
-**Always define an opaque background color when rendering text.**
+1. **Always define an opaque background color when rendering text.** This ensures text is readable in both light and dark modes, regardless of the user's theme settings.
 
-This single rule ensures text is readable in both light and dark modes, regardless of the user's theme settings.
+2. **All diagrams must have a consistent background fill color that contrasts with diagram elements.** This makes diagrams visually distinct and improves readability.
 
 ---
 
@@ -174,13 +174,14 @@ graph TB
 
 Graphviz diagrams are defined in `.dot` files and rendered separately using the `dot` command. **All text is rendered on opaque node/edge backgrounds**, ensuring readability.
 
-### Required Font Configuration
+### Required Configuration
 
-**ALWAYS** include font settings at the graph level:
+**ALWAYS** include font settings and background color at the graph level:
 
 ```dot
 digraph Example {
     rankdir=TB;
+    bgcolor="#f5f5f5";  // Light gray background for contrast
 
     // Font settings for readability
     graph [fontsize=14, fontname="Arial"];
@@ -190,6 +191,8 @@ digraph Example {
     A -> B;
 }
 ```
+
+**Background color**: Use `bgcolor="#f5f5f5"` (light gray) for all diagrams. This provides consistent contrast with node colors and makes diagrams stand out from surrounding content.
 
 ### Font Size Standards
 
@@ -360,6 +363,7 @@ graph TB
 // Diagram Title
 digraph DiagramName {
     rankdir=TB;
+    bgcolor="#f5f5f5";  // Light gray background
 
     // Font settings for readability
     graph [fontsize=14, fontname="Arial"];

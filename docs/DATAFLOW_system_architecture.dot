@@ -2,6 +2,7 @@
 // Complete component and data flow diagram
 digraph SystemArchitecture {
     rankdir=TB;
+    bgcolor="#f5f5f5";  // Light gray background for contrast
     compound=true;
 
     // Font settings for readability
