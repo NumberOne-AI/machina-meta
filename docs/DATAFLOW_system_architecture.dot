@@ -3,7 +3,11 @@
 digraph SystemArchitecture {
     rankdir=TB;
     compound=true;
-    node [shape=box, style=filled];
+
+    // Font settings for readability
+    graph [fontsize=14, fontname="Arial"];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
     // User layer
     user [label="User (Browser)", fillcolor=lightblue];

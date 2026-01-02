@@ -2,7 +2,11 @@
 // Shows internal Python function calling pattern (NOT HTTP)
 digraph AgentHierarchy {
     rankdir=TB;
-    node [shape=box, style=filled];
+
+    // Font settings for readability
+    graph [fontsize=14, fontname="Arial"];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
     // Root agent
     tusdi_ai [label="TusdiAI\n(ParallelAgent)\n\nRuns sub-agents in parallel", fillcolor=cyan, shape=box3d];
@@ -88,7 +92,7 @@ digraph AgentHierarchy {
         fillcolor=white;
         style=filled;
 
-        legend_direct [label="Red bold arrows:\nDirect Python function calls\n(NO HTTP, NO network)", fillcolor=white, shape=plaintext];
-        legend_network [label="Black arrows to cylinders:\nNetwork calls (Neo4j Bolt, PostgreSQL)", fillcolor=white, shape=plaintext];
+        legend_direct [label="Red bold arrows:\nDirect Python function calls\n(NO HTTP, NO network)", fillcolor=white, shape=plaintext, fontsize=11];
+        legend_network [label="Black arrows to cylinders:\nNetwork calls (Neo4j Bolt, PostgreSQL)", fillcolor=white, shape=plaintext, fontsize=11];
     }
 }

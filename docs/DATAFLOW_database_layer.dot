@@ -2,7 +2,11 @@
 // Multi-database system with Neo4j Instance→Type pattern
 digraph DatabaseLayer {
     rankdir=LR;
-    node [shape=cylinder, style=filled];
+
+    // Font settings for readability
+    graph [fontsize=14, fontname="Arial"];
+    node [shape=cylinder, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
     // PostgreSQL
     subgraph cluster_postgres {
@@ -107,11 +111,11 @@ digraph DatabaseLayer {
     websocket_svc -> redis_pubsub [label="Pub/Sub"];
 
     // Data flow annotations
-    note1 [label="PostgreSQL:\n- User authentication\n- Session management\n- Structured medical data\n- Document metadata", fillcolor=white, shape=note];
+    note1 [label="PostgreSQL:\n- User authentication\n- Session management\n- Structured medical data\n- Document metadata", fillcolor=white, shape=note, fontsize=11];
 
-    note2 [label="Neo4j Instance→Type:\n- Instance nodes: Patient-specific\n- Type nodes: Shared definitions\n- Multi-tenant isolation\n- Rich relationships", fillcolor=white, shape=note];
+    note2 [label="Neo4j Instance→Type:\n- Instance nodes: Patient-specific\n- Type nodes: Shared definitions\n- Multi-tenant isolation\n- Rich relationships", fillcolor=white, shape=note, fontsize=11];
 
-    note3 [label="Redis:\n- Hot cache (5-15min TTL)\n- Real-time Pub/Sub\n- Rate limiting\n- Session tokens", fillcolor=white, shape=note];
+    note3 [label="Redis:\n- Hot cache (5-15min TTL)\n- Real-time Pub/Sub\n- Rate limiting\n- Session tokens", fillcolor=white, shape=note, fontsize=11];
 
-    note4 [label="Qdrant:\n- Semantic search\n- Biomarker lookup\n- Medical term matching\n- Vector embeddings", fillcolor=white, shape=note];
+    note4 [label="Qdrant:\n- Semantic search\n- Biomarker lookup\n- Medical term matching\n- Vector embeddings", fillcolor=white, shape=note, fontsize=11];
 }

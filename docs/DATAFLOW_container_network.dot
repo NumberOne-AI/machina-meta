@@ -2,7 +2,11 @@
 // Docker Compose service connectivity
 digraph ContainerNetwork {
     rankdir=TB;
-    node [shape=component, style=filled];
+
+    // Font settings for readability
+    graph [fontsize=14, fontname="Arial"];
+    node [shape=component, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
     // External access
     external [label="External Access\n(Host Network)", fillcolor=lightblue, shape=cloud];
@@ -140,12 +144,12 @@ digraph ContainerNetwork {
         fillcolor=white;
         style=filled;
 
-        note1 [label="Docker Compose Network:\n- Network: dem2_default (bridge)\n- DNS: Service names resolve\n- Isolation: Containers can only\n  communicate within network", fillcolor=white, shape=note];
+        note1 [label="Docker Compose Network:\n- Network: dem2_default (bridge)\n- DNS: Service names resolve\n- Isolation: Containers can only\n  communicate within network", fillcolor=white, shape=note, fontsize=11];
 
-        note2 [label="Port Mapping:\n- Host:Container format\n- 3000:3000 (Frontend)\n- 8000:8000 (Backend API)\n- 5432:5432 (PostgreSQL)\n- 7474:7474, 7687:7687 (Neo4j)\n- 6379:6379 (Redis)\n- 6333:6333 (Qdrant)", fillcolor=white, shape=note];
+        note2 [label="Port Mapping:\n- Host:Container format\n- 3000:3000 (Frontend)\n- 8000:8000 (Backend API)\n- 5432:5432 (PostgreSQL)\n- 7474:7474, 7687:7687 (Neo4j)\n- 6379:6379 (Redis)\n- 6333:6333 (Qdrant)", fillcolor=white, shape=note, fontsize=11];
 
-        note3 [label="Service Discovery:\n- Use container names as hostnames\n- Example: http://dem2:8000\n- Example: postgres:5432\n- No hardcoded IPs", fillcolor=white, shape=note];
+        note3 [label="Service Discovery:\n- Use container names as hostnames\n- Example: http://dem2:8000\n- Example: postgres:5432\n- No hardcoded IPs", fillcolor=white, shape=note, fontsize=11];
 
-        note4 [label="Hot-Reload Mode:\n- Just databases in Docker\n- Apps run on host (just run, pnpm dev)\n- Apps connect via localhost:PORT\n- Faster development cycle", fillcolor=white, shape=note];
+        note4 [label="Hot-Reload Mode:\n- Just databases in Docker\n- Apps run on host (just run, pnpm dev)\n- Apps connect via localhost:PORT\n- Faster development cycle", fillcolor=white, shape=note, fontsize=11];
     }
 }

@@ -3,7 +3,11 @@
 digraph DocumentProcessing {
     rankdir=TB;
     compound=true;
-    node [shape=box, style=filled];
+
+    // Font settings for readability
+    graph [fontsize=14, fontname="Arial"];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
     // User interaction
     user [label="User", fillcolor=lightblue, shape=actor];
@@ -180,7 +184,7 @@ Total: 15-60s\n\
 Concurrency Limits:\n\
 - Global: 10 documents\n\
 - Per-user: 5 documents\n\
-- Page rendering: 3 concurrent", fillcolor=white, shape=note];
+- Page rendering: 3 concurrent", fillcolor=white, shape=note, fontsize=11];
     }
 
     // Data model annotations
@@ -202,7 +206,7 @@ BiomarkerValue:\n\
 - observation_date, observation_time\n\
 - name_location (page, x, y, w, h)\n\
 - value_location (page, x, y, w, h)\n\
-- unit_location (page, x, y, w, h)", fillcolor=white, shape=note];
+- unit_location (page, x, y, w, h)", fillcolor=white, shape=note, fontsize=11];
     }
 
     // Instance→Type pattern annotation
@@ -225,6 +229,6 @@ Benefits:\n\
 - No data duplication for types\n\
 - Consistent biomarker definitions\n\
 - Efficient catalog integration\n\
-- Patient data isolation", fillcolor=white, shape=note];
+- Patient data isolation", fillcolor=white, shape=note, fontsize=11];
     }
 }
