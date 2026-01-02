@@ -1,0 +1,230 @@
+// Document Processing Flow
+// Complete pipeline from upload to graph storage
+digraph DocumentProcessing {
+    rankdir=TB;
+    compound=true;
+    node [shape=box, style=filled];
+
+    // User interaction
+    user [label="User", fillcolor=lightblue, shape=actor];
+
+    // Frontend
+    frontend [label="Frontend (Next.js)\nPort 3000", fillcolor=lightyellow];
+
+    // File Storage Service
+    subgraph cluster_file_storage {
+        label="File Storage Service (Port 8000)";
+        fillcolor=lightgreen;
+        style=filled;
+
+        file_api [label="POST /files/upload\nRouter", fillcolor=green];
+        file_service [label="FileService", fillcolor=lightgreen];
+        storage_decision [label="Storage Type", fillcolor=lightgreen, shape=diamond];
+        gcs [label="Google Cloud Storage", fillcolor=palegreen];
+        local_fs [label="Local Filesystem", fillcolor=palegreen];
+    }
+
+    // PostgreSQL for file metadata
+    postgres_file [label="PostgreSQL\nFileRecord Table\n\nColumns:\n- file_id (UUID)\n- filename\n- mimetype\n- size\n- storage_path\n- user_id\n- created_at\n- document_reference_id", fillcolor=lightblue, shape=cylinder];
+
+    // Document Processing Service
+    subgraph cluster_docproc {
+        label="Document Processing Service (Port 8000)";
+        fillcolor=lightyellow;
+        style=filled;
+
+        docproc_api [label="POST /process_document\nRouter", fillcolor=yellow];
+        task_queue [label="Task Queue Manager\n\nLimits:\n- Global: 10 concurrent\n- Per-user: 5 concurrent", fillcolor=wheat];
+        background_worker [label="Background Worker\n(Thread Pool)", fillcolor=wheat];
+        sse_stream [label="SSE Stream\nGET /tasks/stream", fillcolor=wheat];
+    }
+
+    // Extraction Pipeline
+    subgraph cluster_pipeline {
+        label="Extraction Pipeline";
+        fillcolor=lightcyan;
+        style=filled;
+
+        load_file [label="1. Load File\nFetch from storage", fillcolor=cyan];
+        convert_pdf [label="2. Convert PDF\nMax 3 concurrent pages", fillcolor=cyan];
+        extract_metadata [label="3. Extract Metadata\nMetadataAgent\n(Gemini Vision)", fillcolor=cyan];
+        extract_biomarkers [label="4. Extract Biomarkers\nGenericAgent\n(Gemini Vision)", fillcolor=cyan];
+        normalize [label="5. Normalize Names\nNormalizerAgent\n\nRules:\n- Remove footnotes\n- Clean subscripts\n- Fix abbreviations", fillcolor=cyan];
+        deduplicate [label="6. Deduplicate\nRemove duplicate values", fillcolor=cyan];
+        pipeline_result [label="PipelineResult", fillcolor=lightcyan];
+    }
+
+    // Gemini API
+    gemini [label="Google Gemini API\nVision + Tool Calling", fillcolor=plum, shape=cloud];
+
+    // Medical Data Engine
+    subgraph cluster_engine {
+        label="Medical Data Engine";
+        fillcolor=lightpink;
+        style=filled;
+
+        engine_main [label="Engine.process_raw_medical_data()", fillcolor=pink];
+        biomarker_processor [label="BiomarkerProcessor", fillcolor=lightpink];
+        catalog_search [label="Search Medical Catalog\nBatch lookup", fillcolor=lightpink];
+        dedup_engine [label="Deduplication\nGroup by (catalog_id, unit)", fillcolor=lightpink];
+        converter [label="ObservationConverter", fillcolor=lightpink];
+    }
+
+    // Medical Catalog Service
+    subgraph cluster_catalog {
+        label="Medical Catalog Service (Port 8001)";
+        fillcolor=lavender;
+        style=filled;
+
+        catalog_api [label="POST /biomarkers/search_batch", fillcolor=plum];
+        qdrant [label="Qdrant\nVector Search\n\nEmbeddings for:\n- Biomarker names\n- Aliases\n- Synonyms", fillcolor=plum, shape=cylinder];
+    }
+
+    // Neo4j Graph Storage
+    subgraph cluster_neo4j {
+        label="Neo4j Graph Database";
+        fillcolor=lightgray;
+        style=filled;
+
+        create_doc_ref [label="Create DocumentReferenceNode\n\nProperties:\n- uuid, name, file_id\n- document_name\n- report_date\n- patient_id, user_id\n- source_type, content_type", fillcolor=gray];
+
+        create_obs_types [label="Create ObservationTypeNodes\n\nProperties:\n- catalog_id, unit\n- name, display_name\n- aliases, description\n- unit_properties", fillcolor=gray];
+
+        create_obs_values [label="Create ObservationValueNodes\n\nProperties:\n- value, unit\n- observation_date\n- value_epoch\n- patient_id, user_id\n- source_type, source_id", fillcolor=gray];
+
+        create_relationships [label="Create Relationships\n\nDocumentReference-[CONTAINS]->ObservationType\nObservationType-[HAS_VALUE]->ObservationValue\nPatient-[HAS_OBSERVATION]->ObservationValue", fillcolor=gray];
+    }
+
+    neo4j_db [label="Neo4j Database\nPort 7474, 7687", fillcolor=lightblue, shape=cylinder];
+
+    // Flow edges
+    user -> frontend [label="Upload PDF/Image"];
+    frontend -> file_api [label="POST with file"];
+    file_api -> file_service;
+    file_service -> storage_decision;
+    storage_decision -> gcs [label="GCS enabled"];
+    storage_decision -> local_fs [label="Local mode"];
+    gcs -> postgres_file [label="file_id"];
+    local_fs -> postgres_file [label="file_id"];
+    postgres_file -> frontend [label="FileRecordOut"];
+
+    frontend -> docproc_api [label="POST {file_id}"];
+    docproc_api -> task_queue [label="Queue task"];
+    task_queue -> background_worker [label="Assign to worker"];
+    frontend -> sse_stream [label="Subscribe to updates"];
+
+    background_worker -> load_file;
+    load_file -> gcs [label="Fetch file", style=dashed, dir=back];
+    load_file -> local_fs [label="Fetch file", style=dashed, dir=back];
+
+    load_file -> convert_pdf;
+    convert_pdf -> extract_metadata;
+    extract_metadata -> gemini [label="API call"];
+    gemini -> extract_metadata [label="Metadata", style=dashed, dir=back];
+    extract_metadata -> sse_stream [label="Emit: phase=detect", style=dotted];
+
+    extract_metadata -> extract_biomarkers;
+    extract_biomarkers -> gemini [label="API call"];
+    gemini -> extract_biomarkers [label="Biomarkers", style=dashed, dir=back];
+    extract_biomarkers -> sse_stream [label="Emit: phase=process", style=dotted];
+
+    extract_biomarkers -> normalize;
+    normalize -> deduplicate;
+    deduplicate -> pipeline_result;
+    pipeline_result -> engine_main [label="DocumentResourcesNew"];
+
+    engine_main -> create_doc_ref;
+    create_doc_ref -> neo4j_db [label="Cypher CREATE"];
+
+    engine_main -> biomarker_processor;
+    biomarker_processor -> catalog_search;
+    catalog_search -> catalog_api [label="HTTP POST"];
+    catalog_api -> qdrant [label="Vector similarity"];
+    qdrant -> catalog_api [label="Matches", style=dashed, dir=back];
+    catalog_api -> catalog_search [label="BiomarkerEntryResults", style=dashed, dir=back];
+
+    catalog_search -> dedup_engine;
+    dedup_engine -> converter;
+    converter -> create_obs_types;
+    create_obs_types -> neo4j_db [label="Cypher CREATE"];
+
+    create_obs_types -> create_obs_values;
+    create_obs_values -> neo4j_db [label="Cypher CREATE"];
+
+    create_obs_values -> create_relationships;
+    create_relationships -> neo4j_db [label="Cypher MATCH + CREATE"];
+
+    create_relationships -> sse_stream [label="Emit: phase=complete", style=dotted];
+    sse_stream -> frontend [label="SSE events", style=dotted];
+    frontend -> user [label="Show biomarkers"];
+
+    // Timing annotations
+    subgraph cluster_timing {
+        label="Performance Metrics";
+        fillcolor=white;
+        style=filled;
+
+        timing [label="Typical Processing Times:\n\n\
+File Upload: 0.5-2s\n\
+Queue Wait: 0-30s\n\
+PDF Conversion: 1-3s per page\n\
+Metadata Extraction: 2-4s\n\
+Biomarker Extraction: 5-15s\n\
+Normalization: <1s\n\
+Medical Catalog Search: 1-3s\n\
+Deduplication: <1s\n\
+Graph Storage: 2-5s\n\
+\n\
+Total: 15-60s\n\
+\n\
+Concurrency Limits:\n\
+- Global: 10 documents\n\
+- Per-user: 5 documents\n\
+- Page rendering: 3 concurrent", fillcolor=white, shape=note];
+    }
+
+    // Data model annotations
+    subgraph cluster_data_model {
+        label="Biomarker Data Model";
+        fillcolor=white;
+        style=filled;
+
+        biomarker_model [label="Biomarker:\n\
+- long_name, short_name\n\
+- document_name\n\
+- aliases: list[str]\n\
+- values: list[BiomarkerValue]\n\
+- specimen_type\n\
+- panel_name\n\
+\n\
+BiomarkerValue:\n\
+- value, unit\n\
+- observation_date, observation_time\n\
+- name_location (page, x, y, w, h)\n\
+- value_location (page, x, y, w, h)\n\
+- unit_location (page, x, y, w, h)", fillcolor=white, shape=note];
+    }
+
+    // Instance→Type pattern annotation
+    subgraph cluster_pattern {
+        label="Instance→Type Pattern";
+        fillcolor=white;
+        style=filled;
+
+        pattern [label="Multi-Tenancy Pattern:\n\n\
+Instance Layer (Patient-Specific):\n\
+- DocumentReferenceNode\n\
+- ObservationValueNode\n\
+Contains patient_id for scoping\n\
+\n\
+Type Layer (Shared):\n\
+- ObservationTypeNode\n\
+Shared across all patients\n\
+\n\
+Benefits:\n\
+- No data duplication for types\n\
+- Consistent biomarker definitions\n\
+- Efficient catalog integration\n\
+- Patient data isolation", fillcolor=white, shape=note];
+    }
+}

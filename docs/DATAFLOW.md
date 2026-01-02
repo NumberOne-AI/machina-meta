@@ -1180,6 +1180,7 @@ Detailed Graphviz diagrams are available in separate `.dot` files:
 
 - [`DATAFLOW_system_architecture.dot`](DATAFLOW_system_architecture.dot) - Complete system architecture
 - [`DATAFLOW_agent_hierarchy.dot`](DATAFLOW_agent_hierarchy.dot) - Agent composition and tool calling
+- [`DATAFLOW_document_processing.dot`](DATAFLOW_document_processing.dot) - Document upload, extraction, and storage pipeline
 - [`DATAFLOW_database_layer.dot`](DATAFLOW_database_layer.dot) - Multi-database architecture
 - [`DATAFLOW_container_network.dot`](DATAFLOW_container_network.dot) - Docker container communication
 
