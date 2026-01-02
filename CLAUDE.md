@@ -592,6 +592,46 @@ Refer to individual CLAUDE.md files for detailed service guidance:
 
 **Never let AGENTS.md drift from actual implementation - it's a living reference document.**
 
+### DATAFLOW.md - System Data Flow Architecture
+
+**[docs/DATAFLOW.md](docs/DATAFLOW.md)** documents MachinaMed's complete data flow architecture with Mermaid and Graphviz diagrams.
+
+**Purpose**: Comprehensive visual and textual documentation of how data flows through the entire system, from user input through services, agents, databases, and back to the user.
+
+**Key Sections**:
+- System architecture overview
+- Service-level communication (frontend ↔ backend ↔ medical-catalog)
+- Frontend-backend HTTP/WebSocket flows
+- Agent processing (tool calling patterns, internal Python calls)
+- **Document processing pipeline** (upload → extraction → reconciliation → graph storage)
+- Database layer (PostgreSQL, Neo4j, Redis, Qdrant)
+- Container networking
+- Performance characteristics
+
+**This file MUST be updated whenever system architecture changes:**
+- Adding/removing services or databases
+- Changing API endpoints or communication patterns
+- Modifying agent tool calling mechanisms
+- **Updating document processing pipeline** (extraction agents, normalization rules, catalog integration)
+- Changing database schemas or graph patterns
+- Adding new data flows or integration points
+- Modifying authentication/authorization flows
+
+**Regeneration Process**:
+See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instructions on how to regenerate this documentation when the system changes. The process is designed to be repeatable and verification-based.
+
+**How to update**:
+1. Identify which data flows are affected by code changes
+2. Use the Explore agent to research actual implementation
+3. Verify all flows by reading source code (never assume)
+4. Update Mermaid diagrams in DATAFLOW.md
+5. Update corresponding Graphviz .dot files
+6. Update version number and "Last Updated" date
+7. Create TODO.md task for the documentation update
+8. Commit all updated files together
+
+**Never let DATAFLOW.md drift from actual implementation - it's a living reference document.**
+
 ## Workspace Principles
 
 1. **Submodules maintain independence** - Each repo has its own git history
