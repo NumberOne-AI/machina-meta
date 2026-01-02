@@ -46,6 +46,10 @@ MachinaMed is a medical AI platform with the following architecture:
 - **Deployed Agents**: 23 total agents
 - **Models**: Gemini 2.5 Flash, Gemini 2.5 Pro
 
+### Diagram Styling
+
+All diagrams in this document follow the standards defined in **[DIAGRAMS.md](DIAGRAMS.md)**. Refer to that guide when creating or updating diagrams.
+
 ---
 
 ## System Architecture

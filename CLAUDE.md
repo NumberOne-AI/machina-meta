@@ -632,6 +632,10 @@ See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instruct
 
 **Never let DATAFLOW.md drift from actual implementation - it's a living reference document.**
 
+### Diagram Styling Standards
+
+**When creating or updating any diagrams, schematics, or visual documents, refer to [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** for required styling standards and best practices.
+
 ## Workspace Principles
 
 1. **Submodules maintain independence** - Each repo has its own git history
