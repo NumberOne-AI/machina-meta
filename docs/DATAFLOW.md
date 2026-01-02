@@ -2,8 +2,8 @@
 
 This document provides comprehensive data flow diagrams for the MachinaMed (dem2) platform, covering all services, containers, frontend/backend communication, and agent processing.
 
-**Document Version**: 1.0
-**Last Updated**: 2025-12-31
+**Document Version**: 1.1
+**Last Updated**: 2026-01-02
 **Status**: All information verified from source code
 
 ---
@@ -15,10 +15,11 @@ This document provides comprehensive data flow diagrams for the MachinaMed (dem2
 3. [Service-Level Data Flow](#service-level-data-flow)
 4. [Frontend-Backend Flow](#frontend-backend-flow)
 5. [Agent Processing Flow](#agent-processing-flow)
-6. [Database Layer Flow](#database-layer-flow)
-7. [Container Communication](#container-communication)
-8. [External Integration Flow](#external-integration-flow)
-9. [Graphviz Diagrams](#graphviz-diagrams)
+6. [Document Processing Flow](#document-processing-flow)
+7. [Database Layer Flow](#database-layer-flow)
+8. [Container Communication](#container-communication)
+9. [External Integration Flow](#external-integration-flow)
+10. [Graphviz Diagrams](#graphviz-diagrams)
 
 ---
 
@@ -397,6 +398,463 @@ async def query_graph(
 ```
 
 **No HTTP calls are made**. Agents call Python functions that directly access databases.
+
+---
+
+## Document Processing Flow
+
+### Overview
+
+MachinaMed's document processing pipeline extracts biomarkers and medical data from lab reports, PDFs, and images. The pipeline uses Gemini Vision AI for extraction, the medical-catalog service for reconciliation, and Neo4j for graph storage.
+
+**Key Features**:
+- Real-time progress tracking via Server-Sent Events (SSE)
+- Concurrent processing with configurable limits (10 global, 5 per user)
+- Biomarker normalization and deduplication
+- Medical catalog integration for standardized biomarker definitions
+- Complete graph-based storage with Instance→Type pattern
+
+### High-Level Document Processing Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant Frontend as Frontend (3000)
+    participant FileAPI as File Storage API
+    participant GCS as Google Cloud Storage
+    participant DocProcAPI as DocProc API
+    participant Queue as Task Queue
+    participant Pipeline as Extraction Pipeline
+    participant Gemini as Gemini Vision API
+    participant MedCat as Medical Catalog (8001)
+    participant Engine as Medical Data Engine
+    participant Neo4j as Neo4j Graph DB
+    participant Postgres as PostgreSQL
+
+    User->>Frontend: Upload PDF/Image
+    Frontend->>FileAPI: POST /files/upload
+    FileAPI->>GCS: Store file
+    GCS-->>FileAPI: file_id
+    FileAPI->>Postgres: Save FileRecord metadata
+    FileAPI-->>Frontend: FileRecordOut (file_id)
+
+    Frontend->>DocProcAPI: POST /process_document {file_id}
+    DocProcAPI->>Queue: Add to task queue
+    Queue-->>DocProcAPI: task_id
+    DocProcAPI-->>Frontend: ProcessDocumentResponse (task_id)
+
+    Frontend->>DocProcAPI: GET /tasks/stream (SSE)
+
+    Queue->>Pipeline: Pick up task (background worker)
+    Pipeline->>GCS: Fetch file
+    Pipeline->>Pipeline: Convert PDF to images
+
+    Pipeline->>Gemini: Extract metadata (patient, dates)
+    Gemini-->>Pipeline: Metadata (patient_name, report_date)
+    Pipeline->>DocProcAPI: Emit SSE event (phase: detect)
+    DocProcAPI-->>Frontend: SSE: Metadata extracted
+
+    Pipeline->>Gemini: Extract biomarkers (all pages)
+    Gemini-->>Pipeline: List[Biomarker] with values
+    Pipeline->>DocProcAPI: Emit SSE event (phase: process)
+    DocProcAPI-->>Frontend: SSE: Biomarkers extracted
+
+    Pipeline->>Pipeline: Normalize biomarker names
+    Note over Pipeline: Remove footnotes, clean subscripts
+
+    Pipeline->>Engine: process_raw_medical_data(DocumentResourcesNew)
+    Engine->>Neo4j: Create DocumentReferenceNode
+
+    Engine->>MedCat: POST /biomarkers/search_batch
+    MedCat-->>Engine: Catalog entries (catalog_id, unit)
+
+    Engine->>Engine: Deduplicate by (catalog_id, unit)
+
+    Engine->>Neo4j: Create ObservationTypeNodes
+    Engine->>Neo4j: Create ObservationValueNodes
+    Engine->>Neo4j: Link DocumentReference → Observations
+
+    Engine-->>Pipeline: Processing complete
+    Pipeline->>DocProcAPI: Emit SSE event (phase: complete)
+    DocProcAPI-->>Frontend: SSE: Document saved
+    Frontend-->>User: Show extracted biomarkers
+```
+
+### Document Upload & File Storage
+
+**Endpoints**: `repos/dem2/services/file-storage/src/machina/file_storage/router.py`
+
+**Upload Flow**:
+```mermaid
+graph LR
+    A[User] -->|Upload file| B[POST /files/upload]
+    B -->|FileService.upload| C{Storage Type}
+    C -->|GCS| D[Google Cloud Storage]
+    C -->|Local| E[Local Filesystem]
+    D -->|file_id| F[PostgreSQL FileRecord]
+    E -->|file_id| F
+    F -->|FileRecordOut| G[Return to user]
+
+    style B fill:#e3f2fd
+    style F fill:#c8e6c9
+```
+
+**File Storage Schema** (PostgreSQL):
+```
+FileRecord:
+  - file_id (UUID)
+  - filename (string)
+  - mimetype (string)
+  - size (int)
+  - storage_path (string)
+  - user_id (UUID)
+  - created_at (timestamp)
+  - document_reference_id (UUID, FK to Neo4j)
+```
+
+### Extraction Pipeline Architecture
+
+**Location**: `repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py`
+
+```mermaid
+graph TB
+    subgraph "Pipeline Stages"
+        A[1. Load File] -->|PDF or Image| B[2. Convert to Images]
+        B -->|Page images| C[3. Metadata Extraction]
+        C -->|MetadataAgent<br/>Gemini Vision| D[4. Biomarker Extraction]
+        D -->|GenericAgent<br/>Gemini Vision| E[5. Normalization]
+        E -->|NormalizerAgent| F[6. Deduplication]
+        F --> G[PipelineResult]
+    end
+
+    subgraph "Parallel Processing"
+        B -->|Max 3 concurrent| B1[Page 1]
+        B --> B2[Page 2]
+        B --> B3[Page 3]
+    end
+
+    subgraph "Progress Events"
+        C -.->|SSE| H[phase: detect]
+        D -.->|SSE| I[phase: process]
+        F -.->|SSE| J[phase: upload]
+        G -.->|SSE| K[phase: complete]
+    end
+
+    style C fill:#fff9c4
+    style D fill:#fff9c4
+    style E fill:#fff9c4
+    style G fill:#c8e6c9
+```
+
+**Stage Details**:
+
+1. **Load File**: Fetch from storage, detect MIME type (PDF/PNG/JPEG)
+2. **Convert to Images**: Split PDF into pages, convert to RGB images
+3. **Metadata Extraction**: Extract patient_name, document_name, report_date, collection_date
+4. **Biomarker Extraction**: Process all pages in single LLM call for full context
+5. **Normalization**: Clean biomarker names (remove footnotes, fix subscripts)
+6. **Deduplication**: Remove duplicate values within document
+
+### Biomarker Data Model
+
+**Schema**: `repos/dem2/shared/src/machina/shared/docproc/schema.py`
+
+```mermaid
+classDiagram
+    class Biomarker {
+        +string long_name
+        +string short_name
+        +string document_name
+        +string document_name_modifier
+        +string document_footnote
+        +list~string~ aliases
+        +list~BiomarkerValue~ values
+        +float confidence
+        +bool is_biomarker_derivative
+        +string specimen_type
+        +string panel_name
+    }
+
+    class BiomarkerValue {
+        +string value
+        +string observation_date
+        +string observation_time
+        +string unit
+        +string label
+        +SourceLocation name_location
+        +SourceLocation value_location
+        +SourceLocation unit_location
+    }
+
+    class SourceLocation {
+        +int page_number
+        +int x
+        +int y
+        +int width
+        +int height
+    }
+
+    Biomarker "1" --> "*" BiomarkerValue
+    BiomarkerValue "1" --> "0..3" SourceLocation
+```
+
+### Biomarker Extraction with Gemini Vision
+
+**Agent**: `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/generic/agent.py`
+
+**Extraction Process**:
+```mermaid
+graph LR
+    A[Document Pages] -->|All pages| B[Gemini 2.0 Vision]
+    B -->|Tool Calling| C[extract_biomarkers tool]
+    C -->|Validation| D{Valid?}
+    D -->|Yes| E[List of Biomarkers]
+    D -->|No| F[Empty result]
+    E --> G[NormalizerAgent]
+    G -->|Clean names| H[Normalized Biomarkers]
+
+    style B fill:#e1bee7
+    style G fill:#fff9c4
+    style H fill:#c8e6c9
+```
+
+**Normalization Rules**:
+- Remove footnote superscripts: `Glucose²` → `Glucose`
+- Remove parenthetical abbreviations: `HDL (LA)` → `HDL`
+- Convert chemical subscripts: `CO₂` → `CO2`
+- Detect genetic markers: `rs10757278`, `9p21`
+
+### Biomarker Reconciliation & Medical Catalog Integration
+
+**Location**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/biomarker/`
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Pipeline as Extraction Pipeline
+    participant Engine as Medical Data Engine
+    participant MedCat as Medical Catalog (Qdrant)
+    participant Dedup as Deduplication Service
+    participant Neo4j as Neo4j Graph DB
+
+    Pipeline->>Engine: DocumentResourcesNew (biomarkers)
+
+    loop For each biomarker
+        Engine->>MedCat: search_biomarker(name)
+        MedCat->>MedCat: Vector similarity search
+        MedCat-->>Engine: BiomarkerEntryResult
+        Note over MedCat,Engine: catalog_id, long_name,<br/>short_name, unit_properties,<br/>aliases
+    end
+
+    Engine->>Dedup: Group by (catalog_id, unit)
+    Dedup->>Dedup: Merge duplicate values
+    Dedup-->>Engine: Deduplicated biomarkers
+
+    Engine->>Neo4j: Create ObservationTypeNodes
+    Note over Neo4j: Node properties:<br/>catalog_id, unit, name,<br/>display_name, aliases
+
+    Engine->>Neo4j: Create ObservationValueNodes
+    Note over Neo4j: Node properties:<br/>value, observation_date,<br/>value_epoch, unit, patient_id
+
+    Engine->>Neo4j: Create relationships
+    Note over Neo4j: DocumentReference-[CONTAINS]->ObservationType<br/>ObservationType-[HAS_VALUE]->ObservationValue<br/>Patient-[HAS_OBSERVATION]->ObservationValue
+```
+
+**Medical Catalog Entry Structure**:
+```
+BiomarkerEntryResult:
+  - id (catalog_id): Unique identifier
+  - long_name: "High-Density Lipoprotein Cholesterol"
+  - short_name: "HDL Cholesterol"
+  - description: Clinical description
+  - unit_properties: ["mg/dL", "mmol/L"]
+  - aliases: ["HDL", "HDL-C", "Good Cholesterol"]
+```
+
+**Deduplication Strategy**:
+- Group biomarkers by `(catalog_id, unit)` tuple
+- Within each group, merge values by:
+  - Value equality (numeric or string)
+  - Observation time (dedupe same value at same time)
+  - Unit normalization (convert to canonical unit)
+
+### Graph Database Storage Pattern
+
+**Instance→Type Pattern for Multi-Tenancy**:
+
+```mermaid
+graph LR
+    subgraph "Instance Layer (Patient-Specific)"
+        DR[DocumentReferenceNode<br/>uuid: doc-123<br/>patient_id: patient-456<br/>file_id: file-789<br/>document_name: Lab Report<br/>report_date: 2024-12-15]
+
+        OV1[ObservationValueNode<br/>uuid: obs-val-1<br/>value: 185<br/>unit: mg/dL<br/>observation_date: 2024-12-15<br/>patient_id: patient-456]
+
+        OV2[ObservationValueNode<br/>uuid: obs-val-2<br/>value: 110<br/>unit: mg/dL<br/>observation_date: 2024-12-15<br/>patient_id: patient-456]
+    end
+
+    subgraph "Type Layer (Shared)"
+        OT1[ObservationTypeNode<br/>catalog_id: cat-001<br/>name: Cholesterol Total<br/>unit: mg/dL<br/>aliases: Total Cholesterol, CHOL]
+
+        OT2[ObservationTypeNode<br/>catalog_id: cat-002<br/>name: LDL Cholesterol<br/>unit: mg/dL<br/>aliases: LDL, LDL-C]
+    end
+
+    DR -->|CONTAINS| OT1
+    DR -->|CONTAINS| OT2
+    OT1 -->|HAS_VALUE| OV1
+    OT2 -->|HAS_VALUE| OV2
+
+    style DR fill:#ffccbc
+    style OV1 fill:#ffccbc
+    style OV2 fill:#ffccbc
+    style OT1 fill:#c5e1a5
+    style OT2 fill:#c5e1a5
+```
+
+**Neo4j Node Schemas**:
+
+**DocumentReferenceNode**:
+```cypher
+CREATE (doc:DocumentReference {
+  uuid: "doc-123",
+  name: "Lab_Report.pdf",
+  file_id: "file-789",
+  document_name: "Lab Report",
+  source_type: "DOCUMENT",
+  source_id: "external-id",
+  url: "gs://bucket/file-789",
+  content_type: "application/pdf",
+  size: 245678,
+  hash: "sha256-...",
+  summary: "Blood chemistry panel",
+  report_date: datetime("2024-12-15T00:00:00Z"),
+  user_id: "user-123",
+  patient_id: "patient-456",
+  created_at: datetime("2024-12-15T10:30:00Z")
+})
+```
+
+**ObservationTypeNode**:
+```cypher
+CREATE (type:ObservationType {
+  catalog_id: "cat-001",
+  unit: "mg/dL",
+  name: "Cholesterol Total",
+  display_name: "Total Cholesterol",
+  description: "Total blood cholesterol measurement",
+  summary: "Lipid panel biomarker",
+  aliases: ["Total Cholesterol", "CHOL", "Cholesterol"],
+  unit_properties: ["mg/dL", "mmol/L"]
+})
+```
+
+**ObservationValueNode**:
+```cypher
+CREATE (value:ObservationValue {
+  value: 185.0,
+  observation_date: datetime("2024-12-15T08:30:00Z"),
+  value_epoch: 1702627800,
+  unit: "mg/dL",
+  source_type: "DOCUMENT",
+  source_id: "doc-123",
+  patient_id: "patient-456",
+  user_id: "user-123"
+})
+```
+
+### Complete Document Processing Flow
+
+**End-to-End Data Flow**:
+
+```mermaid
+flowchart TB
+    Start([User uploads PDF]) --> Upload[POST /files/upload]
+    Upload --> Store[Store in GCS/Local]
+    Store --> FileRecord[(PostgreSQL FileRecord)]
+    FileRecord --> Queue[POST /process_document]
+    Queue --> TaskQueue[Task Queue Manager]
+    TaskQueue --> Worker[Background Worker]
+
+    Worker --> Load[Load file from storage]
+    Load --> Convert[Convert PDF to images]
+    Convert --> Metadata[Extract Metadata<br/>Gemini Vision]
+    Metadata --> Extract[Extract Biomarkers<br/>Gemini Vision]
+    Extract --> Normalize[Normalize names<br/>NormalizerAgent]
+    Normalize --> DocResources[DocumentResourcesNew]
+
+    DocResources --> DataEngine[Medical Data Engine]
+    DataEngine --> CreateDoc[Create DocumentReferenceNode]
+    CreateDoc --> Neo4jDoc[(Neo4j DocumentReference)]
+
+    DataEngine --> SearchCatalog[Search Medical Catalog]
+    SearchCatalog --> Qdrant[(Qdrant Vector Search)]
+    Qdrant --> CatalogResults[BiomarkerEntryResults]
+
+    CatalogResults --> Dedup[Deduplicate by<br/>catalog_id + unit]
+    Dedup --> CreateTypes[Create ObservationTypeNodes]
+    CreateTypes --> Neo4jTypes[(Neo4j ObservationTypes)]
+
+    Neo4jTypes --> CreateValues[Create ObservationValueNodes]
+    CreateValues --> Neo4jValues[(Neo4j ObservationValues)]
+
+    Neo4jValues --> Link[Create relationships]
+    Link --> Complete[Emit SSE: complete]
+    Complete --> End([User sees biomarkers])
+
+    Metadata -.->|SSE| SSE1[Frontend: detect]
+    Extract -.->|SSE| SSE2[Frontend: process]
+    Dedup -.->|SSE| SSE3[Frontend: upload]
+    Complete -.->|SSE| SSE4[Frontend: complete]
+
+    style Upload fill:#e3f2fd
+    style DataEngine fill:#fff9c4
+    style Neo4jDoc fill:#c8e6c9
+    style Neo4jTypes fill:#c8e6c9
+    style Neo4jValues fill:#c8e6c9
+    style End fill:#a5d6a7
+```
+
+### Performance Characteristics
+
+**Document Processing Metrics**:
+
+| Stage | Typical Time | Notes |
+|-------|--------------|-------|
+| File Upload | 0.5-2s | Depends on file size |
+| Queue Wait | 0-30s | Depends on concurrent load |
+| PDF Conversion | 1-3s per page | Max 3 concurrent pages |
+| Metadata Extraction | 2-4s | Gemini Vision API call |
+| Biomarker Extraction | 5-15s | Depends on document complexity |
+| Normalization | <1s | Local processing |
+| Medical Catalog Search | 1-3s | Batch vector search |
+| Deduplication | <1s | In-memory processing |
+| Graph Storage | 2-5s | Depends on biomarker count |
+| **Total** | **15-60s** | **Complete pipeline** |
+
+**Concurrency Limits**:
+- Global concurrent documents: 10
+- Per-user concurrent documents: 5
+- Page rendering concurrency: 3
+
+### Key Implementation Files
+
+| Component | Location |
+|-----------|----------|
+| File Upload API | `services/file-storage/src/machina/file_storage/router.py` |
+| File Service | `services/file-storage/src/machina/file_storage/file_service.py` |
+| Document Processing API | `services/docproc/src/machina/docproc/router.py` |
+| Processing Service | `services/docproc/src/machina/docproc/service.py` |
+| Extraction Pipeline | `services/docproc/src/machina/docproc/extractor/pipeline.py` |
+| Generic Agent | `services/docproc/extractor/agents/generic/agent.py` |
+| Normalizer Agent | `services/docproc/extractor/agents/normalizer/agent.py` |
+| Medical Data Engine | `services/medical-data-engine/src/machina/medical_data_engine/engine/engine.py` |
+| Biomarker Processor | `services/medical-data-engine/engine/processors/biomarker/` |
+| Observation Converter | `services/medical-data-engine/engine/processors/biomarker/observation_converter.py` |
+| Deduplication | `services/medical-data-engine/engine/processors/biomarker/deduplication.py` |
+| Medical Catalog Client | `services/medical-catalog/` |
+| Document Repository | `services/medical-data-storage/repository/document_reference_repository.py` |
+| Observation Memory | `services/graph-memory/src/machina/graph_memory/medical/observation/` |
+| Graph Nodes | `services/graph-memory/src/machina/graph_memory/medical/graph/` |
 
 ---
 
