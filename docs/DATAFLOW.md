@@ -53,6 +53,7 @@ MachinaMed is a medical AI platform with the following architecture:
 ### High-Level Architecture Diagram
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph "Client Layer"
         Browser[Web Browser]
@@ -116,6 +117,7 @@ graph TB
 ### Complete Service Communication Map
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     subgraph "Frontend (Port 3000)"
         UI[React UI Components]
@@ -176,6 +178,7 @@ graph LR
 ### User Interaction Flow
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     participant User
     participant React as React Component
@@ -205,6 +208,7 @@ sequenceDiagram
 ### Authentication Flow
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     participant Browser
     participant NextJS as Next.js Frontend
@@ -238,6 +242,7 @@ sequenceDiagram
 ### Real-Time Chat Flow (WebSocket)
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     participant User
     participant Browser
@@ -272,6 +277,7 @@ sequenceDiagram
 ### Agent Hierarchy and Tool Calling
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     subgraph "Root Agent"
         TusdiAI[TusdiAI<br/>ParallelAgent]
@@ -332,6 +338,7 @@ graph TD
 ### Agent Tool Execution Flow (Internal Python Calls)
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     participant User
     participant Triage as TriageAgent<br/>(Flash)
@@ -417,6 +424,7 @@ MachinaMed's document processing pipeline extracts biomarkers and medical data f
 ### High-Level Document Processing Flow
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     autonumber
     participant User
@@ -487,6 +495,7 @@ sequenceDiagram
 
 **Upload Flow**:
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     A[User] -->|Upload file| B[POST /files/upload]
     B -->|FileService.upload| C{Storage Type}
@@ -518,6 +527,7 @@ FileRecord:
 **Location**: `repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py`
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph "Pipeline Stages"
         A[1. Load File] -->|PDF or Image| B[2. Convert to Images]
@@ -561,6 +571,7 @@ graph TB
 **Schema**: `repos/dem2/shared/src/machina/shared/docproc/schema.py`
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 classDiagram
     class Biomarker {
         +string long_name
@@ -605,6 +616,7 @@ classDiagram
 
 **Extraction Process**:
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     A[Document Pages] -->|All pages| B[Gemini 2.0 Vision]
     B -->|Tool Calling| C[extract_biomarkers tool]
@@ -630,6 +642,7 @@ graph LR
 **Location**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/biomarker/`
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     autonumber
     participant Pipeline as Extraction Pipeline
@@ -684,6 +697,7 @@ BiomarkerEntryResult:
 **Instance→Type Pattern for Multi-Tenancy**:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     subgraph "Instance Layer (Patient-Specific)"
         DR[DocumentReferenceNode<br/>uuid: doc-123<br/>patient_id: patient-456<br/>file_id: file-789<br/>document_name: Lab Report<br/>report_date: 2024-12-15]
@@ -767,6 +781,7 @@ CREATE (value:ObservationValue {
 **End-to-End Data Flow**:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 flowchart TB
     Start([User uploads PDF]) --> Upload[POST /files/upload]
     Upload --> Store[Store in GCS/Local]
@@ -863,6 +878,7 @@ flowchart TB
 ### Multi-Database Architecture
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph "Application Layer"
         Service[Service Layer]
@@ -916,6 +932,7 @@ graph TB
 ### Neo4j Graph Structure
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     subgraph "Instance Layer (Patient-Specific)"
         Patient[Patient<br/>uuid, patient_id]
@@ -958,6 +975,7 @@ graph LR
 ### Docker Compose Service Map
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph "Application Containers"
         Frontend[dem2-webui<br/>next:alpine<br/>Port 3000]
@@ -1009,6 +1027,7 @@ graph TB
 ### Container Dependencies
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     Start[docker-compose up]
 
@@ -1040,6 +1059,7 @@ graph TD
 ### Google Cloud Integration
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     subgraph "MachinaMed Backend"
         App[FastAPI Application]
@@ -1075,6 +1095,7 @@ graph LR
 ### Model Selection Flow
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     Query[User Query Arrives]
 
@@ -1106,6 +1127,7 @@ graph TD
 ### End-to-End Flow Diagram
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 sequenceDiagram
     autonumber
     participant User
@@ -1318,6 +1340,7 @@ dot -Tsvg DATAFLOW_agent_hierarchy.dot -o DATAFLOW_agent_hierarchy.svg
 ### Data Flow Security
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     subgraph "Public Internet"
         User[User Browser]
@@ -1356,6 +1379,7 @@ graph TD
 ### Data Flow Monitoring Points
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     Request[HTTP Request] -->|1| APIGateway[API Gateway<br/>Request ID]
     APIGateway -->|2| Middleware[Middleware<br/>Log + Metrics]
