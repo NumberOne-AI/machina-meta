@@ -134,9 +134,9 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - Commit: ffcdcce - "docs: create comprehensive Google ADK agent architecture documentation"
 
 - [REVIEW] **Create comprehensive data flow documentation** - Document complete system data flows with diagrams
-  - Impact: HIGH | Added: 2025-12-31
+  - Impact: HIGH | Added: 2025-12-31 | Updated: 2026-01-02
   - Created master DATAFLOW.md with comprehensive INPUT/OUTPUT/PROCESSING documentation
-  - Included 10+ Mermaid diagrams covering all architecture layers:
+  - Included 18+ Mermaid diagrams covering all architecture layers:
     - System architecture with all components and services
     - Service-level data flow (dem2, medical-catalog, webui)
     - Frontend-backend communication (HTTP REST + WebSocket)
@@ -147,9 +147,19 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Authentication flow (Google SSO + JWT)
     - Real-time WebSocket chat flow
     - Complete end-to-end sequence diagram (24 steps)
-  - Created 4 Graphviz .dot files for detailed diagrams:
+    - **Document processing flow (8 new diagrams):**
+      - High-level document processing sequence (upload → extraction → storage)
+      - File upload and storage flow (GCS/Local + PostgreSQL)
+      - Extraction pipeline architecture with 6 stages
+      - Biomarker data model (class diagram)
+      - Gemini Vision extraction process
+      - Biomarker reconciliation and medical-catalog integration
+      - Graph database storage pattern (Instance→Type)
+      - Complete end-to-end document flow
+  - Created 5 Graphviz .dot files for detailed diagrams:
     - DATAFLOW_system_architecture.dot (complete component and data flow)
     - DATAFLOW_agent_hierarchy.dot (agent composition and tool calling pattern)
+    - **DATAFLOW_document_processing.dot (document upload, extraction, and storage pipeline)**
     - DATAFLOW_database_layer.dot (multi-database architecture with Instance→Type pattern)
     - DATAFLOW_container_network.dot (Docker service connectivity and port mapping)
   - Verified all diagrams from actual source code
@@ -158,16 +168,28 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Frontend uses 126 OpenAPI endpoints via wretch HTTP client
     - Multi-database architecture with clear separation of concerns
     - Neo4j Instance→Type pattern for multi-tenant scoping
-  - Performance characteristics included (3-5s end-to-end processing)
+    - **Document processing: PDF → Gemini Vision → Medical Catalog → Neo4j (15-60s)**
+    - **Biomarker reconciliation: Vector search + deduplication by (catalog_id, unit)**
+    - **Real-time progress tracking via Server-Sent Events (SSE)**
+    - **Concurrency limits: 10 global, 5 per-user, 3 concurrent page renders**
+  - Performance characteristics:
+    - Agent processing: 3-5s end-to-end
+    - Document processing: 15-60s end-to-end
   - Security considerations and monitoring stack documented
   - Files created:
-    - docs/DATAFLOW.md (946 lines with Mermaid diagrams)
+    - docs/DATAFLOW.md (1,410 lines with Mermaid diagrams, version 1.1)
     - docs/DATAFLOW_system_architecture.dot
     - docs/DATAFLOW_agent_hierarchy.dot
+    - docs/DATAFLOW_document_processing.dot
     - docs/DATAFLOW_database_layer.dot
     - docs/DATAFLOW_container_network.dot
-  - Commit: 110d6da - "docs: complete DATAFLOW.md with Graphviz diagrams"
-  - Status: All requested documentation completed (covers all services, all containers, frontend/backend, agents, Mermaid inline + Graphviz output). Awaiting user review and approval.
+  - Commits:
+    - 110d6da - "docs: complete DATAFLOW.md with Graphviz diagrams"
+    - 5c4e013 - "fix: quote special characters in Mermaid diagram labels"
+    - 837242d - "fix: remove quotes from Mermaid node labels"
+    - 9c715e1 - "docs: add comprehensive document processing flow to DATAFLOW.md"
+    - deb2f4b - "docs: add Graphviz diagram for document processing pipeline"
+  - Status: All requested documentation completed, including detailed document processing flow with biomarker extraction, reconciliation, and graph storage patterns. Awaiting user review and approval.
 
 ---
 
