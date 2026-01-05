@@ -1,0 +1,45 @@
+// Diagram #23: Data Flow Security
+// Security layers and network isolation
+
+digraph SecurityLayers {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Public Internet
+    subgraph cluster_public {
+        label="Public Internet";
+        fillcolor=mistyrose;
+        style=filled;
+
+        User [label="User Browser", fillcolor=lightblue];
+    }
+
+    // DMZ
+    subgraph cluster_dmz {
+        label="DMZ";
+        fillcolor=lightyellow;
+        style=filled;
+
+        Frontend [label="Next.js Frontend\nHTTPS enabled", fillcolor=lightyellow];
+    }
+
+    // Private Network
+    subgraph cluster_private {
+        label="Private Network";
+        fillcolor=lightgreen;
+        style=filled;
+
+        Backend [label="FastAPI Backend\nJWT Authentication", fillcolor=lightgreen];
+        Databases [label="Databases\nNo Public Access", fillcolor=skyblue, shape=cylinder];
+    }
+
+    // Connections
+    User -> Frontend [label="HTTPS\nTLS encryption"];
+    Frontend -> Backend [label="Internal Network\nNo public access"];
+    Backend -> Databases [label="Internal Network\nNo public access"];
+
+    // Security layers note
+    SecurityNote [label="Security Layers:\n1. HTTPS - TLS encryption for frontend\n2. JWT Authentication - Token-based auth with HTTP-only cookies\n3. Network Isolation - Databases not publicly accessible\n4. Patient Context Headers - X-Patient-Context-ID for tenant scoping\n5. Service Account - GCP authentication for Gemini API", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

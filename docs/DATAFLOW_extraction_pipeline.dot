@@ -1,0 +1,57 @@
+// Diagram #10: Extraction Pipeline Architecture
+// Pipeline stages with parallel processing and SSE progress events
+
+digraph ExtractionPipeline {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    DocProcAPI [label="DocProc API", fillcolor=wheat];
+    ExtractionPipeline [label="Extraction Pipeline", fillcolor=wheat];
+    GCS [label="Google Cloud Storage", fillcolor=lavender, shape=cylinder];
+    GeminiAPI [label="Google Gemini API", fillcolor=plum];
+    MedicalDataEngine [label="Medical Data Engine", fillcolor=palegreen];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+
+    // Pipeline stages
+    subgraph cluster_stages {
+        label="Pipeline Stages";
+        fillcolor=lightyellow;
+        style=filled;
+
+        LoadFile [label="1. Load File", fillcolor=wheat];
+        ConvertImages [label="2. Convert PDF\nto Images", fillcolor=wheat];
+        ExtractMetadata [label="3. Extract Metadata\nMetadataAgent", fillcolor=wheat];
+        ExtractBiomarkers [label="4. Extract Biomarkers\nGenericAgent", fillcolor=wheat];
+        Normalize [label="5. Normalize Names\nNormalizerAgent", fillcolor=wheat];
+        Deduplicate [label="6. Deduplicate\nby catalog_id + unit", fillcolor=wheat];
+    }
+
+    // Main flow
+    DocProcAPI -> ExtractionPipeline [label="Background task\nfile_id"];
+    ExtractionPipeline -> LoadFile;
+    LoadFile -> GCS [label="GCS API\nFetch file"];
+    GCS -> LoadFile [label="Binary data", style=dashed];
+
+    LoadFile -> ConvertImages [label="PDF or Image"];
+    ConvertImages -> ExtractMetadata [label="Page images\n(max 3 concurrent)"];
+    ExtractMetadata -> GeminiAPI [label="HTTPS\nVision API\nExtract patient_name,\ndocument_name, dates"];
+    GeminiAPI -> ExtractMetadata [label="Metadata", style=dashed];
+
+    ExtractMetadata -> ExtractBiomarkers [label="Metadata +\nall page images"];
+    ExtractBiomarkers -> GeminiAPI [label="HTTPS\nVision API\nExtract biomarkers\n(single LLM call)"];
+    GeminiAPI -> ExtractBiomarkers [label="List[Biomarker]", style=dashed];
+
+    ExtractBiomarkers -> Normalize [label="Raw biomarkers"];
+    Normalize -> Deduplicate [label="Clean names"];
+    Deduplicate -> MedicalDataEngine [label="DocumentResourcesNew"];
+
+    // SSE progress events
+    ExtractMetadata -> DocProcAPI [label="SSE: phase=detect", style=dotted, color=blue];
+    ExtractBiomarkers -> DocProcAPI [label="SSE: phase=process", style=dotted, color=blue];
+    Deduplicate -> DocProcAPI [label="SSE: phase=upload", style=dotted, color=blue];
+    MedicalDataEngine -> DocProcAPI [label="SSE: phase=complete", style=dotted, color=blue];
+    DocProcAPI -> NextJS [label="Server-Sent Events\nStreaming progress", color=blue];
+}

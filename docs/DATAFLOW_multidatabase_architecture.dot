@@ -1,0 +1,78 @@
+// Diagram #16: Multi-Database Architecture
+// Application layer accessing multiple database types
+
+digraph MultiDatabaseArchitecture {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Application Layer
+    subgraph cluster_app {
+        label="Application Layer";
+        fillcolor=lightgreen;
+        style=filled;
+
+        ServiceLayer [label="Service Layer", fillcolor=palegreen];
+        AgentTools [label="Agent Tools", fillcolor=lightcyan];
+    }
+
+    // PostgreSQL databases
+    subgraph cluster_postgres {
+        label="PostgreSQL (Port 5432)";
+        fillcolor=lightyellow;
+        style=filled;
+
+        UserDB [label="users\nsessions\nauth_tokens", fillcolor=skyblue, shape=cylinder];
+        FileDB [label="files\ndocuments", fillcolor=skyblue, shape=cylinder];
+        CalDB [label="appointments\nschedules", fillcolor=skyblue, shape=cylinder];
+    }
+
+    // Neo4j databases
+    subgraph cluster_neo4j {
+        label="Neo4j (Port 7474/7687)";
+        fillcolor=lightcyan;
+        style=filled;
+
+        PatientGraph [label="Patient\nMedical Data\nGraph", fillcolor=skyblue, shape=cylinder];
+        TypeNodes [label="Type Nodes\nShared Definitions", fillcolor=lightgreen];
+        InstanceNodes [label="Instance Nodes\nPatient-Specific", fillcolor=mistyrose];
+    }
+
+    // Redis databases
+    subgraph cluster_redis {
+        label="Redis (Port 6379)";
+        fillcolor=lightpink;
+        style=filled;
+
+        Cache [label="Cache Layer", fillcolor=skyblue, shape=cylinder];
+        PubSub [label="Pub/Sub\nEvents", fillcolor=skyblue, shape=cylinder];
+        Sessions [label="Session Data", fillcolor=skyblue, shape=cylinder];
+    }
+
+    // Qdrant
+    subgraph cluster_qdrant {
+        label="Qdrant (Port 6333)";
+        fillcolor=lavender;
+        style=filled;
+
+        Vectors [label="Vector Embeddings\nSemantic Search", fillcolor=skyblue, shape=cylinder];
+        BiomarkerEmbed [label="Biomarker Embeddings", fillcolor=skyblue, shape=cylinder];
+    }
+
+    // Connections
+    ServiceLayer -> UserDB [label="SQLAlchemy\nORM"];
+    ServiceLayer -> FileDB [label="SQLAlchemy\nORM"];
+    ServiceLayer -> CalDB [label="SQLAlchemy\nORM"];
+
+    AgentTools -> PatientGraph [label="Neo4j Driver\nBolt Protocol"];
+    PatientGraph -> TypeNodes [label="Relationships"];
+    PatientGraph -> InstanceNodes [label="Relationships"];
+
+    ServiceLayer -> Cache [label="Redis Client"];
+    ServiceLayer -> PubSub [label="Redis Client\nPUBLISH/SUBSCRIBE"];
+    ServiceLayer -> Sessions [label="Redis Client"];
+
+    AgentTools -> Vectors [label="Qdrant Client\ngRPC"];
+    Vectors -> BiomarkerEmbed [label="Search"];
+}

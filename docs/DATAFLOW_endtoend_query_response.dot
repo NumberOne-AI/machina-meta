@@ -1,0 +1,62 @@
+// Diagram #22: End-to-End Query Response Flow
+// Complete user query to response (convert sequence to dataflow)
+
+digraph EndToEndQueryResponse {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+    FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+    Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
+    TusdiAI [label="TusdiAI Root\nParallelAgent", fillcolor=lightcyan];
+    Triage [label="TriageAgent\nGemini Flash", fillcolor=lightcyan];
+    ParallelExtract [label="ParallelExtractor", fillcolor=lightcyan];
+    Consultant [label="HealthConsultantAgent\nGemini Pro", fillcolor="#ba68c8"];
+    QueryGraphTool [label="query_graph Tool\nPython function", fillcolor=wheat];
+    CypherAgent [label="CypherAgent\nGemini Flash", fillcolor=lightcyan];
+    Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+    GeminiAPI [label="Google Gemini API", fillcolor=plum];
+
+    // Flow
+    Browser -> NextJS [label="User types:\n'What's my cholesterol?'"];
+    NextJS -> FastAPI [label="HTTP POST\n/api/v1/medical-agent/\nsession/123/send"];
+    FastAPI -> TusdiAI [label="Python call\nValidate JWT,\nextract patient_id"];
+
+    // Parallel execution
+    TusdiAI -> Triage [label="Branch 1:\nRoute query"];
+    TusdiAI -> ParallelExtract [label="Branch 2:\nExtract entities\n(background)"];
+
+    Triage -> GeminiAPI [label="HTTPS\nAnalyze query type"];
+    GeminiAPI -> Triage [label="Classification:\nPatient-specific", style=dashed];
+    Triage -> Consultant [label="Python call\nTransfer control"];
+
+    Consultant -> GeminiAPI [label="HTTPS\nNeed patient data?"];
+    GeminiAPI -> Consultant [label="Decision:\nCall query_graph", style=dashed];
+
+    Consultant -> QueryGraphTool [label="Python call\nDIRECT FUNCTION CALL", color=red, penwidth=2];
+    QueryGraphTool -> CypherAgent [label="Python call"];
+    CypherAgent -> GeminiAPI [label="HTTPS\nNL to Cypher"];
+    GeminiAPI -> CypherAgent [label="Cypher query", style=dashed];
+    CypherAgent -> QueryGraphTool [label="Return Cypher", style=dashed];
+
+    QueryGraphTool -> Neo4j [label="Neo4j Bolt Protocol\nExecute query"];
+    Neo4j -> QueryGraphTool [label="Results:\nTotal: 185 mg/dL\nLDL: 110 mg/dL\ndate: 2024-12-15", style=dashed];
+    QueryGraphTool -> Consultant [label="Formatted markdown", style=dashed];
+
+    Consultant -> GeminiAPI [label="HTTPS\nGenerate response\nwith data"];
+    GeminiAPI -> Consultant [label="Natural language\nresponse", style=dashed];
+    Consultant -> TusdiAI [label="Response complete", style=dashed];
+
+    TusdiAI -> FastAPI [label="Combined response", style=dashed];
+    FastAPI -> Redis [label="Redis Protocol\nPUBLISH agent_response", color=blue];
+    Redis -> FastAPI [label="Redis Protocol\nSUBSCRIBE", style=dashed, color=blue];
+    FastAPI -> NextJS [label="Server-Sent Events\nStreaming chunks", style=dashed, color=blue];
+    NextJS -> Browser [label="DOM update\nShow response", style=dashed];
+
+    // Timing note
+    TimingNote [label="Key Timings:\n- Routing: <1s\n- Pro model + query: 2-3s\n- Response delivery: <0.5s\n\nTotal: 3-5s end-to-end", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

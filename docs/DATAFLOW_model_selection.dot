@@ -1,0 +1,35 @@
+// Diagram #21: Model Selection Flow
+// Agent routing and model selection for cost optimization
+
+digraph ModelSelection {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // User query
+    Query [label="User Query Arrives", shape=ellipse, fillcolor=lightblue];
+
+    // Triage
+    Triage [label="TriageAgent\nGemini 2.5 Flash ($)", fillcolor=lightcyan];
+
+    // Consultant agents
+    ConsultantFull [label="HealthConsultantAgent\nGemini 2.5 Pro ($$)", fillcolor="#ba68c8"];
+    ConsultantLite [label="HealthConsultantLiteAgent\nGemini 2.5 Pro ($$)", fillcolor="#ce93d8"];
+    URLHandler [label="URLHandlerAgent\nGemini 2.5 Flash ($)", fillcolor=lightcyan];
+
+    // Supporting agents
+    CypherGen [label="CypherAgent\nGemini 2.5 Flash ($)", fillcolor=lightcyan];
+
+    // Flow
+    Query -> Triage [label="Route"];
+
+    Triage -> ConsultantFull [label="Patient-specific query\n(needs graph data)"];
+    Triage -> ConsultantLite [label="General knowledge\n(no graph data)"];
+    Triage -> URLHandler [label="URL provided"];
+
+    ConsultantFull -> CypherGen [label="Needs graph data"];
+
+    // Cost note
+    CostNote [label="Cost Optimization Strategy:\n- Flash ($): Routing, extraction, query generation\n- Pro ($$): Medical reasoning, consultation\n\nResult: 15-20% cost savings\nvs. using Pro for everything", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

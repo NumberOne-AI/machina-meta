@@ -1,249 +1,101 @@
 # Diagram Styling Guide
 
-This document defines the **standard visual style** for all diagrams in MachinaMed documentation. Following these guidelines ensures consistent, professional, and accessible diagrams across all documentation.
+This document defines the **standard visual style** for all diagrams in MachinaMed documentation using **Graphviz .dot files rendered as SVG**. Following these guidelines ensures consistent, professional, and accessible diagrams across all documentation.
 
 ## Core Principles
 
-1. **Always define an opaque background color when rendering text.** This ensures text is readable in both light and dark modes, regardless of the user's theme settings.
-
-2. **All diagrams must have a consistent background fill color that contrasts with diagram elements.** This makes diagrams visually distinct and improves readability.
-
-3. **For complex diagrams, prefer Graphviz .dot files with SVG output over Mermaid.** This provides better styling control and consistent rendering.
+1. **Use Graphviz .dot files with SVG output for ALL diagrams**
+2. **Always define an opaque background color** (`bgcolor="#f5f5f5"` with `style=filled`)
+3. **Maintain consistent entity definitions** across all diagrams
+4. **Version control both source (.dot) and output (.svg) files**
 
 ---
 
-## Recommended Approach: Graphviz + SVG
-
-**For complex, detailed diagrams (architecture, data flow, system diagrams), use Graphviz .dot files rendered as SVG.**
-
-### Why Graphviz + SVG?
+## Why Graphviz + SVG?
 
 ✅ **Full styling control** - Complete control over colors, fonts, backgrounds, and layout
-✅ **Consistent rendering** - SVG files render identically across all platforms
-✅ **Opaque backgrounds** - Guaranteed non-transparent backgrounds with `bgcolor` and `style=filled`
-✅ **GitHub compatible** - SVG files display perfectly in GitHub markdown using `![Alt text](diagram.svg)`
-✅ **Version controlled** - Both source `.dot` files and rendered `.svg` files are tracked in git
+✅ **Consistent rendering** - SVG files render identically across all platforms and themes
+✅ **Opaque backgrounds** - Guaranteed non-transparent light gray backgrounds
+✅ **GitHub compatible** - SVG files display perfectly in GitHub markdown
 ✅ **Professional quality** - Publication-ready diagrams with precise control
+✅ **Persistent entity identities** - Same entities look identical across all diagrams
 
-### Workflow
+---
 
-1. **Create `.dot` file** with proper styling (see Graphviz section below)
-2. **Render to SVG**: `dot -Tsvg diagram.dot -o diagram.svg`
-3. **Reference in markdown**: `![Diagram Description](diagram.svg)`
-4. **Commit both files**: Both `.dot` source and `.svg` output
-
-### Example
+## Quick Start Workflow
 
 ```bash
-# Create/edit diagram source
-vim DATAFLOW_system_architecture.dot
+# 1. Create/edit diagram source
+vim docs/DATAFLOW_my_feature.dot
 
-# Render to SVG
-dot -Tsvg DATAFLOW_system_architecture.dot -o DATAFLOW_system_architecture.svg
+# 2. Render to SVG
+cd docs/
+dot -Tsvg DATAFLOW_my_feature.dot -o DATAFLOW_my_feature.svg
 
-# Reference in markdown
-echo "![System Architecture](DATAFLOW_system_architecture.svg)" >> DATAFLOW.md
+# Or render all diagrams:
+../scripts/render_diagrams.sh
 
-# Commit both source and output
-git add DATAFLOW_system_architecture.dot DATAFLOW_system_architecture.svg
-git commit -m "docs: Add system architecture diagram"
+# 3. Reference in markdown
+echo "![My Feature Flow](DATAFLOW_my_feature.svg)" >> DATAFLOW.md
+
+# 4. Validate consistency
+../scripts/validate_diagram_consistency.py
+
+# 5. Commit both source and output
+git add DATAFLOW_my_feature.dot DATAFLOW_my_feature.svg
+git commit -m "docs: Add my feature dataflow diagram"
 ```
 
 ---
 
-## Mermaid Diagrams (Limited Use)
-
-**Use Mermaid only for simple, inline diagrams where Graphviz would be overkill.**
-
-⚠️ **Known Limitations**:
-- Background color support is inconsistent across renderers
-- GitHub's Mermaid renderer may not respect `themeVariables.background` setting
-- Less control over styling compared to Graphviz
-- May render with dark/transparent backgrounds despite configuration
-
-Mermaid diagrams are embedded inline in Markdown files and rendered by GitHub.
-
-### Required Theme Configuration
-
-**ALWAYS** add theme configuration with background color at the start of every Mermaid diagram:
-
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A[Component A] --> B[Component B]
-```
-
-**Why**: The neutral theme with explicit background color ensures:
-- Text renders on opaque backgrounds (readable in both light and dark modes)
-- Diagram has a consistent light gray background that's not transparent
-- Visual distinction from surrounding content
-
-### Theme Configuration by Diagram Type
-
-All diagram types must include the theme directive with background:
-
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    A->>B: Message
-```
-
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-classDiagram
-    class Animal {
-        +name: string
-    }
-```
-
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-flowchart TB
-    Start --> End
-```
-
-### Node Labels
-
-**Format multi-line labels with `<br/>`**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A[Service Name<br/>Port 8000<br/>Python 3.13]
-```
-
-**Keep labels concise**:
-- ✅ `FastAPI Backend<br/>Port 8000`
-- ❌ `FastAPI Backend Service Running on Port 8000 with Python 3.13 and uvicorn ASGI server`
-
-### Edge Labels
-
-**Use clear, concise labels**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    A -->|HTTP POST| B
-    B -->|Response| A
-```
-
-**Quote labels with special characters**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    A -->|"POST /api/v1/endpoint/{id}"| B
-```
-
-### Subgraphs
-
-**Use descriptive titles**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Backend Services"
-        API[API Server]
-        DB[Database]
-    end
-```
-
-### Sequence Diagrams
-
-**Use `autonumber` for clarity**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    autonumber
-    Alice->>Bob: Hello
-    Bob->>Alice: Hi
-```
-
-**Use descriptive participant aliases**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    participant FE as Frontend (3000)
-    participant BE as Backend (8000)
-    FE->>BE: POST /api/data
-```
-
-### Class Diagrams
-
-**Show relevant properties and methods only**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-classDiagram
-    class User {
-        +string id
-        +string email
-        +login()
-    }
-```
-
-### Common Mermaid Mistakes
-
-❌ **Missing theme configuration**:
-```mermaid
-graph TB
-    A --> B
-```
-
-✅ **Correct**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A --> B
-```
-
-❌ **Quotes inside node labels**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A[Type: "String"]
-```
-
-✅ **Correct**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A[Type: String]
-```
-
-❌ **Unquoted edge labels with special chars**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A -->|GET /api/{id}| B
-```
-
-✅ **Correct**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    A -->|"GET /api/{id}"| B
-```
-
----
-
-## Graphviz Diagrams
-
-Graphviz diagrams are defined in `.dot` files and rendered separately using the `dot` command. **All text is rendered on opaque node/edge backgrounds**, ensuring readability.
+## Graphviz .dot File Structure
 
 ### Required Configuration
 
-**ALWAYS** include font settings and background color at the graph level:
+**ALWAYS** include this header in every `.dot` file:
 
 ```dot
-digraph Example {
-    rankdir=TB;
+// Diagram Title
+// Brief description of what this diagram shows
+digraph DiagramName {
+    rankdir=TB;  // TB=top-to-bottom, LR=left-to-right
 
     // Font settings and background for readability
     graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
     node [shape=box, style=filled, fontsize=12, fontname="Arial"];
     edge [fontsize=10, fontname="Arial"];
 
-    A -> B;
+    // Diagram content here...
 }
 ```
 
-**Background color**: Use `bgcolor="#f5f5f5"` with `style=filled` in the `graph` attributes block for all diagrams. This ensures a non-transparent, opaque light gray background that provides consistent contrast with node colors and makes diagrams stand out from surrounding content.
+### Standard Entity Definitions
+
+**CRITICAL**: Use these exact definitions for standard entities to ensure visual consistency across all diagrams.
+
+```dot
+// Core Services (always use these exact definitions)
+FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen, shape=box];
+NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow, shape=box];
+MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink, shape=box];
+
+// Databases (always cylinders with skyblue)
+Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
+Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+
+// External services and clients
+Browser [label="Web Browser", fillcolor=lightblue, shape=box];
+GeminiAPI [label="Google Gemini API", fillcolor=plum, shape=cloud];
+GCP [label="Google Cloud Platform", fillcolor=plum, shape=cloud];
+
+// Agent System
+AgentSystem [label="Agent System\n23 agents", fillcolor=lightcyan, shape=box];
+AgentTools [label="Agent Tools", fillcolor=cyan, shape=box];
+```
+
+**Reference**: See `docs/DATAFLOW_entities.dot` for the complete standard entity definitions.
 
 ### Font Size Standards
 
@@ -256,62 +108,70 @@ digraph Example {
 
 ### Node Styling
 
-**Default node configuration** (provides opaque background):
+**Default node configuration**:
 ```dot
 node [shape=box, style=filled, fontsize=12, fontname="Arial"];
 ```
 
 **Common node shapes**:
-- `shape=box` - Services, components
+- `shape=box` - Services, components (default)
 - `shape=cylinder` - Databases
-- `shape=diamond` - Decisions
+- `shape=diamond` - Decision points
 - `shape=note` - Annotations
 - `shape=cloud` - External services
 - `shape=component` - Containers
 
 **Node with custom styling**:
 ```dot
-database [label="PostgreSQL\nPort 5432",
-          fillcolor=lightblue,
-          shape=cylinder,
-          fontsize=12];
-```
+MyService [label="Service Name\nPort 8000",
+           fillcolor=lightgreen,
+           shape=box];
 
-**Note**: The `fillcolor` attribute ensures an opaque background, making text readable.
+Database [label="PostgreSQL\nPort 5432",
+          fillcolor=skyblue,
+          shape=cylinder];
+```
 
 ### Edge Styling
 
 **Edge with label**:
 ```dot
-A -> B [label="HTTP POST", fontsize=10];
+A -> B [label="HTTP POST"];
 ```
 
 **Bold edges for emphasis**:
 ```dot
-A -> B [label="Direct Call\n(NOT HTTP)",
+A -> B [label="Critical Path",
         style=bold,
-        color=red,
-        fontsize=10];
+        color=red];
+```
+
+**Dashed edges for optional/async**:
+```dot
+A -> B [label="Async",
+        style=dashed];
 ```
 
 ### Color Palette
 
-Consistent colors across diagrams:
+Consistent colors across all diagrams:
 
 | Category | Fill Color | Use Case |
 |----------|-----------|----------|
-| **External/User** | `lightblue` | Users, external services |
-| **Frontend** | `lightyellow` | UI, web apps |
-| **Backend** | `lightgreen`, `palegreen` | APIs, services |
-| **Processing** | `lightpink`, `pink` | Engines, processors |
-| **Agent/AI** | `lightcyan`, `cyan` | Agents, AI components |
-| **Database** | `skyblue` | Databases, storage |
+| **External/User** | `lightblue` | Browsers, external clients |
+| **Frontend** | `lightyellow` | Next.js, UI components |
+| **Backend** | `lightgreen`, `palegreen` | FastAPI, services |
+| **Medical Catalog** | `lightpink`, `pink` | Catalog service |
+| **Agent/AI** | `lightcyan`, `cyan` | Agent system, tools |
+| **Database** | `skyblue` | PostgreSQL, Neo4j, Redis, Qdrant |
+| **External Services** | `plum`, `lavender` | Google Cloud, Gemini API |
 | **Infrastructure** | `lightgray`, `gray` | Containers, networks |
 | **Documentation** | `white` | Notes, legends |
 
 ### Subgraphs (Clusters)
 
-**Cluster with label**:
+Use subgraphs to group related components:
+
 ```dot
 subgraph cluster_backend {
     label="Backend Services (Port 8000)";
@@ -319,23 +179,25 @@ subgraph cluster_backend {
     style=filled;
     fontsize=14;
 
-    API [label="API Server"];
-    Service [label="Business Logic"];
+    FastAPI [label="FastAPI Server"];
+    Services [label="Business Logic"];
 }
 ```
 
 ### Multi-line Labels
 
-**Use `\n` for line breaks**:
+Use `\n` for line breaks in labels:
+
 ```dot
-node [label="Service Name\nPort 8000\nPython 3.13"];
+MyNode [label="Service Name\nPort 8000\nPython 3.13"];
 ```
 
 ### Note Boxes
 
-**Note boxes for documentation**:
+Add documentation notes to diagrams:
+
 ```dot
-note1 [label="Note:\n- Important detail 1\n- Important detail 2",
+note1 [label="Note:\n- Important detail 1\n- Important detail 2\n- Important detail 3",
        fillcolor=white,
        shape=note,
        fontsize=11];
@@ -344,128 +206,176 @@ note1 [label="Note:\n- Important detail 1\n- Important detail 2",
 ### Layout Control
 
 **Direction**:
-- `rankdir=TB` - Top to bottom (hierarchies)
-- `rankdir=LR` - Left to right (flows)
+- `rankdir=TB` - Top to bottom (good for hierarchies)
+- `rankdir=LR` - Left to right (good for flows)
+
+**Ranking**:
+```dot
+// Force nodes to same rank (horizontal alignment)
+{rank=same; NodeA; NodeB; NodeC}
+```
 
 ---
 
-## Testing Diagrams
+## Maintaining Diagrams
 
-### Testing Mermaid Diagrams
+### Regenerating SVG Files
 
-1. **GitHub Preview**: Push changes and verify rendering on GitHub in both light and dark modes
-2. **Mermaid Live Editor**: Test at https://mermaid.live/
-3. **Local Preview**:
-   ```bash
-   npm install -g @mermaid-js/mermaid-cli
-   mmdc -i diagram.mmd -o output.png
-   ```
+**Single file**:
+```bash
+cd docs/
+dot -Tsvg DATAFLOW_system_architecture.dot -o DATAFLOW_system_architecture.svg
+```
 
-### Testing Graphviz Diagrams
+**All files**:
+```bash
+./scripts/render_diagrams.sh
+```
 
-1. **Local Rendering**:
-   ```bash
-   dot -Tpng diagram.dot -o output.png
-   dot -Tsvg diagram.dot -o output.svg
-   ```
+### Validating Consistency
 
-2. **Verify font rendering**: Open generated image and check text readability
-
----
-
-## Automation Tools
-
-### Mermaid Theme Updater
-
-Ensure all Mermaid diagrams have theme configuration:
+Run the validation script to ensure all diagrams use consistent entity definitions:
 
 ```bash
-python3 scripts/fix_mermaid_dark_mode.py
+./scripts/validate_diagram_consistency.py
 ```
 
-### Graphviz Font Checker
+This checks:
+- Same entities look identical across all diagrams
+- Colors, shapes, and labels are consistent
+- No violations of standard entity definitions
 
-Verify all `.dot` files have font configuration:
+### Workflow for Architecture Changes
 
-```bash
-grep -L "fontsize" docs/DATAFLOW_*.dot
-```
+When the system architecture changes:
+
+1. **Identify affected diagrams**: Determine which diagrams need updates
+2. **Update .dot files**: Edit the source `.dot` files
+3. **Use standard entities**: Reference `DATAFLOW_entities.dot` for consistent definitions
+4. **Validate consistency**: Run `./scripts/validate_diagram_consistency.py`
+5. **Regenerate SVGs**: Run `./scripts/render_diagrams.sh`
+6. **Test locally**: Open SVG files in browser to verify rendering
+7. **Commit both**: Commit both `.dot` source and `.svg` output files
+8. **Update markdown**: Update any markdown files that reference the diagrams
+
+### Maintenance Scripts
+
+| Script | Purpose |
+|--------|---------|
+| **`scripts/render_diagrams.sh`** | Regenerate all SVG files from .dot sources |
+| **`scripts/validate_diagram_consistency.py`** | Check entity definitions are consistent |
 
 ---
 
-## Quick Reference
+## Complete Example
 
-### Mermaid Template
-
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Layer Name"
-        A[Component<br/>Port 8000]
-        B[Component<br/>Details]
-    end
-
-    A -->|"Action/Protocol"| B
-```
-
-### Graphviz Template
+### Example .dot File
 
 ```dot
-// Diagram Title
-digraph DiagramName {
-    rankdir=TB;
-    bgcolor="#f5f5f5";  // Light gray background
+// User Authentication Flow
+// Shows Google SSO integration with JWT token generation
+digraph AuthenticationFlow {
+    rankdir=LR;
 
-    // Font settings for readability
-    graph [fontsize=14, fontname="Arial"];
+    // Font settings and background
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
     node [shape=box, style=filled, fontsize=12, fontname="Arial"];
     edge [fontsize=10, fontname="Arial"];
 
-    // Nodes with opaque backgrounds
-    service [label="Service Name\nPort 8000", fillcolor=lightgreen];
-    database [label="Database", fillcolor=skyblue, shape=cylinder];
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+    FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+    Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
 
-    // Edges
-    service -> database [label="Query", fontsize=10];
+    // External service
+    GoogleSSO [label="Google SSO", fillcolor=plum, shape=cloud];
 
-    // Notes with opaque backgrounds
-    note1 [label="Note:\n- Detail 1",
+    // Flow
+    Browser -> NextJS [label="Visit /login"];
+    NextJS -> GoogleSSO [label="Redirect"];
+    GoogleSSO -> NextJS [label="Auth code"];
+    NextJS -> FastAPI [label="POST /api/v1/auth/google"];
+    FastAPI -> GoogleSSO [label="Verify token"];
+    FastAPI -> Postgres [label="Store session"];
+    Postgres -> FastAPI [label="Session ID"];
+    FastAPI -> Browser [label="Return JWT"];
+
+    // Note
+    note1 [label="JWT Token:\n- Access token (15 min)\n- Refresh token (7 days)\n- HTTP-only cookies",
            fillcolor=white,
            shape=note,
            fontsize=11];
 }
 ```
 
+### Rendering
+
+```bash
+dot -Tsvg DATAFLOW_authentication.dot -o DATAFLOW_authentication.svg
+```
+
+### Markdown Reference
+
+```markdown
+## Authentication Flow
+
+![Authentication Flow](DATAFLOW_authentication.svg)
+
+*Source: [DATAFLOW_authentication.dot](DATAFLOW_authentication.dot)*
+```
+
 ---
 
 ## Checklist for New Diagrams
 
-### Mermaid Checklist
-- [ ] Theme configuration with background present (`%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%`)
-- [ ] Node labels are concise (use `<br/>` for multi-line)
-- [ ] Edge labels with special characters are quoted
-- [ ] Tested on GitHub (both light and dark modes)
-
-### Graphviz Checklist
-- [ ] Font configuration present (graph, node, edge)
-- [ ] Font sizes follow standards (14pt/12pt/10pt/11pt)
+- [ ] Used standard Graphviz .dot format
+- [ ] Included font configuration (14pt/12pt/10pt)
+- [ ] Set `bgcolor="#f5f5f5"` with `style=filled`
+- [ ] Used standard entity definitions from `DATAFLOW_entities.dot`
 - [ ] All nodes have `style=filled` for opaque backgrounds
 - [ ] Colors follow standard palette
-- [ ] Rendered locally with `dot` command
-- [ ] Text is readable in generated image
+- [ ] Validated with `./scripts/validate_diagram_consistency.py`
+- [ ] Rendered successfully with `dot -Tsvg`
+- [ ] Tested SVG display in browser
+- [ ] Committed both .dot and .svg files
+- [ ] Updated markdown references
+
+---
+
+## Troubleshooting
+
+**Syntax errors when rendering**:
+```bash
+# Check for syntax errors
+dot -Tsvg diagram.dot -o diagram.svg
+# Graphviz will report line numbers of errors
+```
+
+**Entity inconsistencies**:
+```bash
+# Validate all diagrams
+./scripts/validate_diagram_consistency.py
+# Fix any reported issues
+```
+
+**SVG not displaying on GitHub**:
+- Ensure the .svg file is committed to the repository
+- Check the markdown reference uses correct relative path
+- Verify the SVG file is not empty: `ls -lh diagram.svg`
 
 ---
 
 ## References
 
-- [Mermaid Documentation](https://mermaid.js.org/)
-- [Mermaid Theme Configuration](https://mermaid.js.org/config/theming.html)
 - [Graphviz Documentation](https://graphviz.org/documentation/)
 - [Graphviz Attributes Reference](https://graphviz.org/doc/info/attrs.html)
+- [Graphviz Node Shapes](https://graphviz.org/doc/info/shapes.html)
+- [Graphviz Colors](https://graphviz.org/doc/info/colors.html)
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-01-02
+**Document Version**: 2.0
+**Last Updated**: 2026-01-05
 
-**Remember**: Always define opaque background colors for text readability!
+**All diagrams use Graphviz + SVG with consistent entity definitions.**

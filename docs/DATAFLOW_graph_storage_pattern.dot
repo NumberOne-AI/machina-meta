@@ -1,0 +1,42 @@
+// Diagram #14: Graph Database Storage Pattern
+// Instance→Type pattern for multi-tenancy in Neo4j
+
+digraph GraphStoragePattern {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=11, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Instance Layer (Patient-Specific)
+    subgraph cluster_instance {
+        label="Instance Layer (Patient-Specific)";
+        fillcolor=mistyrose;
+        style=filled;
+
+        DocRef [label="DocumentReferenceNode\nuuid: doc-123\npatient_id: patient-456\nfile_id: file-789\ndocument_name: Lab Report\nreport_date: 2024-12-15", fillcolor="#ffccbc"];
+
+        ObsVal1 [label="ObservationValueNode\nuuid: obs-val-1\nvalue: 185\nunit: mg/dL\nobservation_date: 2024-12-15\npatient_id: patient-456", fillcolor="#ffccbc"];
+
+        ObsVal2 [label="ObservationValueNode\nuuid: obs-val-2\nvalue: 110\nunit: mg/dL\nobservation_date: 2024-12-15\npatient_id: patient-456", fillcolor="#ffccbc"];
+    }
+
+    // Type Layer (Shared)
+    subgraph cluster_type {
+        label="Type Layer (Shared Definitions)";
+        fillcolor=lightgreen;
+        style=filled;
+
+        ObsType1 [label="ObservationTypeNode\ncatalog_id: cat-001\nname: Cholesterol Total\nunit: mg/dL\naliases: [Total Cholesterol, CHOL]", fillcolor="#c5e1a5"];
+
+        ObsType2 [label="ObservationTypeNode\ncatalog_id: cat-002\nname: LDL Cholesterol\nunit: mg/dL\naliases: [LDL, LDL-C]", fillcolor="#c5e1a5"];
+    }
+
+    // Relationships
+    DocRef -> ObsType1 [label="CONTAINS"];
+    DocRef -> ObsType2 [label="CONTAINS"];
+    ObsType1 -> ObsVal1 [label="HAS_VALUE"];
+    ObsType2 -> ObsVal2 [label="HAS_VALUE"];
+
+    // Note
+    Note [label="Critical Pattern:\nInstance→Type separation\nfor tenant scoping.\n\nAlways query Instance nodes\n(patient-specific) first,\nthen traverse to Type nodes\n(shared definitions).", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

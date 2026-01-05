@@ -1,0 +1,20 @@
+// Diagram #11: Biomarker Data Model
+// Data structure for biomarkers extracted from documents
+
+digraph BiomarkerDataModel {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=record, style=filled, fontsize=11, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Classes
+    Biomarker [label="{Biomarker|+ long_name: string\l+ short_name: string\l+ document_name: string\l+ document_name_modifier: string\l+ document_footnote: string\l+ aliases: list[string]\l+ values: list[BiomarkerValue]\l+ confidence: float\l+ is_biomarker_derivative: bool\l+ specimen_type: string\l+ panel_name: string\l}", fillcolor=lightcyan];
+
+    BiomarkerValue [label="{BiomarkerValue|+ value: string\l+ observation_date: string\l+ observation_time: string\l+ unit: string\l+ label: string\l+ name_location: SourceLocation\l+ value_location: SourceLocation\l+ unit_location: SourceLocation\l}", fillcolor=lightyellow];
+
+    SourceLocation [label="{SourceLocation|+ page_number: int\l+ x: int\l+ y: int\l+ width: int\l+ height: int\l}", fillcolor=wheat];
+
+    // Relationships
+    Biomarker -> BiomarkerValue [label="1 to many\nvalues"];
+    BiomarkerValue -> SourceLocation [label="0 to 3\nlocations"];
+}

@@ -1,0 +1,59 @@
+// Diagram #8: High-Level Document Processing Flow
+// Complete pipeline from PDF upload to graph storage
+
+digraph DocumentProcessing {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+    FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+    FileStorageAPI [label="File Storage API", fillcolor=wheat];
+    DocProcAPI [label="DocProc API", fillcolor=wheat];
+    ExtractionPipeline [label="Extraction Pipeline", fillcolor=wheat];
+    MedicalDataEngine [label="Medical Data Engine", fillcolor=palegreen];
+    MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink];
+    GCS [label="Google Cloud Storage", fillcolor=lavender, shape=cylinder];
+    Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+    Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+    Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+    GeminiAPI [label="Google Gemini API", fillcolor=plum];
+
+    // Upload phase
+    Browser -> NextJS [label="User uploads PDF"];
+    NextJS -> FileStorageAPI [label="HTTP POST\n/files/upload\nMultipart form"];
+    FileStorageAPI -> GCS [label="GCS API\nUpload binary"];
+    FileStorageAPI -> Postgres [label="PostgreSQL\nINSERT FileRecord"];
+    Postgres -> FileStorageAPI [label="file_id", style=dashed];
+    FileStorageAPI -> NextJS [label="HTTP 200\nfile_id", style=dashed];
+
+    // Processing phase
+    NextJS -> DocProcAPI [label="HTTP POST\n/process_document\nfile_id"];
+    DocProcAPI -> NextJS [label="SSE stream\n/tasks/stream", color=blue];
+    DocProcAPI -> ExtractionPipeline [label="Background task\nPython asyncio"];
+
+    // Extraction
+    ExtractionPipeline -> GCS [label="GCS API\nFetch file"];
+    ExtractionPipeline -> GeminiAPI [label="HTTPS\nVision API\nExtract biomarkers"];
+    GeminiAPI -> ExtractionPipeline [label="List[Biomarker]", style=dashed];
+
+    // Medical data engine processing
+    ExtractionPipeline -> MedicalDataEngine [label="Python call\nprocess_raw_medical_data()"];
+    MedicalDataEngine -> MedicalCatalog [label="HTTP POST\n/biomarkers/search_batch"];
+    MedicalCatalog -> Qdrant [label="Qdrant gRPC\nVector search"];
+    Qdrant -> MedicalCatalog [label="Catalog matches", style=dashed];
+    MedicalCatalog -> MedicalDataEngine [label="HTTP 200\ncatalog_id, names", style=dashed];
+
+    // Graph storage
+    MedicalDataEngine -> Neo4j [label="Neo4j Bolt Protocol\nCREATE nodes:\nDocumentReference\nObservationType\nObservationValue"];
+    Neo4j -> MedicalDataEngine [label="Success", style=dashed];
+
+    // Progress updates
+    ExtractionPipeline -> DocProcAPI [label="Progress events", style=dotted, color=blue];
+    MedicalDataEngine -> DocProcAPI [label="Complete event", style=dotted, color=blue];
+    DocProcAPI -> NextJS [label="SSE: complete", style=dashed, color=blue];
+    NextJS -> Browser [label="UI update\nShow biomarkers", style=dashed];
+}

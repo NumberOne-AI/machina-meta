@@ -1,0 +1,28 @@
+// Diagram #12: Biomarker Extraction with Gemini Vision
+// Extraction process from document pages to normalized biomarkers
+
+digraph BiomarkerExtraction {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Nodes
+    DocPages [label="Document Pages\n(PDF converted\nto images)", fillcolor=lightblue];
+    GeminiVision [label="Gemini 2.0 Vision", fillcolor=plum];
+    ExtractTool [label="extract_biomarkers\ntool", fillcolor=wheat];
+    Validation [label="Validation", fillcolor=wheat, shape=diamond];
+    BiomarkerList [label="List of Biomarkers", fillcolor=lightgreen];
+    EmptyResult [label="Empty result", fillcolor=lightcoral];
+    Normalizer [label="NormalizerAgent", fillcolor=lightcyan];
+    NormalizedBiomarkers [label="Normalized Biomarkers\n(clean names)", fillcolor=palegreen];
+
+    // Flow
+    DocPages -> GeminiVision [label="All pages"];
+    GeminiVision -> ExtractTool [label="Tool calling"];
+    ExtractTool -> Validation;
+    Validation -> BiomarkerList [label="Valid"];
+    Validation -> EmptyResult [label="Invalid"];
+    BiomarkerList -> Normalizer;
+    Normalizer -> NormalizedBiomarkers [label="Clean names:\n- Remove footnotes\n- Fix subscripts\n- Remove abbreviations"];
+}

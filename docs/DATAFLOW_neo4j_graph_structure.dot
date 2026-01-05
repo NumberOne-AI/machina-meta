@@ -1,0 +1,44 @@
+// Diagram #17: Neo4j Graph Structure
+// Instance→Type pattern with patient medical data
+
+digraph Neo4jGraphStructure {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Instance Layer
+    subgraph cluster_instance {
+        label="Instance Layer (Patient-Specific)";
+        fillcolor=mistyrose;
+        style=filled;
+
+        Patient [label="Patient\nuuid\npatient_id", fillcolor="#ffccbc"];
+        ConditionCase [label="ConditionCase\nuuid\npatient_id", fillcolor="#ffccbc"];
+        Observation [label="Observation\nuuid\nvalue\ndate", fillcolor="#ffccbc"];
+        SymptomEpisode [label="SymptomEpisode\nuuid\nseverity", fillcolor="#ffccbc"];
+    }
+
+    // Type Layer
+    subgraph cluster_type {
+        label="Type Layer (Shared Definitions)";
+        fillcolor=lightgreen;
+        style=filled;
+
+        ConditionType [label="ConditionType\nname: Diabetes", fillcolor="#c5e1a5"];
+        ObservationType [label="ObservationType\nname: Cholesterol\nloinc_code", fillcolor="#c5e1a5"];
+        SymptomType [label="SymptomType\nname: Headache", fillcolor="#c5e1a5"];
+    }
+
+    // Relationships
+    Patient -> ConditionCase [label="HAS_CONDITION"];
+    Patient -> Observation [label="HAS_OBSERVATION"];
+    Patient -> SymptomEpisode [label="HAS_SYMPTOM"];
+
+    ConditionCase -> ConditionType [label="IS_A"];
+    Observation -> ObservationType [label="IS_A"];
+    SymptomEpisode -> SymptomType [label="IS_A"];
+
+    // Note
+    Note [label="Critical Pattern:\nCypherAgent ALWAYS queries\nInstance nodes first (patient-specific),\nthen traverses to Type nodes (shared).\n\nNever query Type nodes directly\nto prevent data leakage across patients.", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

@@ -1,0 +1,35 @@
+// Diagram #24: Monitoring & Observability
+// Data flow monitoring points and observability stack
+
+digraph MonitoringObservability {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Request flow
+    Request [label="HTTP Request", fillcolor=lightblue];
+    APIGateway [label="API Gateway\nRequest ID", fillcolor=wheat];
+    Middleware [label="Middleware\nLog + Metrics", fillcolor=wheat];
+    ServiceLayer [label="Service Layer\nBusiness Logic", fillcolor=palegreen];
+    Database [label="Database\nQuery Time", fillcolor=skyblue, shape=cylinder];
+
+    // Observability tools
+    Sentry [label="Sentry\nError Tracking", fillcolor=lightcoral];
+    Langfuse [label="Langfuse\nLLM Observability", fillcolor=plum];
+    Prometheus [label="Prometheus\nTime Series Metrics", fillcolor=lightyellow];
+
+    // Main flow
+    Request -> APIGateway [label="1"];
+    APIGateway -> Middleware [label="2"];
+    Middleware -> ServiceLayer [label="3"];
+    ServiceLayer -> Database [label="4"];
+
+    // Monitoring connections
+    Middleware -> Sentry [label="Logs", style=dotted];
+    ServiceLayer -> Langfuse [label="Traces\nLLM calls", style=dotted];
+    Database -> Prometheus [label="Metrics\nQuery times", style=dotted];
+
+    // Stack note
+    StackNote [label="Observability Stack:\n- Sentry: Error tracking (confirmed in use)\n- Langfuse: LLM tracing (deployed in K8s, optional for dev)\n- Structlog: Structured logging (Python)\n- Prometheus: Metrics (infrastructure level)", shape=note, fillcolor=lightyellow, style="filled,dashed"];
+}

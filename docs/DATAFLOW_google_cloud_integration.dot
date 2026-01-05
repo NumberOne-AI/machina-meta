@@ -1,0 +1,45 @@
+// Diagram #20: Google Cloud Integration
+// MachinaMed backend integration with Google Cloud Platform
+
+digraph GoogleCloudIntegration {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // MachinaMed Backend
+    subgraph cluster_backend {
+        label="MachinaMed Backend";
+        fillcolor=lightgreen;
+        style=filled;
+
+        FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+        AgentSystem [label="Agent System\n23 agents", fillcolor=lightcyan];
+    }
+
+    // Google Cloud Platform
+    subgraph cluster_gcp {
+        label="Google Cloud Platform";
+        fillcolor=lavender;
+        style=filled;
+
+        VertexAI [label="Vertex AI\nus-central1", fillcolor=plum];
+        GeminiAPI [label="Gemini API\nAI Studio", fillcolor=plum];
+        GCS [label="Google Cloud Storage", fillcolor=lavender];
+        IAM [label="IAM\nService Account", fillcolor=wheat];
+    }
+
+    // Authentication
+    ServiceAcct [label="Service Account JSON\nn1-machina1-*.json", fillcolor=lightyellow];
+
+    // Connections
+    FastAPI -> ServiceAcct [label="Load credentials"];
+    ServiceAcct -> IAM [label="Authenticate"];
+
+    AgentSystem -> VertexAI [label="HTTPS\nLLM API calls\n(primary)"];
+    AgentSystem -> GeminiAPI [label="HTTPS\nLLM API calls\n(alternative)"];
+    FastAPI -> GCS [label="GCS Client API\nFile upload"];
+
+    IAM -> VertexAI [label="Authorize"];
+    IAM -> GCS [label="Authorize"];
+}

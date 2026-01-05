@@ -1,0 +1,23 @@
+// Diagram #3: User Interaction Flow
+// User action to UI update with medication entry example
+
+digraph UserInteraction {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+    FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+    Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+
+    // Flow
+    Browser -> NextJS [label="User clicks\n'Add Medication'"];
+    NextJS -> FastAPI [label="HTTP POST\n/api/v1/graph-memory/\nmedical/medication/\nintake-regimens\nAuth: JWT"];
+    FastAPI -> Neo4j [label="Cypher Query\nCREATE IntakeRegimen"];
+    Neo4j -> FastAPI [label="Success", style=dashed];
+    FastAPI -> NextJS [label="HTTP 200\nJSON response", style=dashed];
+    NextJS -> Browser [label="UI update\nShow success", style=dashed];
+}

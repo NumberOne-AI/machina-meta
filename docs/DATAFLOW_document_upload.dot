@@ -1,0 +1,33 @@
+// Diagram #9: Document Upload & File Storage
+// File upload flow with storage type selection (GCS or Local)
+
+digraph DocumentUpload {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow];
+    FileStorageAPI [label="File Storage API", fillcolor=wheat];
+    GCS [label="Google Cloud Storage", fillcolor=lavender, shape=cylinder];
+    LocalFS [label="Local Filesystem", fillcolor=lightgray, shape=cylinder];
+    Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+
+    // Upload flow
+    Browser -> NextJS [label="User selects file"];
+    NextJS -> FileStorageAPI [label="HTTP POST\n/files/upload\nMultipart form data"];
+
+    // Storage branches
+    FileStorageAPI -> GCS [label="GCS Client API\nUpload binary\n(if storage=GCS)", color=green];
+    FileStorageAPI -> LocalFS [label="File I/O\nWrite to disk\n(if storage=LOCAL)", color=orange];
+
+    // Metadata storage
+    GCS -> FileStorageAPI [label="gs://path", style=dashed, color=green];
+    LocalFS -> FileStorageAPI [label="/path/to/file", style=dashed, color=orange];
+    FileStorageAPI -> Postgres [label="PostgreSQL\nINSERT FileRecord\n(file_id, filename,\nmimetype, size,\nstorage_path,\nuser_id)"];
+    Postgres -> FileStorageAPI [label="file_id", style=dashed];
+    FileStorageAPI -> NextJS [label="HTTP 200\nFileRecordOut", style=dashed];
+    NextJS -> Browser [label="Show file info", style=dashed];
+}

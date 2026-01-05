@@ -56,63 +56,9 @@ All diagrams in this document follow the standards defined in **[DIAGRAMS.md](DI
 
 ### High-Level Architecture Diagram
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Client Layer"
-        Browser[Web Browser]
-    end
+![High-Level Architecture](DATAFLOW_highlevel_architecture.svg)
 
-    subgraph "Frontend Service"
-        NextJS[Next.js App<br/>Port 3000]
-        NextAPI[Next.js API Routes]
-    end
-
-    subgraph "Backend Services"
-        FastAPI[FastAPI Backend<br/>Port 8000]
-        MedCat[Medical Catalog<br/>Port 8001]
-    end
-
-    subgraph "Agent Layer"
-        ADK[Google ADK Runtime]
-        Agents[23 Agents<br/>11 Types]
-        Tools[Agent Tools]
-    end
-
-    subgraph "Data Layer"
-        Postgres[(PostgreSQL<br/>5432)]
-        Neo4j[(Neo4j<br/>7474/7687)]
-        Redis[(Redis<br/>6379)]
-        Qdrant[(Qdrant<br/>6333)]
-    end
-
-    subgraph "External Services"
-        Gemini[Google Gemini API]
-        GCP[Google Cloud<br/>Vertex AI]
-    end
-
-    Browser -->|HTTP/WebSocket| NextJS
-    NextJS -->|wretch HTTP| FastAPI
-    NextAPI -->|Server-side| FastAPI
-
-    FastAPI -->|Internal Calls| ADK
-    FastAPI -->|HTTP| MedCat
-
-    ADK -->|Manages| Agents
-    Agents -->|Call| Tools
-
-    Tools -->|Direct Access| Postgres
-    Tools -->|Cypher Queries| Neo4j
-    Tools -->|Pub/Sub| Redis
-    Tools -->|Vector Search| Qdrant
-
-    Agents -->|LLM Calls| Gemini
-    FastAPI -->|Auth/Storage| GCP
-
-    style ADK fill:#e1f5ff
-    style Agents fill:#b3e5fc
-    style Tools fill:#81d4fa
-```
+*Source: [DATAFLOW_highlevel_architecture.dot](DATAFLOW_highlevel_architecture.dot) - Complete system architecture overview with all major components*
 
 ---
 
@@ -120,42 +66,9 @@ graph TB
 
 ### Complete Service Communication Map
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    subgraph "Frontend (Port 3000)"
-        UI[React UI Components]
-        Store[Zustand State]
-        API[API Client<br/>wretch]
-    end
+![Service Communication](DATAFLOW_service_communication.svg)
 
-    subgraph "Backend (Port 8000)"
-        Router[FastAPI Routers<br/>126 endpoints]
-        Service[Service Layer]
-        AgentMgr[Agent Manager]
-    end
-
-    subgraph "Medical Catalog (Port 8001)"
-        CatAPI[Biomarker API<br/>21 endpoints]
-        Qdrant2[Qdrant Client]
-    end
-
-    UI -->|User Actions| Store
-    Store -->|State Changes| API
-    API -->|"POST /api/v1/medical-agent/session/{id}/send"| Router
-    API -->|"GET /api/v1/graph-memory/medical/*"| Router
-    API -->|"POST /api/v1/auth/*"| Router
-
-    Router -->|Route Handler| Service
-    Service -->|Create/Run| AgentMgr
-    Service -->|HTTP GET| CatAPI
-
-    CatAPI -->|Search| Qdrant2
-
-    style UI fill:#ffebee
-    style Router fill:#e8f5e9
-    style CatAPI fill:#fff3e0
-```
+*Source: [DATAFLOW_service_communication.dot](DATAFLOW_service_communication.dot) - Service-level communication patterns and API endpoints*
 
 ### Service Endpoints Summary
 
@@ -181,98 +94,21 @@ graph LR
 
 ### User Interaction Flow
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    participant User
-    participant React as React Component
-    participant Zustand as Zustand Store
-    participant Wretch as wretch HTTP Client
-    participant FastAPI as Backend Router
-    participant Service as Service Layer
-    participant DB as Database
+![User Interaction Flow](DATAFLOW_user_interaction.svg)
 
-    User->>React: Click "Add Medication"
-    React->>Zustand: Update UI State
-    Zustand->>Wretch: POST /api/v1/graph-memory/medical/medication/intake-regimens
-
-    Wretch->>FastAPI: HTTP Request + Auth Header
-    FastAPI->>FastAPI: Validate JWT Token
-    FastAPI->>Service: create_intake_regimen(data)
-    Service->>DB: INSERT INTO neo4j
-    DB-->>Service: Success
-    Service-->>FastAPI: IntakeRegimenResponse
-    FastAPI-->>Wretch: JSON Response
-
-    Wretch-->>Zustand: Update State
-    Zustand-->>React: Re-render
-    React-->>User: Show Success Message
-```
+*Source: [DATAFLOW_user_interaction.dot](DATAFLOW_user_interaction.dot) - User interaction flow from frontend to database*
 
 ### Authentication Flow
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    participant Browser
-    participant NextJS as Next.js Frontend
-    participant Backend as FastAPI Backend
-    participant DB as PostgreSQL
+![Authentication Flow](DATAFLOW_authentication.svg)
 
-    Browser->>NextJS: Visit /login
-    NextJS->>Browser: Show Google SSO
-    Browser->>NextJS: Click "Sign in with Google"
-    NextJS->>Backend: POST /api/v1/auth/google
-    Backend->>Backend: Verify Google Token
-    Backend->>DB: SELECT user WHERE email=?
-
-    alt User Exists
-        DB-->>Backend: User Record
-    else New User
-        Backend->>DB: INSERT INTO users
-        DB-->>Backend: New User Record
-    end
-
-    Backend->>Backend: Generate JWT (Access + Refresh)
-    Backend-->>NextJS: Set HTTP-Only Cookies
-    NextJS-->>Browser: Redirect to /dashboard
-
-    loop Every 60s
-        Browser->>Backend: GET /api/v1/auth/session
-        Backend-->>Browser: Session Valid
-    end
-```
+*Source: [DATAFLOW_authentication.dot](DATAFLOW_authentication.dot) - Google SSO authentication flow with JWT tokens*
 
 ### Real-Time Chat Flow (WebSocket)
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    participant User
-    participant Browser
-    participant WS as WebSocket Client
-    participant Backend as Backend (Port 8000)
-    participant Redis as Redis Pub/Sub
-    participant Agents as Agent System
+![Real-Time Chat](DATAFLOW_realtime_chat.svg)
 
-    User->>Browser: Type message in chat
-    Browser->>Backend: POST /api/v1/medical-agent/session/{id}/send
-    Backend->>Agents: Process message
-
-    par Agent Processing
-        Agents->>Agents: TriageAgent routes query
-        Agents->>Agents: HealthConsultantAgent processes
-    and Real-time Updates
-        Agents->>Redis: PUBLISH agent_event
-        Redis->>Backend: SUBSCRIBE agent_event
-        Backend->>WS: Server-Sent Event (SSE)
-        WS->>Browser: Update UI with streaming response
-        Browser->>User: Show response chunks
-    end
-
-    Agents-->>Backend: Final Response
-    Backend-->>Browser: Complete
-```
+*Source: [DATAFLOW_realtime_chat.dot](DATAFLOW_realtime_chat.dot) - Real-time chat with Redis pub/sub and SSE streaming*
 
 ---
 
@@ -280,107 +116,15 @@ sequenceDiagram
 
 ### Agent Hierarchy and Tool Calling
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TD
-    subgraph "Root Agent"
-        TusdiAI[TusdiAI<br/>ParallelAgent]
-    end
+![Agent Hierarchy](DATAFLOW_agent_hierarchy.svg)
 
-    subgraph "Routing Branch"
-        Triage[TriageAgent<br/>Gemini 2.5 Flash]
-        URLAgent[URLHandlerAgent]
-        Consultant[HealthConsultantAgent<br/>Gemini 2.5 Pro]
-        ConsultantLite[HealthConsultantLiteAgent<br/>Gemini 2.5 Pro]
-    end
-
-    subgraph "Extraction Branch"
-        ParallelExt[ParallelDataExtractor]
-        DataEntry[DataEntryAgent]
-        DataExt[DataExtractorAgent]
-        MedMeas[MedicalMeasurementsAgent]
-        MedCtx[MedicalContextAgent]
-    end
-
-    subgraph "Agent Tools (Python Functions)"
-        QueryGraph[query_graph<br/>Neo4j Queries]
-        SaveRes[save_resources<br/>FHIR Storage]
-        URLTool[url_context<br/>Web Scraping]
-    end
-
-    subgraph "Supporting Agents"
-        Cypher[CypherAgent<br/>NL to Cypher]
-        Google[GoogleSearchAgent]
-    end
-
-    TusdiAI -->|Parallel Execution| Triage
-    TusdiAI -->|Parallel Execution| ParallelExt
-
-    Triage -->|Routes to| URLAgent
-    Triage -->|Routes to| Consultant
-    Triage -->|Routes to| ConsultantLite
-
-    ParallelExt -->|Runs Concurrently| DataEntry
-    ParallelExt -->|Runs Concurrently| DataExt
-    ParallelExt -->|Runs Concurrently| MedMeas
-    ParallelExt -->|Runs Concurrently| MedCtx
-
-    Consultant -->|Calls| QueryGraph
-    Consultant -->|Calls| SaveRes
-    URLAgent -->|Calls| URLTool
-
-    QueryGraph -->|Uses| Cypher
-    Consultant -->|May Use| Google
-
-    style TusdiAI fill:#e1bee7
-    style Triage fill:#ce93d8
-    style Consultant fill:#ba68c8
-    style ParallelExt fill:#ab47bc
-    style QueryGraph fill:#9c27b0
-```
+*Source: [DATAFLOW_agent_hierarchy.dot](DATAFLOW_agent_hierarchy.dot) - Agent composition and tool calling patterns*
 
 ### Agent Tool Execution Flow (Internal Python Calls)
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    participant User
-    participant Triage as TriageAgent<br/>(Flash)
-    participant Consultant as HealthConsultantAgent<br/>(Pro)
-    participant Tool as MedicalDataAgentTools<br/>(Python Class)
-    participant Cypher as CypherAgent<br/>(Flash)
-    participant Neo4j as Neo4j Database
+![Agent Tool Execution](DATAFLOW_agent_tool_execution.svg)
 
-    User->>Triage: "What's my latest cholesterol?"
-    Triage->>Triage: Analyze query type
-    Triage->>Triage: Route to HealthConsultantAgent
-
-    activate Consultant
-    Consultant->>Consultant: Gemini decides to call query_graph tool
-
-    Note over Consultant,Tool: Tool call is a DIRECT Python function call<br/>NOT an HTTP request
-
-    Consultant->>Tool: query_graph(natural_language_query=<br/>"Get latest cholesterol for patient")
-
-    activate Tool
-    Tool->>Tool: Extract patient_id from context
-    Tool->>Cypher: Generate Cypher query
-
-    activate Cypher
-    Cypher->>Cypher: Gemini converts NL to Cypher
-    Cypher-->>Tool: MATCH (p:Patient {uuid: $patient_id})<br/>-[:HAS_OBSERVATION]->(o:Observation)<br/>-[:IS_A]->(ot:ObservationType)<br/>WHERE toLower(ot.name) CONTAINS "cholesterol"
-    deactivate Cypher
-
-    Tool->>Neo4j: Execute Cypher query
-    Neo4j-->>Tool: Query results (nodes + relationships)
-    Tool->>Tool: Format results as markdown
-    Tool-->>Consultant: "**ObservationType**: Total Cholesterol<br/>- value_numeric: 185<br/>- unit: mg/dL<br/>- observed_at: 2024-12-15"
-    deactivate Tool
-
-    Consultant->>Consultant: Gemini incorporates data into response
-    Consultant-->>User: "Your most recent cholesterol test from December 15th..."
-    deactivate Consultant
-```
+*Source: [DATAFLOW_agent_tool_execution.dot](DATAFLOW_agent_tool_execution.dot) - Agent tool execution with internal Python function calls*
 
 ### Key Insight: Agents Use Internal APIs, Not HTTP
 
@@ -427,91 +171,19 @@ MachinaMed's document processing pipeline extracts biomarkers and medical data f
 
 ### High-Level Document Processing Flow
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    autonumber
-    participant User
-    participant Frontend as Frontend (3000)
-    participant FileAPI as File Storage API
-    participant GCS as Google Cloud Storage
-    participant DocProcAPI as DocProc API
-    participant Queue as Task Queue
-    participant Pipeline as Extraction Pipeline
-    participant Gemini as Gemini Vision API
-    participant MedCat as Medical Catalog (8001)
-    participant Engine as Medical Data Engine
-    participant Neo4j as Neo4j Graph DB
-    participant Postgres as PostgreSQL
+![Document Processing Flow](DATAFLOW_document_processing_highlevel.svg)
 
-    User->>Frontend: Upload PDF/Image
-    Frontend->>FileAPI: POST /files/upload
-    FileAPI->>GCS: Store file
-    GCS-->>FileAPI: file_id
-    FileAPI->>Postgres: Save FileRecord metadata
-    FileAPI-->>Frontend: FileRecordOut (file_id)
-
-    Frontend->>DocProcAPI: POST /process_document {file_id}
-    DocProcAPI->>Queue: Add to task queue
-    Queue-->>DocProcAPI: task_id
-    DocProcAPI-->>Frontend: ProcessDocumentResponse (task_id)
-
-    Frontend->>DocProcAPI: GET /tasks/stream (SSE)
-
-    Queue->>Pipeline: Pick up task (background worker)
-    Pipeline->>GCS: Fetch file
-    Pipeline->>Pipeline: Convert PDF to images
-
-    Pipeline->>Gemini: Extract metadata (patient, dates)
-    Gemini-->>Pipeline: Metadata (patient_name, report_date)
-    Pipeline->>DocProcAPI: Emit SSE event (phase: detect)
-    DocProcAPI-->>Frontend: SSE: Metadata extracted
-
-    Pipeline->>Gemini: Extract biomarkers (all pages)
-    Gemini-->>Pipeline: List[Biomarker] with values
-    Pipeline->>DocProcAPI: Emit SSE event (phase: process)
-    DocProcAPI-->>Frontend: SSE: Biomarkers extracted
-
-    Pipeline->>Pipeline: Normalize biomarker names
-    Note over Pipeline: Remove footnotes, clean subscripts
-
-    Pipeline->>Engine: process_raw_medical_data(DocumentResourcesNew)
-    Engine->>Neo4j: Create DocumentReferenceNode
-
-    Engine->>MedCat: POST /biomarkers/search_batch
-    MedCat-->>Engine: Catalog entries (catalog_id, unit)
-
-    Engine->>Engine: Deduplicate by (catalog_id, unit)
-
-    Engine->>Neo4j: Create ObservationTypeNodes
-    Engine->>Neo4j: Create ObservationValueNodes
-    Engine->>Neo4j: Link DocumentReference → Observations
-
-    Engine-->>Pipeline: Processing complete
-    Pipeline->>DocProcAPI: Emit SSE event (phase: complete)
-    DocProcAPI-->>Frontend: SSE: Document saved
-    Frontend-->>User: Show extracted biomarkers
-```
+*Source: [DATAFLOW_document_processing_highlevel.dot](DATAFLOW_document_processing_highlevel.dot) - High-level document processing flow with SSE events*
 
 ### Document Upload & File Storage
 
 **Endpoints**: `repos/dem2/services/file-storage/src/machina/file_storage/router.py`
 
 **Upload Flow**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    A[User] -->|Upload file| B[POST /files/upload]
-    B -->|FileService.upload| C{Storage Type}
-    C -->|GCS| D[Google Cloud Storage]
-    C -->|Local| E[Local Filesystem]
-    D -->|file_id| F[PostgreSQL FileRecord]
-    E -->|file_id| F
-    F -->|FileRecordOut| G[Return to user]
 
-    style B fill:#e3f2fd
-    style F fill:#c8e6c9
-```
+![Document Upload](DATAFLOW_document_upload.svg)
+
+*Source: [DATAFLOW_document_upload.dot](DATAFLOW_document_upload.dot) - Document upload flow with GCS or local storage*
 
 **File Storage Schema** (PostgreSQL):
 ```
@@ -530,36 +202,9 @@ FileRecord:
 
 **Location**: `repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py`
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Pipeline Stages"
-        A[1. Load File] -->|PDF or Image| B[2. Convert to Images]
-        B -->|Page images| C[3. Metadata Extraction]
-        C -->|MetadataAgent<br/>Gemini Vision| D[4. Biomarker Extraction]
-        D -->|GenericAgent<br/>Gemini Vision| E[5. Normalization]
-        E -->|NormalizerAgent| F[6. Deduplication]
-        F --> G[PipelineResult]
-    end
+![Extraction Pipeline](DATAFLOW_extraction_pipeline.svg)
 
-    subgraph "Parallel Processing"
-        B -->|Max 3 concurrent| B1[Page 1]
-        B --> B2[Page 2]
-        B --> B3[Page 3]
-    end
-
-    subgraph "Progress Events"
-        C -.->|SSE| H[phase: detect]
-        D -.->|SSE| I[phase: process]
-        F -.->|SSE| J[phase: upload]
-        G -.->|SSE| K[phase: complete]
-    end
-
-    style C fill:#fff9c4
-    style D fill:#fff9c4
-    style E fill:#fff9c4
-    style G fill:#c8e6c9
-```
+*Source: [DATAFLOW_extraction_pipeline.dot](DATAFLOW_extraction_pipeline.dot) - Extraction pipeline stages with parallel processing*
 
 **Stage Details**:
 
@@ -574,66 +219,19 @@ graph TB
 
 **Schema**: `repos/dem2/shared/src/machina/shared/docproc/schema.py`
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-classDiagram
-    class Biomarker {
-        +string long_name
-        +string short_name
-        +string document_name
-        +string document_name_modifier
-        +string document_footnote
-        +list~string~ aliases
-        +list~BiomarkerValue~ values
-        +float confidence
-        +bool is_biomarker_derivative
-        +string specimen_type
-        +string panel_name
-    }
+![Biomarker Data Model](DATAFLOW_biomarker_data_model.svg)
 
-    class BiomarkerValue {
-        +string value
-        +string observation_date
-        +string observation_time
-        +string unit
-        +string label
-        +SourceLocation name_location
-        +SourceLocation value_location
-        +SourceLocation unit_location
-    }
-
-    class SourceLocation {
-        +int page_number
-        +int x
-        +int y
-        +int width
-        +int height
-    }
-
-    Biomarker "1" --> "*" BiomarkerValue
-    BiomarkerValue "1" --> "0..3" SourceLocation
-```
+*Source: [DATAFLOW_biomarker_data_model.dot](DATAFLOW_biomarker_data_model.dot) - Biomarker data model with relationships*
 
 ### Biomarker Extraction with Gemini Vision
 
 **Agent**: `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/generic/agent.py`
 
 **Extraction Process**:
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    A[Document Pages] -->|All pages| B[Gemini 2.0 Vision]
-    B -->|Tool Calling| C[extract_biomarkers tool]
-    C -->|Validation| D{Valid?}
-    D -->|Yes| E[List of Biomarkers]
-    D -->|No| F[Empty result]
-    E --> G[NormalizerAgent]
-    G -->|Clean names| H[Normalized Biomarkers]
 
-    style B fill:#e1bee7
-    style G fill:#fff9c4
-    style H fill:#c8e6c9
-```
+![Biomarker Extraction](DATAFLOW_biomarker_extraction.svg)
+
+*Source: [DATAFLOW_biomarker_extraction.dot](DATAFLOW_biomarker_extraction.dot) - Biomarker extraction with Gemini Vision and normalization*
 
 **Normalization Rules**:
 - Remove footnote superscripts: `Glucose²` → `Glucose`
@@ -645,38 +243,9 @@ graph LR
 
 **Location**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/biomarker/`
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    autonumber
-    participant Pipeline as Extraction Pipeline
-    participant Engine as Medical Data Engine
-    participant MedCat as Medical Catalog (Qdrant)
-    participant Dedup as Deduplication Service
-    participant Neo4j as Neo4j Graph DB
+![Biomarker Reconciliation](DATAFLOW_biomarker_reconciliation.svg)
 
-    Pipeline->>Engine: DocumentResourcesNew (biomarkers)
-
-    loop For each biomarker
-        Engine->>MedCat: search_biomarker(name)
-        MedCat->>MedCat: Vector similarity search
-        MedCat-->>Engine: BiomarkerEntryResult
-        Note over MedCat,Engine: catalog_id, long_name,<br/>short_name, unit_properties,<br/>aliases
-    end
-
-    Engine->>Dedup: Group by (catalog_id, unit)
-    Dedup->>Dedup: Merge duplicate values
-    Dedup-->>Engine: Deduplicated biomarkers
-
-    Engine->>Neo4j: Create ObservationTypeNodes
-    Note over Neo4j: Node properties:<br/>catalog_id, unit, name,<br/>display_name, aliases
-
-    Engine->>Neo4j: Create ObservationValueNodes
-    Note over Neo4j: Node properties:<br/>value, observation_date,<br/>value_epoch, unit, patient_id
-
-    Engine->>Neo4j: Create relationships
-    Note over Neo4j: DocumentReference-[CONTAINS]->ObservationType<br/>ObservationType-[HAS_VALUE]->ObservationValue<br/>Patient-[HAS_OBSERVATION]->ObservationValue
-```
+*Source: [DATAFLOW_biomarker_reconciliation.dot](DATAFLOW_biomarker_reconciliation.dot) - Biomarker reconciliation with medical catalog integration*
 
 **Medical Catalog Entry Structure**:
 ```
@@ -700,34 +269,9 @@ BiomarkerEntryResult:
 
 **Instance→Type Pattern for Multi-Tenancy**:
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    subgraph "Instance Layer (Patient-Specific)"
-        DR[DocumentReferenceNode<br/>uuid: doc-123<br/>patient_id: patient-456<br/>file_id: file-789<br/>document_name: Lab Report<br/>report_date: 2024-12-15]
+![Graph Storage Pattern](DATAFLOW_graph_storage_pattern.svg)
 
-        OV1[ObservationValueNode<br/>uuid: obs-val-1<br/>value: 185<br/>unit: mg/dL<br/>observation_date: 2024-12-15<br/>patient_id: patient-456]
-
-        OV2[ObservationValueNode<br/>uuid: obs-val-2<br/>value: 110<br/>unit: mg/dL<br/>observation_date: 2024-12-15<br/>patient_id: patient-456]
-    end
-
-    subgraph "Type Layer (Shared)"
-        OT1[ObservationTypeNode<br/>catalog_id: cat-001<br/>name: Cholesterol Total<br/>unit: mg/dL<br/>aliases: Total Cholesterol, CHOL]
-
-        OT2[ObservationTypeNode<br/>catalog_id: cat-002<br/>name: LDL Cholesterol<br/>unit: mg/dL<br/>aliases: LDL, LDL-C]
-    end
-
-    DR -->|CONTAINS| OT1
-    DR -->|CONTAINS| OT2
-    OT1 -->|HAS_VALUE| OV1
-    OT2 -->|HAS_VALUE| OV2
-
-    style DR fill:#ffccbc
-    style OV1 fill:#ffccbc
-    style OV2 fill:#ffccbc
-    style OT1 fill:#c5e1a5
-    style OT2 fill:#c5e1a5
-```
+*Source: [DATAFLOW_graph_storage_pattern.dot](DATAFLOW_graph_storage_pattern.dot) - Instance→Type pattern for multi-tenant graph storage*
 
 **Neo4j Node Schemas**:
 
@@ -784,54 +328,9 @@ CREATE (value:ObservationValue {
 
 **End-to-End Data Flow**:
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-flowchart TB
-    Start([User uploads PDF]) --> Upload[POST /files/upload]
-    Upload --> Store[Store in GCS/Local]
-    Store --> FileRecord[(PostgreSQL FileRecord)]
-    FileRecord --> Queue[POST /process_document]
-    Queue --> TaskQueue[Task Queue Manager]
-    TaskQueue --> Worker[Background Worker]
+![Complete Document Flow](DATAFLOW_complete_document_flow.svg)
 
-    Worker --> Load[Load file from storage]
-    Load --> Convert[Convert PDF to images]
-    Convert --> Metadata[Extract Metadata<br/>Gemini Vision]
-    Metadata --> Extract[Extract Biomarkers<br/>Gemini Vision]
-    Extract --> Normalize[Normalize names<br/>NormalizerAgent]
-    Normalize --> DocResources[DocumentResourcesNew]
-
-    DocResources --> DataEngine[Medical Data Engine]
-    DataEngine --> CreateDoc[Create DocumentReferenceNode]
-    CreateDoc --> Neo4jDoc[(Neo4j DocumentReference)]
-
-    DataEngine --> SearchCatalog[Search Medical Catalog]
-    SearchCatalog --> Qdrant[(Qdrant Vector Search)]
-    Qdrant --> CatalogResults[BiomarkerEntryResults]
-
-    CatalogResults --> Dedup[Deduplicate by<br/>catalog_id + unit]
-    Dedup --> CreateTypes[Create ObservationTypeNodes]
-    CreateTypes --> Neo4jTypes[(Neo4j ObservationTypes)]
-
-    Neo4jTypes --> CreateValues[Create ObservationValueNodes]
-    CreateValues --> Neo4jValues[(Neo4j ObservationValues)]
-
-    Neo4jValues --> Link[Create relationships]
-    Link --> Complete[Emit SSE: complete]
-    Complete --> End([User sees biomarkers])
-
-    Metadata -.->|SSE| SSE1[Frontend: detect]
-    Extract -.->|SSE| SSE2[Frontend: process]
-    Dedup -.->|SSE| SSE3[Frontend: upload]
-    Complete -.->|SSE| SSE4[Frontend: complete]
-
-    style Upload fill:#e3f2fd
-    style DataEngine fill:#fff9c4
-    style Neo4jDoc fill:#c8e6c9
-    style Neo4jTypes fill:#c8e6c9
-    style Neo4jValues fill:#c8e6c9
-    style End fill:#a5d6a7
-```
+*Source: [DATAFLOW_complete_document_flow.dot](DATAFLOW_complete_document_flow.dot) - Complete document processing flow from upload to graph storage*
 
 ### Performance Characteristics
 
@@ -881,92 +380,15 @@ flowchart TB
 
 ### Multi-Database Architecture
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Application Layer"
-        Service[Service Layer]
-        Tools[Agent Tools]
-    end
+![Multi-Database Architecture](DATAFLOW_multidatabase_architecture.svg)
 
-    subgraph "PostgreSQL (Port 5432)"
-        UserDB[(users<br/>sessions<br/>auth_tokens)]
-        FileDB[(files<br/>documents)]
-        CalDB[(appointments<br/>schedules)]
-    end
-
-    subgraph "Neo4j (Port 7474/7687)"
-        PatientGraph[(Patient<br/>Medical Data<br/>Graph)]
-        TypeNodes[Type Nodes<br/>Shared Definitions]
-        InstanceNodes[Instance Nodes<br/>Patient-Specific]
-    end
-
-    subgraph "Redis (Port 6379)"
-        Cache[Cache Layer]
-        PubSub[Pub/Sub<br/>Events]
-        Sessions[Session Data]
-    end
-
-    subgraph "Qdrant (Port 6333)"
-        Vectors[Vector Embeddings<br/>Semantic Search]
-        BiomarkerEmbed[Biomarker Embeddings]
-    end
-
-    Service -->|SQLAlchemy| UserDB
-    Service -->|SQLAlchemy| FileDB
-    Service -->|SQLAlchemy| CalDB
-
-    Tools -->|Neo4j Driver| PatientGraph
-    PatientGraph -->|Relationships| TypeNodes
-    PatientGraph -->|Relationships| InstanceNodes
-
-    Service -->|Redis Client| Cache
-    Service -->|Redis Client| PubSub
-    Service -->|Redis Client| Sessions
-
-    Tools -->|Qdrant Client| Vectors
-    Vectors -->|Search| BiomarkerEmbed
-
-    style UserDB fill:#c8e6c9
-    style PatientGraph fill:#b2dfdb
-    style Cache fill:#b2ebf2
-    style Vectors fill:#b2dfdb
-```
+*Source: [DATAFLOW_multidatabase_architecture.dot](DATAFLOW_multidatabase_architecture.dot) - Multi-database architecture with PostgreSQL, Neo4j, Redis, and Qdrant*
 
 ### Neo4j Graph Structure
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    subgraph "Instance Layer (Patient-Specific)"
-        Patient[Patient<br/>uuid, patient_id]
-        CC[ConditionCase<br/>uuid, patient_id]
-        Obs[Observation<br/>uuid, value, date]
-        SE[SymptomEpisode<br/>uuid, severity]
-    end
+![Neo4j Graph Structure](DATAFLOW_neo4j_graph_structure.svg)
 
-    subgraph "Type Layer (Shared Definitions)"
-        CT[ConditionType<br/>name: Diabetes]
-        OT[ObservationType<br/>name: Cholesterol<br/>loinc_code]
-        ST[SymptomType<br/>name: Headache]
-    end
-
-    Patient -->|HAS_CONDITION| CC
-    Patient -->|HAS_OBSERVATION| Obs
-    Patient -->|HAS_SYMPTOM| SE
-
-    CC -->|IS_A| CT
-    Obs -->|IS_A| OT
-    SE -->|IS_A| ST
-
-    style Patient fill:#ffccbc
-    style CC fill:#ffccbc
-    style Obs fill:#ffccbc
-    style SE fill:#ffccbc
-    style CT fill:#c5e1a5
-    style OT fill:#c5e1a5
-    style ST fill:#c5e1a5
-```
+*Source: [DATAFLOW_neo4j_graph_structure.dot](DATAFLOW_neo4j_graph_structure.dot) - Neo4j graph structure with Instance→Type pattern*
 
 **Critical Pattern**: Instance→Type separation for tenant scoping.
 
@@ -978,83 +400,15 @@ graph LR
 
 ### Docker Compose Service Map
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TB
-    subgraph "Application Containers"
-        Frontend[dem2-webui<br/>next:alpine<br/>Port 3000]
-        Backend[dem2<br/>python:3.13<br/>Port 8000]
-        MedCat[medical-catalog<br/>python:3.13<br/>Port 8001]
-    end
+![Docker Compose Services](DATAFLOW_docker_compose_services.svg)
 
-    subgraph "Database Containers"
-        Postgres[postgres:15<br/>Port 5432]
-        Neo4j[neo4j:5<br/>Ports 7474, 7687]
-        Redis[redis:7-alpine<br/>Port 6379]
-        Qdrant[qdrant/qdrant<br/>Port 6333]
-    end
-
-    subgraph "Dev Tools"
-        RedisUI[redisinsight<br/>Port 5540]
-    end
-
-    subgraph "Networks"
-        AppNet[dem2-network<br/>bridge]
-    end
-
-    Frontend -.->|docker network| AppNet
-    Backend -.->|docker network| AppNet
-    MedCat -.->|docker network| AppNet
-    Postgres -.->|docker network| AppNet
-    Neo4j -.->|docker network| AppNet
-    Redis -.->|docker network| AppNet
-    Qdrant -.->|docker network| AppNet
-    RedisUI -.->|docker network| AppNet
-
-    Frontend -->|HTTP| Backend
-    Backend -->|HTTP| MedCat
-    Backend -->|PostgreSQL Protocol| Postgres
-    Backend -->|Bolt Protocol| Neo4j
-    Backend -->|Redis Protocol| Redis
-    MedCat -->|gRPC| Qdrant
-    RedisUI -->|Redis Protocol| Redis
-
-    style Frontend fill:#e3f2fd
-    style Backend fill:#e8f5e9
-    style MedCat fill:#fff3e0
-    style Postgres fill:#f3e5f5
-    style Neo4j fill:#e1f5fe
-    style Redis fill:#fce4ec
-    style Qdrant fill:#f1f8e9
-```
+*Source: [DATAFLOW_docker_compose_services.dot](DATAFLOW_docker_compose_services.dot) - Docker Compose service map with networking*
 
 ### Container Dependencies
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TD
-    Start[docker-compose up]
+![Container Dependencies](DATAFLOW_container_dependencies.svg)
 
-    Start -->|Start| Postgres
-    Start -->|Start| Neo4j
-    Start -->|Start| Redis
-    Start -->|Start| Qdrant
-
-    Postgres -->|healthy| Backend
-    Neo4j -->|healthy| Backend
-    Redis -->|healthy| Backend
-    Qdrant -->|healthy| MedCat
-
-    Backend -->|ready| Frontend
-
-    style Start fill:#81c784
-    style Postgres fill:#ba68c8
-    style Neo4j fill:#4fc3f7
-    style Redis fill:#f06292
-    style Qdrant fill:#aed581
-    style Backend fill:#66bb6a
-    style Frontend fill:#42a5f5
-```
+*Source: [DATAFLOW_container_dependencies.dot](DATAFLOW_container_dependencies.dot) - Container startup dependencies and health checks*
 
 ---
 
@@ -1062,61 +416,15 @@ graph TD
 
 ### Google Cloud Integration
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    subgraph "MachinaMed Backend"
-        App[FastAPI Application]
-        Agents[Agent System]
-    end
+![Google Cloud Integration](DATAFLOW_google_cloud_integration.svg)
 
-    subgraph "Google Cloud Platform"
-        VertexAI[Vertex AI<br/>us-central1]
-        GeminiAPI[Gemini API<br/>AI Studio]
-        GCS[Cloud Storage<br/>File Upload]
-        IAM[IAM<br/>Service Account]
-    end
-
-    subgraph "Authentication"
-        ServiceAcct[Service Account JSON<br/>n1-machina1-*.json]
-    end
-
-    App -->|Auth| ServiceAcct
-    ServiceAcct -->|Authenticate| IAM
-
-    Agents -->|LLM Calls| VertexAI
-    Agents -->|Alternative| GeminiAPI
-    App -->|File Upload| GCS
-
-    IAM -->|Authorize| VertexAI
-    IAM -->|Authorize| GCS
-
-    style App fill:#e8f5e9
-    style VertexAI fill:#fff3e0
-    style GCS fill:#e1f5fe
-```
+*Source: [DATAFLOW_google_cloud_integration.dot](DATAFLOW_google_cloud_integration.dot) - Google Cloud Platform integration with Vertex AI and GCS*
 
 ### Model Selection Flow
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TD
-    Query[User Query Arrives]
+![Model Selection](DATAFLOW_model_selection.svg)
 
-    Query -->|Route| Triage[TriageAgent<br/>Gemini 2.5 Flash]
-
-    Triage -->|Patient-specific query| ConsultantFull[HealthConsultantAgent<br/>Gemini 2.5 Pro]
-    Triage -->|General knowledge| ConsultantLite[HealthConsultantLiteAgent<br/>Gemini 2.5 Pro]
-    Triage -->|URL provided| URLHandler[URLHandlerAgent<br/>Gemini 2.5 Flash]
-
-    ConsultantFull -->|Needs graph data| CypherGen[CypherAgent<br/>Gemini 2.5 Flash]
-
-    style Triage fill:#b3e5fc
-    style ConsultantFull fill:#ba68c8
-    style ConsultantLite fill:#ce93d8
-    style URLHandler fill:#81d4fa
-    style CypherGen fill:#4fc3f7
-```
+*Source: [DATAFLOW_model_selection.dot](DATAFLOW_model_selection.dot) - Model selection flow with Gemini Flash and Pro*
 
 **Cost Optimization Strategy**:
 - **Flash** ($) - Routing, extraction, query generation
@@ -1130,67 +438,9 @@ graph TD
 
 ### End-to-End Flow Diagram
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-sequenceDiagram
-    autonumber
-    participant User
-    participant Browser
-    participant NextJS as Next.js (3000)
-    participant FastAPI as Backend (8000)
-    participant Redis
-    participant TusdiAI as TusdiAI Root
-    participant Triage as TriageAgent (Flash)
-    participant Extract as ParallelExtractor
-    participant Consult as Consultant (Pro)
-    participant Tool as query_graph Tool
-    participant Cypher as CypherAgent (Flash)
-    participant Neo4j
-    participant Gemini as Gemini API
+![End-to-End Flow](DATAFLOW_endtoend_query_response.svg)
 
-    User->>Browser: Types "What's my cholesterol?"
-    Browser->>NextJS: User input
-    NextJS->>FastAPI: POST /api/v1/medical-agent/session/123/send<br/>{message: "What's my cholesterol?"}
-
-    FastAPI->>FastAPI: Validate JWT, extract patient_id
-    FastAPI->>TusdiAI: Process message (ParallelAgent)
-
-    par Parallel Execution
-        TusdiAI->>Triage: Route query (Branch 1)
-        and
-        TusdiAI->>Extract: Extract entities (Branch 2)
-    end
-
-    Triage->>Gemini: Analyze query type
-    Gemini-->>Triage: "Patient-specific health query"
-    Triage->>Consult: Transfer to HealthConsultantAgent
-
-    Consult->>Gemini: "Need patient's cholesterol data"
-    Gemini-->>Consult: "Call query_graph tool"
-
-    Consult->>Tool: query_graph("cholesterol for patient")
-    Tool->>Cypher: Convert to Cypher query
-    Cypher->>Gemini: Natural language → Cypher
-    Gemini-->>Cypher: MATCH (p:Patient {uuid: $pid})-[:HAS_OBSERVATION]->...
-
-    Cypher-->>Tool: Cypher query string
-    Tool->>Neo4j: Execute query
-    Neo4j-->>Tool: Results: Total: 185 mg/dL, LDL: 110 mg/dL, date: 2024-12-15
-    Tool-->>Consult: Formatted markdown results
-
-    Consult->>Gemini: Generate response with data
-    Gemini-->>Consult: "Your most recent cholesterol test from December 15th..."
-    Consult-->>TusdiAI: Response complete
-
-    Extract-->>TusdiAI: Entities extracted (background)
-
-    TusdiAI-->>FastAPI: Combined response
-    FastAPI->>Redis: PUBLISH agent_response
-    Redis->>FastAPI: Forward to WebSocket
-    FastAPI-->>NextJS: SSE: Response chunks
-    NextJS-->>Browser: Update chat UI
-    Browser-->>User: Show response
-```
+*Source: [DATAFLOW_endtoend_query_response.dot](DATAFLOW_endtoend_query_response.dot) - Complete end-to-end flow from user query to response*
 
 **Key Timings** (from testing):
 - Steps 1-8: <1s (routing)
@@ -1382,31 +632,9 @@ dot -Tsvg DATAFLOW_container_network.dot -o DATAFLOW_container_network.svg
 
 ### Data Flow Security
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph TD
-    subgraph "Public Internet"
-        User[User Browser]
-    end
+![Security Layers](DATAFLOW_security_layers.svg)
 
-    subgraph "DMZ"
-        Frontend[Next.js Frontend<br/>HTTPS]
-    end
-
-    subgraph "Private Network"
-        Backend[FastAPI Backend<br/>JWT Auth]
-        Databases[(Databases<br/>No Public Access)]
-    end
-
-    User -->|HTTPS| Frontend
-    Frontend -->|Internal Network| Backend
-    Backend -->|Internal Network| Databases
-
-    style User fill:#ffcdd2
-    style Frontend fill:#fff9c4
-    style Backend fill:#c8e6c9
-    style Databases fill:#b2dfdb
-```
+*Source: [DATAFLOW_security_layers.dot](DATAFLOW_security_layers.dot) - Security layers from public internet to databases*
 
 **Security Layers**:
 1. **HTTPS** - TLS encryption for frontend
@@ -1421,23 +649,9 @@ graph TD
 
 ### Data Flow Monitoring Points
 
-```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
-graph LR
-    Request[HTTP Request] -->|1| APIGateway[API Gateway<br/>Request ID]
-    APIGateway -->|2| Middleware[Middleware<br/>Log + Metrics]
-    Middleware -->|3| Service[Service Layer<br/>Business Logic]
-    Service -->|4| Database[(Database<br/>Query Time)]
+![Monitoring & Observability](DATAFLOW_monitoring_observability.svg)
 
-    Middleware -.->|Logs| Sentry[Sentry<br/>Error Tracking]
-    Service -.->|Traces| Langfuse[Langfuse<br/>LLM Observability]
-    Database -.->|Metrics| Prometheus[Prometheus<br/>Time Series]
-
-    style APIGateway fill:#e3f2fd
-    style Middleware fill:#fff3e0
-    style Service fill:#e8f5e9
-    style Database fill:#f3e5f5
-```
+*Source: [DATAFLOW_monitoring_observability.dot](DATAFLOW_monitoring_observability.dot) - Monitoring and observability stack with Sentry, Langfuse, and Prometheus*
 
 **Observability Stack** (from git history):
 - **Sentry** - Error tracking (confirmed in use)

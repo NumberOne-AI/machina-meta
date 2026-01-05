@@ -1,0 +1,91 @@
+// High-Level Architecture Diagram
+// MachinaMed system overview
+digraph HighLevelArchitecture {
+    rankdir=TB;
+
+    // Font settings and background for readability
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Client Layer
+    subgraph cluster_client {
+        label="Client Layer";
+        fillcolor=lightblue;
+        style=filled;
+
+        Browser [label="Web Browser"];
+    }
+
+    // Frontend Service
+    subgraph cluster_frontend {
+        label="Frontend Service";
+        fillcolor=lightyellow;
+        style=filled;
+
+        NextJS [label="Next.js App\nPort 3000", fillcolor=yellow];
+        NextAPI [label="Next.js API Routes", fillcolor=wheat];
+    }
+
+    // Backend Services
+    subgraph cluster_backend {
+        label="Backend Services";
+        fillcolor=lightgreen;
+        style=filled;
+
+        FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=green];
+        MedCat [label="Medical Catalog\nPort 8001", fillcolor=palegreen];
+    }
+
+    // Agent Layer
+    subgraph cluster_agents {
+        label="Agent Layer";
+        fillcolor=lightcyan;
+        style=filled;
+
+        ADK [label="Google ADK Runtime", fillcolor="#e1f5ff"];
+        Agents [label="23 Agents\n11 Types", fillcolor="#b3e5fc"];
+        Tools [label="Agent Tools", fillcolor="#81d4fa"];
+    }
+
+    // Data Layer
+    subgraph cluster_data {
+        label="Data Layer";
+        fillcolor=lightgray;
+        style=filled;
+
+        Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+        Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+        Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
+        Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+    }
+
+    // External Services
+    subgraph cluster_external {
+        label="External Services";
+        fillcolor=lavender;
+        style=filled;
+
+        Gemini [label="Google Gemini API", fillcolor=plum, shape=cloud];
+        GCP [label="Google Cloud\nVertex AI", fillcolor=plum, shape=cloud];
+    }
+
+    // Connections
+    Browser -> NextJS [label="HTTP/WebSocket"];
+    NextJS -> FastAPI [label="wretch HTTP"];
+    NextAPI -> FastAPI [label="Server-side"];
+
+    FastAPI -> ADK [label="Internal Calls"];
+    FastAPI -> MedCat [label="HTTP"];
+
+    ADK -> Agents [label="Manages"];
+    Agents -> Tools [label="Call"];
+
+    Tools -> Postgres [label="Direct Access"];
+    Tools -> Neo4j [label="Cypher Queries"];
+    Tools -> Redis [label="Pub/Sub"];
+    Tools -> Qdrant [label="Vector Search"];
+
+    Agents -> Gemini [label="LLM Calls"];
+    FastAPI -> GCP [label="Auth/Storage"];
+}

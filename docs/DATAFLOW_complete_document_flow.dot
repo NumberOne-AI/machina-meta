@@ -1,0 +1,82 @@
+// Diagram #15: Complete Document Processing Flow
+// End-to-end flowchart style showing all stages
+
+digraph CompleteDocumentFlow {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=11, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Start
+    Start [label="User uploads PDF", shape=ellipse, fillcolor=lightblue];
+
+    // Upload phase
+    Upload [label="POST /files/upload", fillcolor=wheat];
+    Store [label="Store in GCS/Local", fillcolor=wheat];
+    FileRecord [label="PostgreSQL\nFileRecord", fillcolor=skyblue, shape=cylinder];
+    QueueDoc [label="POST /process_document", fillcolor=wheat];
+    TaskQueue [label="Task Queue Manager", fillcolor=wheat];
+    Worker [label="Background Worker", fillcolor=wheat];
+
+    // Processing phase
+    Load [label="Load file from storage", fillcolor=wheat];
+    Convert [label="Convert PDF to images", fillcolor=wheat];
+    ExtractMeta [label="Extract Metadata\nGemini Vision", fillcolor=plum];
+    ExtractBio [label="Extract Biomarkers\nGemini Vision", fillcolor=plum];
+    Normalize [label="Normalize names\nNormalizerAgent", fillcolor=lightcyan];
+    DocResources [label="DocumentResourcesNew", fillcolor=palegreen];
+
+    // Engine phase
+    DataEngine [label="Medical Data Engine", fillcolor=palegreen];
+    CreateDoc [label="Create\nDocumentReferenceNode", fillcolor=wheat];
+    Neo4jDoc [label="Neo4j\nDocumentReference", fillcolor=skyblue, shape=cylinder];
+    SearchCatalog [label="Search Medical Catalog", fillcolor=lightpink];
+    QdrantSearch [label="Qdrant\nVector Search", fillcolor=skyblue, shape=cylinder];
+    CatalogResults [label="BiomarkerEntryResults", fillcolor=palegreen];
+    Dedup [label="Deduplicate by\ncatalog_id + unit", fillcolor=wheat];
+    CreateTypes [label="Create\nObservationTypeNodes", fillcolor=wheat];
+    Neo4jTypes [label="Neo4j\nObservationTypes", fillcolor=skyblue, shape=cylinder];
+    CreateValues [label="Create\nObservationValueNodes", fillcolor=wheat];
+    Neo4jValues [label="Neo4j\nObservationValues", fillcolor=skyblue, shape=cylinder];
+    Link [label="Create relationships", fillcolor=wheat];
+    Complete [label="Complete", fillcolor=lightgreen, shape=ellipse];
+
+    // SSE events
+    SSE1 [label="SSE: detect", fillcolor=lightyellow, style=dashed];
+    SSE2 [label="SSE: process", fillcolor=lightyellow, style=dashed];
+    SSE3 [label="SSE: upload", fillcolor=lightyellow, style=dashed];
+    SSE4 [label="SSE: complete", fillcolor=lightyellow, style=dashed];
+
+    // Main flow
+    Start -> Upload;
+    Upload -> Store;
+    Store -> FileRecord;
+    FileRecord -> QueueDoc;
+    QueueDoc -> TaskQueue;
+    TaskQueue -> Worker;
+    Worker -> Load;
+    Load -> Convert;
+    Convert -> ExtractMeta;
+    ExtractMeta -> ExtractBio;
+    ExtractBio -> Normalize;
+    Normalize -> DocResources;
+    DocResources -> DataEngine;
+    DataEngine -> CreateDoc;
+    CreateDoc -> Neo4jDoc;
+    DataEngine -> SearchCatalog;
+    SearchCatalog -> QdrantSearch;
+    QdrantSearch -> CatalogResults;
+    CatalogResults -> Dedup;
+    Dedup -> CreateTypes;
+    CreateTypes -> Neo4jTypes;
+    Neo4jTypes -> CreateValues;
+    CreateValues -> Neo4jValues;
+    Neo4jValues -> Link;
+    Link -> Complete;
+
+    // SSE progress
+    ExtractMeta -> SSE1 [style=dotted, color=blue];
+    ExtractBio -> SSE2 [style=dotted, color=blue];
+    Dedup -> SSE3 [style=dotted, color=blue];
+    Complete -> SSE4 [style=dotted, color=blue];
+}

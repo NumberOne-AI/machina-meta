@@ -1,0 +1,30 @@
+// Diagram #13: Biomarker Reconciliation & Medical Catalog Integration
+// Convert sequence diagram to dataflow showing catalog search and deduplication
+
+digraph BiomarkerReconciliation {
+    rankdir=LR;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    ExtractionPipeline [label="Extraction Pipeline", fillcolor=wheat];
+    MedicalDataEngine [label="Medical Data Engine", fillcolor=palegreen];
+    MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink];
+    Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+    Deduplication [label="Deduplication Service\nGroup by (catalog_id, unit)", fillcolor=wheat];
+    Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+
+    // Flow
+    ExtractionPipeline -> MedicalDataEngine [label="DocumentResourcesNew\n(biomarkers)"];
+    MedicalDataEngine -> MedicalCatalog [label="HTTP POST\n/biomarkers/search_batch\nFor each biomarker"];
+    MedicalCatalog -> Qdrant [label="Qdrant gRPC\nVector similarity search"];
+    Qdrant -> MedicalCatalog [label="Search results", style=dashed];
+    MedicalCatalog -> MedicalDataEngine [label="HTTP 200\nBiomarkerEntryResult:\n- catalog_id\n- long_name, short_name\n- unit_properties\n- aliases", style=dashed];
+
+    MedicalDataEngine -> Deduplication [label="Group biomarkers"];
+    Deduplication -> MedicalDataEngine [label="Deduplicated biomarkers\n(merged by value + time)", style=dashed];
+
+    MedicalDataEngine -> Neo4j [label="Neo4j Bolt Protocol\nCREATE:\n1. ObservationTypeNodes\n2. ObservationValueNodes\n3. Relationships"];
+    Neo4j -> MedicalDataEngine [label="Success", style=dashed];
+}

@@ -1,0 +1,63 @@
+// Diagram #18: Docker Compose Service Map
+// Container network and service communication
+
+digraph DockerComposeServices {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Network
+    AppNet [label="dem2-network\nbridge network", fillcolor=lightblue, shape=ellipse];
+
+    // Application Containers
+    subgraph cluster_app {
+        label="Application Containers";
+        fillcolor=lightyellow;
+        style=filled;
+
+        Frontend [label="dem2-webui\nnext:alpine\nPort 3000", fillcolor=lightyellow];
+        Backend [label="dem2\npython:3.13\nPort 8000", fillcolor=lightgreen];
+        MedCat [label="medical-catalog\npython:3.13\nPort 8001", fillcolor=lightpink];
+    }
+
+    // Database Containers
+    subgraph cluster_db {
+        label="Database Containers";
+        fillcolor=lightcyan;
+        style=filled;
+
+        Postgres [label="postgres:15\nPort 5432", fillcolor=skyblue];
+        Neo4j [label="neo4j:5\nPorts 7474, 7687", fillcolor=skyblue];
+        Redis [label="redis:7-alpine\nPort 6379", fillcolor=skyblue];
+        Qdrant [label="qdrant/qdrant\nPort 6333", fillcolor=skyblue];
+    }
+
+    // Dev Tools
+    subgraph cluster_tools {
+        label="Dev Tools";
+        fillcolor=lavender;
+        style=filled;
+
+        RedisUI [label="redisinsight\nPort 5540", fillcolor=wheat];
+    }
+
+    // Network connections (all containers on same network)
+    AppNet -> Frontend [style=dotted, label="docker network"];
+    AppNet -> Backend [style=dotted, label="docker network"];
+    AppNet -> MedCat [style=dotted, label="docker network"];
+    AppNet -> Postgres [style=dotted, label="docker network"];
+    AppNet -> Neo4j [style=dotted, label="docker network"];
+    AppNet -> Redis [style=dotted, label="docker network"];
+    AppNet -> Qdrant [style=dotted, label="docker network"];
+    AppNet -> RedisUI [style=dotted, label="docker network"];
+
+    // Service communication
+    Frontend -> Backend [label="HTTP"];
+    Backend -> MedCat [label="HTTP"];
+    Backend -> Postgres [label="PostgreSQL Protocol"];
+    Backend -> Neo4j [label="Bolt Protocol"];
+    Backend -> Redis [label="Redis Protocol"];
+    MedCat -> Qdrant [label="gRPC"];
+    RedisUI -> Redis [label="Redis Protocol"];
+}

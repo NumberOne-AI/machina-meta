@@ -1,0 +1,46 @@
+// Diagram #7: Agent Tool Execution Flow
+// How agents call Python tools to access databases (NOT HTTP)
+
+digraph AgentToolExecution {
+    rankdir=TB;
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // Standard entities
+    Browser [label="Web Browser", fillcolor=lightblue];
+    FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen];
+    TriageAgent [label="TriageAgent\nGemini Flash", fillcolor=lightcyan];
+    HealthConsultant [label="HealthConsultantAgent\nGemini Pro", fillcolor=lightcyan];
+    MedicalDataTools [label="MedicalDataAgentTools\nPython Class", fillcolor=wheat];
+    CypherAgent [label="CypherAgent\nGemini Flash", fillcolor=lightcyan];
+    Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+    GeminiAPI [label="Google Gemini API", fillcolor=plum];
+
+    // User query
+    Browser -> FastAPI [label="HTTP POST\n'What's my latest\ncholesterol?'"];
+    FastAPI -> TriageAgent [label="Python call"];
+    TriageAgent -> GeminiAPI [label="HTTPS\nClassify query"];
+    GeminiAPI -> TriageAgent [label="Route to\nHealthConsultant", style=dashed];
+
+    // Agent routing
+    TriageAgent -> HealthConsultant [label="Python call\nTransfer control"];
+    HealthConsultant -> GeminiAPI [label="HTTPS\nAnalyze query"];
+    GeminiAPI -> HealthConsultant [label="Decision:\nCall query_graph tool", style=dashed];
+
+    // Tool execution (key insight: Python functions, not HTTP)
+    HealthConsultant -> MedicalDataTools [label="Python call\nquery_graph()\nDIRECT FUNCTION CALL", color=red, penwidth=2];
+    MedicalDataTools -> CypherAgent [label="Python call\ngenerate_cypher()"];
+    CypherAgent -> GeminiAPI [label="HTTPS\nNL to Cypher"];
+    GeminiAPI -> CypherAgent [label="Cypher query", style=dashed];
+    CypherAgent -> MedicalDataTools [label="Return Cypher", style=dashed];
+    MedicalDataTools -> Neo4j [label="Neo4j Bolt Protocol\nExecute Cypher"];
+    Neo4j -> MedicalDataTools [label="Query results", style=dashed];
+    MedicalDataTools -> HealthConsultant [label="Return markdown\nformatted data", style=dashed];
+
+    // Final response
+    HealthConsultant -> GeminiAPI [label="HTTPS\nGenerate response"];
+    GeminiAPI -> HealthConsultant [label="Natural language\nresponse", style=dashed];
+    HealthConsultant -> FastAPI [label="Return response", style=dashed];
+    FastAPI -> Browser [label="HTTP 200\nJSON", style=dashed];
+}

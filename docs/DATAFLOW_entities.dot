@@ -1,0 +1,30 @@
+// Standard Entity Definitions for DATAFLOW diagrams
+// Use these exact definitions consistently across ALL diagrams
+
+// Core Services
+// FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen, shape=box];
+// NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow, shape=box];
+// MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink, shape=box];
+
+// Databases (always cylinders with skyblue)
+// Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+// Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+// Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
+// Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+
+// External/Client
+// Browser [label="Web Browser", fillcolor=lightblue, shape=box];
+// GeminiAPI [label="Google Gemini API", fillcolor=plum, shape=box];
+// GCS [label="Google Cloud Storage", fillcolor=lavender, shape=cylinder];
+
+// Agent System
+// AgentSystem [label="Agent System\n23 agents", fillcolor=lightcyan, shape=box];
+// TriageAgent [label="TriageAgent\nGemini Flash", fillcolor=lightcyan, shape=box];
+// HealthConsultant [label="HealthConsultantAgent\nGemini Pro", fillcolor=lightcyan, shape=box];
+// CypherAgent [label="CypherAgent\nGemini Flash", fillcolor=lightcyan, shape=box];
+
+// Internal Components
+// FileStorageAPI [label="File Storage API", fillcolor=wheat, shape=box];
+// DocProcAPI [label="DocProc API", fillcolor=wheat, shape=box];
+// MedicalDataEngine [label="Medical Data Engine", fillcolor=palegreen, shape=box];
+// ExtractionPipeline [label="Extraction Pipeline", fillcolor=wheat, shape=box];
