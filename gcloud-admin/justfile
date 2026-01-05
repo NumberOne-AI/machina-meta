@@ -1,0 +1,192 @@
+# GCloud Admin Container - Common Operations
+# Usage: just <command>
+
+set dotenv-load := true
+
+# Default: show help
+default:
+    @just --list
+
+# Build the gcloud-admin container
+build:
+    docker compose build
+
+# Build with no cache
+build-fresh:
+    docker compose build --no-cache
+
+# Start interactive shell in gcloud-admin container
+shell:
+    docker compose run --rm gcloud-admin
+
+# Start container in background
+up:
+    docker compose up -d
+
+# Stop background container
+down:
+    docker compose down
+
+# Show container logs
+logs:
+    docker compose logs -f
+
+# Authenticate with Google Cloud (run inside container)
+auth:
+    docker compose run --rm gcloud-admin gcloud auth login --update-adc
+
+# Complete first-time setup: auth + get nonprod credentials + verify
+setup-nonprod:
+    @echo "=== Step 1: Authenticating with Google Cloud ==="
+    docker compose run --rm gcloud-admin gcloud auth login --update-adc
+    @echo ""
+    @echo "=== Step 2: Getting GKE cluster credentials ==="
+    docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-nonprod-cluster --region us-central1
+    @echo ""
+    @echo "=== Step 3: Verifying connection ==="
+    docker compose run --rm gcloud-admin kubectl cluster-info
+    @echo ""
+    @echo "=== Setup complete! ==="
+    @echo "You can now run: just kubectl get nodes"
+
+# Complete first-time setup: auth + get prod credentials + verify
+setup-prod:
+    @echo "=== Step 1: Authenticating with Google Cloud ==="
+    docker compose run --rm gcloud-admin gcloud auth login --update-adc
+    @echo ""
+    @echo "=== Step 2: Getting GKE cluster credentials ==="
+    docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-prod-cluster --region us-central1
+    @echo ""
+    @echo "=== Step 3: Verifying connection ==="
+    docker compose run --rm gcloud-admin kubectl cluster-info
+    @echo ""
+    @echo "=== Setup complete! ==="
+    @echo "You can now run: just kubectl get nodes"
+
+# Get GKE credentials for nonprod cluster
+get-creds-nonprod:
+    docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-nonprod-cluster --region us-central1
+
+# Get GKE credentials for prod cluster
+get-creds-prod:
+    docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-prod-cluster --region us-central1
+
+# List all GKE clusters
+list-clusters:
+    docker compose run --rm gcloud-admin gcloud container clusters list
+
+# Run kubectl command
+kubectl *args:
+    docker compose run --rm gcloud-admin kubectl {{ args }}
+
+# Run helm command
+helm *args:
+    docker compose run --rm gcloud-admin helm {{ args }}
+
+# Run k9s (interactive)
+k9s:
+    docker compose run --rm gcloud-admin k9s
+
+# Run argocd CLI
+argocd *args:
+    docker compose run --rm gcloud-admin argocd {{ args }}
+
+# Show current context
+context:
+    docker compose run --rm gcloud-admin kubectl config current-context
+
+# List all contexts
+contexts:
+    docker compose run --rm gcloud-admin kubectl config get-contexts
+
+# Switch context
+switch-context ctx:
+    docker compose run --rm gcloud-admin kubectl config use-context {{ ctx }}
+
+# Get all pods across namespaces
+pods:
+    docker compose run --rm gcloud-admin kubectl get pods -A
+
+# Get all services
+services:
+    docker compose run --rm gcloud-admin kubectl get svc -A
+
+# Get all deployments
+deployments:
+    docker compose run --rm gcloud-admin kubectl get deployments -A
+
+# Tail logs for a pod pattern (e.g., just logs dem2 -n dev)
+stern *args:
+    docker compose run --rm gcloud-admin stern {{ args }}
+
+# Network debug - DNS lookup
+dig host:
+    docker compose run --rm gcloud-admin dig {{ host }}
+
+# Network debug - TCP connectivity check
+nc host port:
+    docker compose run --rm gcloud-admin nc -zv {{ host }} {{ port }}
+
+# Network debug - traceroute
+trace host:
+    docker compose run --rm gcloud-admin traceroute {{ host }}
+
+# Show resource usage across nodes
+node-resources:
+    docker compose run --rm gcloud-admin kubectl resource-capacity
+
+# Show what permissions current user has
+whoami:
+    docker compose run --rm gcloud-admin kubectl whoami
+
+# Login to ArgoCD server
+argo-login:
+    docker compose run --rm gcloud-admin argocd login ${ARGOCD_SERVER}
+
+# Check ArgoCD app status
+argo-status app:
+    docker compose run --rm gcloud-admin argocd app get {{ app }}
+
+# Sync ArgoCD app
+argo-sync app:
+    docker compose run --rm gcloud-admin argocd app sync {{ app }}
+
+# List ArgoCD apps
+argo-list:
+    docker compose run --rm gcloud-admin argocd app list
+
+# Port forward to a service (e.g., just port-forward svc/argocd-server 8080:443 -n argocd)
+port-forward *args:
+    docker compose run --rm -p 8080:8080 gcloud-admin kubectl port-forward {{ args }}
+
+# Show tool versions
+versions:
+    @echo "=== Tool Versions ==="
+    docker compose run --rm gcloud-admin bash -c '\
+        echo "gcloud: $(gcloud version 2>/dev/null | head -1)"; \
+        echo "kubectl: $(kubectl version --client -o json 2>/dev/null | jq -r .clientVersion.gitVersion)"; \
+        echo "helm: $(helm version --short 2>/dev/null)"; \
+        echo "kustomize: $(kustomize version 2>/dev/null)"; \
+        echo "k9s: $(k9s version --short 2>/dev/null | head -1)"; \
+        echo "argocd: $(argocd version --client --short 2>/dev/null)"; \
+        echo "stern: $(stern --version 2>/dev/null)"; \
+    '
+
+# Clean up dangling images
+clean:
+    docker image prune -f
+    docker compose down --rmi local
+
+# === Workspace Operations ===
+
+# Show git status across all workspace repos
+workspace-status:
+    docker compose run --rm gcloud-admin bash -c 'for dir in /workspace/repos/*/; do echo ""; echo "=== $$$$(basename "$$$$dir") ==="; git -C "$$$$dir" status -sb; done'
+
+# Show current branches across all workspace repos
+workspace-branches:
+    docker compose run --rm gcloud-admin bash -c 'for dir in /workspace/repos/*/; do printf "%-20s %s\n" "$$$$(basename "$$$$dir"):" "$$$$(git -C "$$$$dir" branch --show-current)"; done'
+
+# Show recent commits across all workspace repos
+workspace-log lines="5":
+    docker compose run --rm gcloud-admin bash -c 'for dir in /workspace/repos/*/; do echo ""; echo "=== $$$$(basename "$$$$dir") ==="; git -C "$$$$dir" log --oneline -n {{ lines }}; done'

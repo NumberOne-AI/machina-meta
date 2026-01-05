@@ -1,0 +1,47 @@
+services:
+  gcloud-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gcloud-admin:latest
+    container_name: gcloud-admin
+    hostname: gcloud-admin
+    stdin_open: true
+    tty: true
+    volumes:
+      # Use Docker volumes for persistent authentication
+      - gcloud-config:/root/.config/gcloud
+      - kube-config:/root/.kube
+      # Mount SSH keys for git operations
+      - ${HOME}/.ssh:/root/.ssh:ro
+      # Mount machina-meta workspace
+      - ../machina-meta:/workspace
+      # Docker socket for building images (optional - requires host Docker)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Use gke-gcloud-auth-plugin for kubectl authentication
+      - USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      # Preserve terminal colors
+      - TERM=xterm-256color
+      # Google Cloud project (override as needed)
+      - CLOUDSDK_CORE_PROJECT=${CLOUDSDK_CORE_PROJECT:-n1-machina1}
+      # Default GKE cluster region
+      - CLOUDSDK_COMPUTE_REGION=${CLOUDSDK_COMPUTE_REGION:-us-central1}
+      # ArgoCD server URL (required - set in .env)
+      - ARGOCD_SERVER=${ARGOCD_SERVER}
+    working_dir: /workspace
+    # Run interactively by default
+    command: ["/bin/bash", "-l"]
+    # Network mode host for network debugging
+    network_mode: bridge
+    # Add capabilities for network debugging tools
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+volumes:
+  # Named volumes for persistent Google Cloud and Kubernetes credentials
+  gcloud-config:
+    driver: local
+  kube-config:
+    driver: local
