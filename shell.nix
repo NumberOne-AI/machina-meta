@@ -31,6 +31,7 @@ mkShell {
   buildInputs = [ bashInteractive fd gnumake ];
 
   packages = with pkgs; [
+    argocd
     universal-ctags
     claude-code
     # libmagic

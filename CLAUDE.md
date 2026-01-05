@@ -109,12 +109,31 @@ machina-meta/
 │   └── medical-catalog/     # Catalog service
 ├── scripts/                 # Workspace automation
 │   ├── bootstrap.sh
+│   ├── monitor-preview.sh   # ArgoCD preview monitoring
+│   ├── check-token-permissions.sh
 │   ├── status-all.sh
 │   └── sync-all.sh
+├── nix/                     # Nix package manager dependencies (managed by niv)
+│   └── sources.json         # Pinned package versions (argocd, etc.)
+├── shell.nix                # Nix shell environment with dev tools
 ├── justfile                 # Unified operations
 ├── README.md                # User documentation
 └── CLAUDE.md                # AI assistant guidance (this file)
 ```
+
+### Nix Development Environment
+
+The workspace uses Nix for reproducible development tooling:
+
+- **`nix/`**: Nix package sources managed by [niv](https://github.com/nmattia/niv)
+  - `sources.json`: Pinned versions of tools (ArgoCD CLI, etc.)
+  - Add packages: `niv add <package>`
+  - Update packages: `niv update <package>`
+
+- **`shell.nix`**: Development shell environment
+  - Auto-loads when entering directory (if using direnv/nix-shell)
+  - Provides: `argocd`, `gh`, `just`, and other CLI tools
+  - Enter manually: `nix-shell`
 
 ## Quick Start
 
