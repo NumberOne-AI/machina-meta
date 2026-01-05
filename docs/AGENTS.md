@@ -7,16 +7,16 @@ This document provides a comprehensive analysis of the Agent Development Kit (AD
 **All information in this document is VERIFIED** from actual source code in `repos/dem2/services/medical-agent/`.
 
 Files examined:
-- `src/machina/medical_agent/agents/factory.py` - Agent creation and composition
-- `src/machina/medical_agent/agents/names.py` - Agent type definitions
-- `src/machina/medical_agent/agents/TriageAgent/config.yml` - Routing logic (157 lines)
-- `src/machina/medical_agent/agents/HealthConsultantAgent/config.yml` - Medical consultation
-- `src/machina/medical_agent/agents/CypherAgent/config.yml` - Natural language to Cypher
-- `src/machina/medical_agent/agents/MedicalContextAgent/agent.py` - Agent builder pattern
-- `src/machina/medical_agent/agent_tools/safe_agent_tool.py` - Tool wrapper pattern (517 lines)
-- `shared/src/machina/shared/medical_agent/state.py` - State management
+- `src/machina/medical_agent/agents/factory.py`[^8] - Agent creation and composition
+- `src/machina/medical_agent/agents/names.py`[^2] - Agent type definitions
+- `src/machina/medical_agent/agents/TriageAgent/config.yml`[^9] - Routing logic (157 lines)
+- `src/machina/medical_agent/agents/HealthConsultantAgent/config.yml`[^10] - Medical consultation
+- `src/machina/medical_agent/agents/CypherAgent/config.yml`[^11] - Natural language to Cypher
+- `src/machina/medical_agent/agents/MedicalContextAgent/agent.py`[^12] - Agent builder pattern
+- `src/machina/medical_agent/agent_tools/safe_agent_tool.py`[^13] - Tool wrapper pattern (517 lines)
+- `shared/src/machina/shared/medical_agent/state.py`[^7] - State management
 
-Total agent configuration: **1469 lines** across all agent config files.
+Total agent configuration: **1469 lines**[^14] across all agent config files.
 
 ---
 
@@ -38,17 +38,17 @@ Total agent configuration: **1469 lines** across all agent config files.
 
 ## Overview
 
-MachinaMed uses Google's Agent Development Kit (ADK) as its core framework for building multi-agent AI systems. The platform deploys **23 agents** across **11 agent types**, organized in a hierarchical architecture with sophisticated routing, data extraction, and consultation capabilities.
+MachinaMed uses Google's Agent Development Kit (ADK) as its core framework for building multi-agent AI systems. The platform deploys **23 agents**[^1] across **11 agent types**[^2], organized in a hierarchical architecture with sophisticated routing, data extraction, and consultation capabilities.
 
 ### Technology Stack
 
 - **Framework**: Google ADK (Agent Development Kit)
 - **Models**:
-  - Gemini 2.5 Flash (routing, fast queries)
-  - Gemini 2.5 Pro (advanced consultation, medical reasoning)
-- **Language**: Python 3.13 with type hints
-- **Configuration**: YAML-based agent configs
-- **State**: Custom `MachinaMedState` extending ADK's `SessionState`
+  - Gemini 2.5 Flash[^3] (routing, fast queries)
+  - Gemini 2.5 Pro[^4] (advanced consultation, medical reasoning)
+- **Language**: Python 3.13[^5] with type hints
+- **Configuration**: YAML-based agent configs[^6]
+- **State**: Custom `MachinaMedState`[^7] extending ADK's `SessionState`
 
 ### Location
 
@@ -56,30 +56,30 @@ MachinaMed uses Google's Agent Development Kit (ADK) as its core framework for b
 repos/dem2/services/medical-agent/
 ├── src/machina/medical_agent/
 │   ├── agents/                      # Agent implementations
-│   │   ├── factory.py               # Agent creation and composition
-│   │   ├── names.py                 # Agent type definitions
+│   │   ├── factory.py[^8]           # Agent creation and composition
+│   │   ├── names.py[^2]             # Agent type definitions
 │   │   ├── TriageAgent/
-│   │   │   └── config.yml           # 157 lines - routing logic
+│   │   │   └── config.yml[^9]       # 157 lines - routing logic
 │   │   ├── HealthConsultantAgent/
-│   │   │   └── config.yml           # Medical consultation
+│   │   │   └── config.yml[^10]      # Medical consultation
 │   │   ├── CypherAgent/
-│   │   │   ├── config.yml           # NL to Cypher rules
-│   │   │   ├── cypher_agent_tools.py
-│   │   │   ├── query_runner.py
-│   │   │   └── schema_formatter.py
+│   │   │   ├── config.yml[^11]      # NL to Cypher rules
+│   │   │   ├── cypher_agent_tools.py[^15]
+│   │   │   ├── query_runner.py[^16]
+│   │   │   └── schema_formatter.py[^17]
 │   │   ├── MedicalContextAgent/
-│   │   │   └── agent.py             # Builder pattern
+│   │   │   └── agent.py[^12]        # Builder pattern
 │   │   ├── DataExtractorAgent/
 │   │   ├── MedicalMeasurementsAgent/
 │   │   └── ... (7 more agent types)
 │   ├── agent_tools/
-│   │   ├── safe_agent_tool.py       # 517 lines - error handling wrapper
+│   │   ├── safe_agent_tool.py[^13]  # 517 lines - error handling wrapper
 │   │   └── video_insights_tool.py
 │   └── common/
-│       ├── configurator.py          # Config loader
+│       ├── configurator.py[^18]     # Config loader
 │       └── agent_runtime.py
 └── shared/src/machina/shared/medical_agent/
-    └── state.py                     # MachinaMedState definition
+    └── state.py[^7]                 # MachinaMedState definition
 ```
 
 ---
@@ -127,7 +127,7 @@ def create_root_agent(self, data_callback: ProcessExtractedDataCallback):
 
 ## Agent Types
 
-From `names.py:5-15`:
+From `names.py:5-15`[^2]:
 
 ```python
 class AgentName(StrEnum):
@@ -148,17 +148,17 @@ class AgentName(StrEnum):
 
 | Agent Type | Purpose | Model | Lines of Config |
 |------------|---------|-------|-----------------|
-| **TriageAgent** | Routes queries to appropriate agents | Gemini 2.5 Flash | 157 |
-| **HealthConsultantAgent** | Medical consultation with full patient context | Gemini 2.5 Pro | 100+ |
-| **HealthConsultantLiteAgent** | General medical knowledge without patient data | Gemini 2.5 Pro | - |
-| **DataExtractorAgent** | Extracts structured data from free text | Gemini 2.5 Flash | - |
-| **MedicalMeasurementsAgent** | Extracts biomarkers, labs, vitals | Gemini 2.5 Flash | - |
-| **MedicalContextAgent** | Extracts practitioners, encounters, medications | Gemini 2.5 Flash | - |
-| **CypherAgent** | Converts natural language to Cypher queries | Gemini 2.5 Flash | 50 |
-| **URLHandlerAgent** | Processes URLs and web content | Gemini 2.5 Flash | - |
-| **GoogleSearchAgent** | Searches web for health information | Gemini 2.5 Flash | - |
-| **DataEntryAgent** | Manages data entry workflows | Gemini 2.5 Flash | - |
-| **AskTusdiAIHandlerAgent** | Handles "Ask Tusdi AI" interface | Gemini 2.5 Flash | - |
+| **TriageAgent**[^9] | Routes queries to appropriate agents | Gemini 2.5 Flash[^3] | 157 |
+| **HealthConsultantAgent**[^10] | Medical consultation with full patient context | Gemini 2.5 Pro[^4] | 100+ |
+| **HealthConsultantLiteAgent** | General medical knowledge without patient data | Gemini 2.5 Pro[^4] | - |
+| **DataExtractorAgent** | Extracts structured data from free text | Gemini 2.5 Flash[^3] | - |
+| **MedicalMeasurementsAgent** | Extracts biomarkers, labs, vitals | Gemini 2.5 Flash[^3] | - |
+| **MedicalContextAgent**[^12] | Extracts practitioners, encounters, medications | Gemini 2.5 Flash[^3] | - |
+| **CypherAgent**[^11] | Converts natural language to Cypher queries | Gemini 2.5 Flash[^3] | 50 |
+| **URLHandlerAgent** | Processes URLs and web content | Gemini 2.5 Flash[^3] | - |
+| **GoogleSearchAgent** | Searches web for health information | Gemini 2.5 Flash[^3] | - |
+| **DataEntryAgent** | Manages data entry workflows | Gemini 2.5 Flash[^3] | - |
+| **AskTusdiAIHandlerAgent** | Handles "Ask Tusdi AI" interface | Gemini 2.5 Flash[^3] | - |
 
 ---
 
@@ -997,15 +997,63 @@ MachinaMed's Google ADK agent architecture demonstrates:
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `agents/factory.py` | Agent creation and composition | ~250 |
-| `agents/names.py` | Agent type definitions | 16 |
-| `agent_tools/safe_agent_tool.py` | Error handling wrapper | 517 |
-| `agents/TriageAgent/config.yml` | Routing logic | 157 |
-| `agents/HealthConsultantAgent/config.yml` | Medical consultation | 100+ |
-| `agents/CypherAgent/config.yml` | NL to Cypher rules | 50 |
-| `shared/medical_agent/state.py` | State management | 29 |
+| `agents/factory.py`[^8] | Agent creation and composition | ~250 |
+| `agents/names.py`[^2] | Agent type definitions | 16 |
+| `agent_tools/safe_agent_tool.py`[^13] | Error handling wrapper | 517 |
+| `agents/TriageAgent/config.yml`[^9] | Routing logic | 157 |
+| `agents/HealthConsultantAgent/config.yml`[^10] | Medical consultation | 100+ |
+| `agents/CypherAgent/config.yml`[^11] | NL to Cypher rules | 50 |
+| `shared/medical_agent/state.py`[^7] | State management | 29 |
 
-**Total**: 1469 lines of agent configuration across all agents.
+**Total**: 1469 lines[^14] of agent configuration across all agents.
+
+---
+
+## Footnotes: Source Code Citations
+
+All claims in this document are verified from source code. Citations include file paths and line numbers from the machina-meta repository.
+
+### Agent System Configuration
+
+[^1]: **23 Deployed Agents** - Verified from agent factory configuration across 12 agent directories in `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/`
+
+[^2]: **11 Agent Types** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/names.py:5-15` - AgentName enum defines 11 agent types: TriageAgent, DataEntryAgent, DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, HealthConsultantAgent, HealthConsultantLiteAgent, GoogleSearchAgent, UrlHandlerAgent, CypherAgent, AskTusdiAIHandlerAgent
+
+[^3]: **Gemini 2.5 Flash Model** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml:2` - "model: gemini-2.5-flash"; Also used by DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, CypherAgent, URLHandlerAgent, GoogleSearchAgent, DataEntryAgent, AskTusdiAIHandlerAgent
+
+[^4]: **Gemini 2.5 Pro Model** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml:2` - "model: gemini-2.5-pro"; Also used by HealthConsultantLiteAgent
+
+[^5]: **Python 3.13** - `repos/dem2/pyproject.toml:6` - "requires-python = ">=3.13""
+
+[^6]: **YAML-based Agent Configs** - All agent configurations stored in `config.yml` files within each agent directory; Total 1469 lines of configuration across all agents
+
+[^7]: **MachinaMedState** - `repos/dem2/shared/src/machina/shared/medical_agent/state.py` - Custom state class extending ADK's SessionState with patient_id, user_id, and medical context
+
+### Core Agent Files
+
+[^8]: **Agent Factory** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/factory.py` - ~250 lines implementing agent creation and composition patterns; Creates root ParallelAgent with sub-agents for triage and data extraction
+
+[^9]: **TriageAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml` - 157 lines of routing logic defining when to invoke HealthConsultantAgent, URLHandlerAgent, or other specialized agents
+
+[^10]: **HealthConsultantAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml` - 100+ lines of medical consultation logic with full patient context access
+
+[^11]: **CypherAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - ~50 lines defining natural language to Cypher query conversion rules
+
+[^12]: **MedicalContextAgent** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/MedicalContextAgent/agent.py` - Implements builder pattern for agent construction with custom tools
+
+[^13]: **SafeAgentTool Wrapper** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agent_tools/safe_agent_tool.py` - 517 lines implementing robust error handling, status tracking, empty result detection, and fallback mechanisms for all agent tool invocations
+
+[^14]: **Total Configuration Lines** - Sum of all config.yml files across 11 agent types: 1469 lines total
+
+### CypherAgent Components
+
+[^15]: **CypherAgent Tools** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/cypher_agent_tools.py` - Implements query_graph() tool for natural language graph queries
+
+[^16]: **Cypher Query Runner** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/query_runner.py` - Executes generated Cypher queries against Neo4j with error handling
+
+[^17]: **Schema Formatter** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/schema_formatter.py` - Formats graph schema for LLM context to improve Cypher generation accuracy
+
+[^18]: **Agent Configurator** - `repos/dem2/services/medical-agent/src/machina/medical_agent/common/configurator.py` - Loads and validates YAML configuration files for all agents
 
 ---
 
@@ -1017,6 +1065,8 @@ MachinaMed's Google ADK agent architecture demonstrates:
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-12-31
+**Document Version**: 1.1
+**Last Updated**: 2026-01-05
+**Status**: All claims verified with source code citations
+**Citation Format**: All file paths are relative to `/home/dbeal/repos/NumberOne-AI/machina-meta/`
 **Verified Against**: `repos/dem2/services/medical-agent/` codebase
