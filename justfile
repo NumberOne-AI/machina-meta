@@ -317,6 +317,10 @@ dev-status:
         echo "| Dev Tools | RedisInsight | Redis UI | 5540 | ⚪ Optional | - |"
     fi
 
+# Run a Cypher query against Neo4j
+neo4j-query query *args="":
+    python3 scripts/neo4j-query.py "{{query}}" {{args}}
+
 # Run checks across all repos
 repo-check:
     @echo "=== dem2 ==="
@@ -358,13 +362,80 @@ repo-log lines="10":
         git -C "$dir" log --oneline -n {{lines}}
     done
 
-# Create preview environment
+# Create preview environment (legacy - use preview-create instead)
 preview name:
     cd repos/dem2 && git tag -f preview-{{name}} && git push origin preview-{{name}} --force
     cd repos/dem2-webui && git tag -f preview-{{name}} && git push origin preview-{{name}} --force
     cd repos/dem2-infra && git checkout -b preview/{{name}} || git checkout preview/{{name}}
     @echo "Preview environment '{{name}}' created"
     @echo "Push dem2-infra branch to trigger deployment"
+
+# Create preview environment with helper script
+preview-create id *args="":
+    ./scripts/create-preview.sh {{id}} {{args}}
+
+# Monitor preview deployment with ArgoCD CLI
+preview-monitor id *args="":
+    ./scripts/monitor-preview.sh {{id}} {{args}}
+
+# Track preview deployment status (legacy - use preview-monitor)
+preview-status id *args="":
+    ./scripts/track-preview.sh {{id}} {{args}}
+
+# Delete preview environment (remove tags and close PR)
+preview-delete id:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Deleting preview environment: {{id}}"
+    echo ""
+
+    # Find the PR number for this preview
+    if command -v gh &>/dev/null; then
+        echo "Looking up PR for preview/{{id}} branch..."
+        PR_NUMBER=$(gh pr list --repo NumberOne-AI/dem2-infra \
+            --head "preview/{{id}}" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null)
+
+        if [[ -n "$PR_NUMBER" ]]; then
+            echo "Found PR #${PR_NUMBER}"
+            echo ""
+            echo "Closing PR to remove preview environment..."
+            if gh pr close "$PR_NUMBER" --repo NumberOne-AI/dem2-infra \
+                --comment "Closing preview environment: {{id}}" 2>/dev/null; then
+                echo "✅ Closed PR #${PR_NUMBER}"
+            else
+                echo "⚠️  Could not close PR #${PR_NUMBER} (may already be closed)"
+            fi
+            echo ""
+        else
+            echo "⚪ No open PR found for preview/{{id}}"
+            echo ""
+        fi
+    fi
+
+    # Remove tags from dem2 and dem2-webui repos
+    for repo in dem2 dem2-webui; do
+        echo "Removing preview-{{id}} tag from $repo..."
+        if git -C "repos/$repo" rev-parse "preview-{{id}}" &>/dev/null; then
+            git -C "repos/$repo" tag -d "preview-{{id}}"
+            git -C "repos/$repo" push origin :refs/tags/preview-{{id}} || echo "Tag not on remote"
+            echo "✅ Removed from $repo"
+        else
+            echo "⚪ Tag doesn't exist in $repo"
+        fi
+    done
+
+    echo ""
+    echo "✅ Preview environment {{id}} deleted"
+    echo ""
+    echo "Note: ArgoCD application may take 30-60 seconds to detect PR closure"
+    echo "Monitor: https://argo.n1-machina.dev/applications/preview-{{id}}"
+
+# Check GitHub token permissions for preview workflows
+check-token *args="":
+    ./scripts/check-token-permissions.sh {{args}}
 
 # Find all source code
 find-src:
