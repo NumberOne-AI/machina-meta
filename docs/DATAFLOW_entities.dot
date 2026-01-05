@@ -1,30 +1,58 @@
-// Standard Entity Definitions for DATAFLOW diagrams
-// Use these exact definitions consistently across ALL diagrams
+// Standard Entity Definitions
+// Reference diagram showing all standard entities used across MachinaMed diagrams
+// Use these exact definitions to ensure visual consistency
+digraph StandardEntities {
+    rankdir=TB;
 
-// Core Services
-// FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen, shape=box];
-// NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow, shape=box];
-// MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink, shape=box];
+    // Font settings and background for readability
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled, label="Standard Entity Definitions\n\nUse these exact definitions for consistency across all diagrams", labelloc=t, fontsize=16];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
 
-// Databases (always cylinders with skyblue)
-// Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
-// Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
-// Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
-// Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+    // Group by category
+    subgraph cluster_services {
+        label="Core Services";
+        fillcolor=white;
+        style=filled;
 
-// External/Client
-// Browser [label="Web Browser", fillcolor=lightblue, shape=box];
-// GeminiAPI [label="Google Gemini API", fillcolor=plum, shape=box];
-// GCS [label="Google Cloud Storage", fillcolor=lavender, shape=cylinder];
+        FastAPI [label="FastAPI Backend\nPort 8000", fillcolor=lightgreen, shape=box];
+        NextJS [label="Next.js Frontend\nPort 3000", fillcolor=lightyellow, shape=box];
+        MedicalCatalog [label="Medical Catalog\nPort 8001", fillcolor=lightpink, shape=box];
+    }
 
-// Agent System
-// AgentSystem [label="Agent System\n23 agents", fillcolor=lightcyan, shape=box];
-// TriageAgent [label="TriageAgent\nGemini Flash", fillcolor=lightcyan, shape=box];
-// HealthConsultant [label="HealthConsultantAgent\nGemini Pro", fillcolor=lightcyan, shape=box];
-// CypherAgent [label="CypherAgent\nGemini Flash", fillcolor=lightcyan, shape=box];
+    subgraph cluster_databases {
+        label="Databases";
+        fillcolor=white;
+        style=filled;
 
-// Internal Components
-// FileStorageAPI [label="File Storage API", fillcolor=wheat, shape=box];
-// DocProcAPI [label="DocProc API", fillcolor=wheat, shape=box];
-// MedicalDataEngine [label="Medical Data Engine", fillcolor=palegreen, shape=box];
-// ExtractionPipeline [label="Extraction Pipeline", fillcolor=wheat, shape=box];
+        Postgres [label="PostgreSQL\n5432", fillcolor=skyblue, shape=cylinder];
+        Neo4j [label="Neo4j\n7474/7687", fillcolor=skyblue, shape=cylinder];
+        Redis [label="Redis\n6379", fillcolor=skyblue, shape=cylinder];
+        Qdrant [label="Qdrant\n6333", fillcolor=skyblue, shape=cylinder];
+    }
+
+    subgraph cluster_external {
+        label="External Services & Clients";
+        fillcolor=white;
+        style=filled;
+
+        Browser [label="Web Browser", fillcolor=lightblue, shape=box];
+        GeminiAPI [label="Google Gemini API", fillcolor=plum, shape=cloud];
+        GCP [label="Google Cloud Platform", fillcolor=plum, shape=cloud];
+    }
+
+    subgraph cluster_agents {
+        label="Agent System";
+        fillcolor=white;
+        style=filled;
+
+        AgentSystem [label="Agent System\n23 agents", fillcolor=lightcyan, shape=box];
+        AgentTools [label="Agent Tools", fillcolor=cyan, shape=box];
+    }
+
+    // Note box with instructions
+    note [label="USAGE:\n\nCopy these exact node definitions into your diagrams.\nThis ensures visual consistency across all documentation.\n\nExample:\n  FastAPI [label=\"FastAPI Backend\\nPort 8000\",\n           fillcolor=lightgreen,\n           shape=box];\n\nSee docs/DIAGRAMS.md for complete style guide.",
+          fillcolor=white,
+          shape=note,
+          fontsize=11];
+}

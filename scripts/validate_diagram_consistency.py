@@ -81,6 +81,28 @@ def check_consistency(docs_dir):
     print(f"Checking {len(dot_files)} diagram files for consistency...")
     print("=" * 70)
 
+    # Check 1: Verify all .dot files have corresponding .svg files
+    print("\n1. Checking .dot → .svg file pairs...")
+    missing_svgs = []
+    for dot_file in dot_files:
+        svg_file = dot_file.with_suffix(".svg")
+        if not svg_file.exists():
+            missing_svgs.append(dot_file.name)
+            print(f"  ✗ Missing SVG for {dot_file.name}")
+        else:
+            print(f"  ✓ {dot_file.name} → {svg_file.name}")
+
+    if missing_svgs:
+        print(f"\n⚠️  Found {len(missing_svgs)} .dot files without corresponding .svg files:")
+        for dot_name in missing_svgs:
+            print(f"  - {dot_name}")
+        print("\nRun: ./scripts/render_diagrams.sh to generate missing SVG files")
+        return 1
+
+    print(f"\n✓ All {len(dot_files)} .dot files have corresponding .svg files")
+
+    # Check 2: Verify entity definition consistency
+    print("\n2. Checking entity definition consistency...")
     entity_usage = defaultdict(list)
     inconsistencies = []
 
