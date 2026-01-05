@@ -2,10 +2,9 @@
 // Shows internal Python function calling pattern (NOT HTTP)
 digraph AgentHierarchy {
     rankdir=TB;
-    bgcolor="#f5f5f5";  // Light gray background for contrast
 
-    // Font settings for readability
-    graph [fontsize=14, fontname="Arial"];
+    // Font settings and background for readability
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
     node [shape=box, style=filled, fontsize=12, fontname="Arial"];
     edge [fontsize=10, fontname="Arial"];
 

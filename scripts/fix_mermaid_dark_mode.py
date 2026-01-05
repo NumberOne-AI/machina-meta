@@ -11,27 +11,31 @@ def fix_mermaid_diagrams(file_path: Path) -> None:
 
     content = file_path.read_text()
 
-    # Pattern to match mermaid blocks without theme configuration
+    # Pattern to match mermaid blocks without theme configuration or with old theme config
     # Match: ```mermaid\n followed by diagram type (graph, sequenceDiagram, etc.)
-    # But NOT if already has %%{init:
-    pattern = r'(```mermaid)\n((?!%%\{init:)(graph |sequenceDiagram|classDiagram|flowchart ))'
+    # Or match old theme config without background
+    pattern1 = r'(```mermaid)\n((?!%%\{init:)(graph |sequenceDiagram|classDiagram|flowchart ))'
+    pattern2 = r"%%\{init: \{'theme':'neutral'\}\}%%"
 
-    # Replace with theme configuration
-    replacement = r"\1\n%%{init: {'theme':'neutral'}}%%\n\2"
+    # Replace with theme configuration including background
+    replacement1 = r"\1\n%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%\n\2"
+    replacement2 = r"%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%"
 
-    # Perform replacement
-    new_content = re.sub(pattern, replacement, content)
+    # Perform replacements
+    new_content = re.sub(pattern1, replacement1, content)
+    new_content = re.sub(pattern2, replacement2, new_content)
 
     # Count replacements
     original_blocks = len(re.findall(r'```mermaid', content))
-    themed_blocks = len(re.findall(r'%%\{init:', new_content))
+    themed_blocks = len(re.findall(r"%%\{init: \{'theme':'neutral', 'themeVariables': \{'background':'#f5f5f5'\}\}\}%%", new_content))
 
     if new_content != content:
         file_path.write_text(new_content)
         print(f"Updated {file_path}")
         print(f"  Total Mermaid blocks: {original_blocks}")
         print(f"  Blocks with theme: {themed_blocks}")
-        print(f"  Blocks updated: {themed_blocks - len(re.findall(r'%%{init:', content))}")
+        old_themed = len(re.findall(r'%%\{init:', content))
+        print(f"  Blocks updated: {themed_blocks - old_themed if themed_blocks >= old_themed else 'all (updated existing configs)'}")
     else:
         print(f"No changes needed for {file_path}")
 

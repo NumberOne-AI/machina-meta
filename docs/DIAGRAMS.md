@@ -16,28 +16,31 @@ Mermaid diagrams are embedded inline in Markdown files and rendered by GitHub.
 
 ### Required Theme Configuration
 
-**ALWAYS** add theme configuration at the start of every Mermaid diagram:
+**ALWAYS** add theme configuration with background color at the start of every Mermaid diagram:
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A[Component A] --> B[Component B]
 ```
 
-**Why**: The neutral theme ensures text renders on opaque backgrounds, making it readable in both light and dark modes.
+**Why**: The neutral theme with explicit background color ensures:
+- Text renders on opaque backgrounds (readable in both light and dark modes)
+- Diagram has a consistent light gray background that's not transparent
+- Visual distinction from surrounding content
 
 ### Theme Configuration by Diagram Type
 
-All diagram types must include the theme directive:
+All diagram types must include the theme directive with background:
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 sequenceDiagram
     A->>B: Message
 ```
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 classDiagram
     class Animal {
         +name: string
@@ -45,7 +48,7 @@ classDiagram
 ```
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 flowchart TB
     Start --> End
 ```
@@ -54,7 +57,7 @@ flowchart TB
 
 **Format multi-line labels with `<br/>`**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A[Service Name<br/>Port 8000<br/>Python 3.13]
 ```
@@ -67,7 +70,7 @@ graph TB
 
 **Use clear, concise labels**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph LR
     A -->|HTTP POST| B
     B -->|Response| A
@@ -75,7 +78,7 @@ graph LR
 
 **Quote labels with special characters**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph LR
     A -->|"POST /api/v1/endpoint/{id}"| B
 ```
@@ -84,7 +87,7 @@ graph LR
 
 **Use descriptive titles**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     subgraph "Backend Services"
         API[API Server]
@@ -96,7 +99,7 @@ graph TB
 
 **Use `autonumber` for clarity**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 sequenceDiagram
     autonumber
     Alice->>Bob: Hello
@@ -105,7 +108,7 @@ sequenceDiagram
 
 **Use descriptive participant aliases**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 sequenceDiagram
     participant FE as Frontend (3000)
     participant BE as Backend (8000)
@@ -116,7 +119,7 @@ sequenceDiagram
 
 **Show relevant properties and methods only**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 classDiagram
     class User {
         +string id
@@ -135,35 +138,35 @@ graph TB
 
 ✅ **Correct**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A --> B
 ```
 
 ❌ **Quotes inside node labels**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A[Type: "String"]
 ```
 
 ✅ **Correct**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A[Type: String]
 ```
 
 ❌ **Unquoted edge labels with special chars**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A -->|GET /api/{id}| B
 ```
 
 ✅ **Correct**:
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     A -->|"GET /api/{id}"| B
 ```
@@ -181,10 +184,9 @@ Graphviz diagrams are defined in `.dot` files and rendered separately using the 
 ```dot
 digraph Example {
     rankdir=TB;
-    bgcolor="#f5f5f5";  // Light gray background for contrast
 
-    // Font settings for readability
-    graph [fontsize=14, fontname="Arial"];
+    // Font settings and background for readability
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
     node [shape=box, style=filled, fontsize=12, fontname="Arial"];
     edge [fontsize=10, fontname="Arial"];
 
@@ -192,7 +194,7 @@ digraph Example {
 }
 ```
 
-**Background color**: Use `bgcolor="#f5f5f5"` (light gray) for all diagrams. This provides consistent contrast with node colors and makes diagrams stand out from surrounding content.
+**Background color**: Use `bgcolor="#f5f5f5"` with `style=filled` in the `graph` attributes block for all diagrams. This ensures a non-transparent, opaque light gray background that provides consistent contrast with node colors and makes diagrams stand out from surrounding content.
 
 ### Font Size Standards
 
@@ -347,7 +349,7 @@ grep -L "fontsize" docs/DATAFLOW_*.dot
 ### Mermaid Template
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%
 graph TB
     subgraph "Layer Name"
         A[Component<br/>Port 8000]
@@ -390,7 +392,7 @@ digraph DiagramName {
 ## Checklist for New Diagrams
 
 ### Mermaid Checklist
-- [ ] Theme configuration present (`%%{init: {'theme':'neutral'}}%%`)
+- [ ] Theme configuration with background present (`%%{init: {'theme':'neutral', 'themeVariables': {'background':'#f5f5f5'}}}%%`)
 - [ ] Node labels are concise (use `<br/>` for multi-line)
 - [ ] Edge labels with special characters are quoted
 - [ ] Tested on GitHub (both light and dark modes)
