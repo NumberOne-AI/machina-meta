@@ -636,6 +636,14 @@ See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instruct
 
 **When creating or updating any diagrams, schematics, or visual documents, refer to [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** for required styling standards and best practices.
 
+**Recommended Approach**: For complex diagrams (architecture, data flow, system diagrams), use **Graphviz .dot files with SVG output** instead of Mermaid:
+1. Create `.dot` file with proper styling
+2. Render to SVG: `dot -Tsvg diagram.dot -o diagram.svg`
+3. Reference in markdown: `![Description](diagram.svg)`
+4. Commit both `.dot` source and `.svg` output
+
+This ensures consistent, opaque backgrounds and full styling control. See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for complete workflow and examples.
+
 ## Workspace Principles
 
 1. **Submodules maintain independence** - Each repo has its own git history

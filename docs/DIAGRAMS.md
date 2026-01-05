@@ -1,6 +1,6 @@
 # Diagram Styling Guide
 
-This document defines the **standard visual style** for all diagrams in MachinaMed documentation, including Mermaid (inline in Markdown) and Graphviz (.dot files). Following these guidelines ensures consistent, professional, and accessible diagrams across all documentation.
+This document defines the **standard visual style** for all diagrams in MachinaMed documentation. Following these guidelines ensures consistent, professional, and accessible diagrams across all documentation.
 
 ## Core Principles
 
@@ -8,9 +8,58 @@ This document defines the **standard visual style** for all diagrams in MachinaM
 
 2. **All diagrams must have a consistent background fill color that contrasts with diagram elements.** This makes diagrams visually distinct and improves readability.
 
+3. **For complex diagrams, prefer Graphviz .dot files with SVG output over Mermaid.** This provides better styling control and consistent rendering.
+
 ---
 
-## Mermaid Diagrams
+## Recommended Approach: Graphviz + SVG
+
+**For complex, detailed diagrams (architecture, data flow, system diagrams), use Graphviz .dot files rendered as SVG.**
+
+### Why Graphviz + SVG?
+
+✅ **Full styling control** - Complete control over colors, fonts, backgrounds, and layout
+✅ **Consistent rendering** - SVG files render identically across all platforms
+✅ **Opaque backgrounds** - Guaranteed non-transparent backgrounds with `bgcolor` and `style=filled`
+✅ **GitHub compatible** - SVG files display perfectly in GitHub markdown using `![Alt text](diagram.svg)`
+✅ **Version controlled** - Both source `.dot` files and rendered `.svg` files are tracked in git
+✅ **Professional quality** - Publication-ready diagrams with precise control
+
+### Workflow
+
+1. **Create `.dot` file** with proper styling (see Graphviz section below)
+2. **Render to SVG**: `dot -Tsvg diagram.dot -o diagram.svg`
+3. **Reference in markdown**: `![Diagram Description](diagram.svg)`
+4. **Commit both files**: Both `.dot` source and `.svg` output
+
+### Example
+
+```bash
+# Create/edit diagram source
+vim DATAFLOW_system_architecture.dot
+
+# Render to SVG
+dot -Tsvg DATAFLOW_system_architecture.dot -o DATAFLOW_system_architecture.svg
+
+# Reference in markdown
+echo "![System Architecture](DATAFLOW_system_architecture.svg)" >> DATAFLOW.md
+
+# Commit both source and output
+git add DATAFLOW_system_architecture.dot DATAFLOW_system_architecture.svg
+git commit -m "docs: Add system architecture diagram"
+```
+
+---
+
+## Mermaid Diagrams (Limited Use)
+
+**Use Mermaid only for simple, inline diagrams where Graphviz would be overkill.**
+
+⚠️ **Known Limitations**:
+- Background color support is inconsistent across renderers
+- GitHub's Mermaid renderer may not respect `themeVariables.background` setting
+- Less control over styling compared to Graphviz
+- May render with dark/transparent backgrounds despite configuration
 
 Mermaid diagrams are embedded inline in Markdown files and rendered by GitHub.
 

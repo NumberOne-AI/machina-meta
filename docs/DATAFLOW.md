@@ -1202,18 +1202,57 @@ sequenceDiagram
 
 ## Graphviz Diagrams
 
-Detailed Graphviz diagrams are available in separate `.dot` files:
+Detailed Graphviz diagrams rendered from `.dot` source files. Each diagram is displayed below with a link to its editable source.
 
-- [`DATAFLOW_system_architecture.dot`](DATAFLOW_system_architecture.dot) - Complete system architecture
-- [`DATAFLOW_agent_hierarchy.dot`](DATAFLOW_agent_hierarchy.dot) - Agent composition and tool calling
-- [`DATAFLOW_document_processing.dot`](DATAFLOW_document_processing.dot) - Document upload, extraction, and storage pipeline
-- [`DATAFLOW_database_layer.dot`](DATAFLOW_database_layer.dot) - Multi-database architecture
-- [`DATAFLOW_container_network.dot`](DATAFLOW_container_network.dot) - Docker container communication
+### System Architecture
 
-To render Graphviz diagrams:
+![System Architecture](DATAFLOW_system_architecture.svg)
+
+*Source: [`DATAFLOW_system_architecture.dot`](DATAFLOW_system_architecture.dot) - Complete system architecture showing all components and data flow*
+
+---
+
+### Agent Hierarchy
+
+![Agent Hierarchy](DATAFLOW_agent_hierarchy.svg)
+
+*Source: [`DATAFLOW_agent_hierarchy.dot`](DATAFLOW_agent_hierarchy.dot) - Agent composition and tool calling patterns*
+
+---
+
+### Document Processing Pipeline
+
+![Document Processing Pipeline](DATAFLOW_document_processing.svg)
+
+*Source: [`DATAFLOW_document_processing.dot`](DATAFLOW_document_processing.dot) - Document upload, extraction, and storage pipeline*
+
+---
+
+### Database Layer
+
+![Database Layer](DATAFLOW_database_layer.svg)
+
+*Source: [`DATAFLOW_database_layer.dot`](DATAFLOW_database_layer.dot) - Multi-database architecture with Instance→Type pattern*
+
+---
+
+### Container Network
+
+![Container Network](DATAFLOW_container_network.svg)
+
+*Source: [`DATAFLOW_container_network.dot`](DATAFLOW_container_network.dot) - Docker container communication and networking*
+
+---
+
+### Rendering Graphviz Diagrams
+
+To regenerate SVG files from source `.dot` files:
 ```bash
-dot -Tpng DATAFLOW_system_architecture.dot -o DATAFLOW_system_architecture.png
+dot -Tsvg DATAFLOW_system_architecture.dot -o DATAFLOW_system_architecture.svg
 dot -Tsvg DATAFLOW_agent_hierarchy.dot -o DATAFLOW_agent_hierarchy.svg
+dot -Tsvg DATAFLOW_document_processing.dot -o DATAFLOW_document_processing.svg
+dot -Tsvg DATAFLOW_database_layer.dot -o DATAFLOW_database_layer.svg
+dot -Tsvg DATAFLOW_container_network.dot -o DATAFLOW_container_network.svg
 ```
 
 ---
