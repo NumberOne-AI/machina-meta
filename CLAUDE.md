@@ -693,6 +693,18 @@ See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instruct
 
 **Never let DATAFLOW.md drift from actual implementation - it's a living reference document.**
 
+### Citation System - Verifiable Documentation
+
+**[docs/CITATIONS.md](docs/CITATIONS.md)** documents the citation system for AGENTS.md, DATAFLOW.md, and all architecture documentation.
+
+**Core Principle**: Every factual claim MUST be provable via an executable command (yq/jq/grep) that returns exit code 0.
+
+**When updating documentation, ALWAYS refer to [docs/CITATIONS.md](docs/CITATIONS.md) for**:
+- Tool selection guide (yq for YAML, jq for JSON, grep for code)
+- Citation format requirements
+- Verification protocols (test ALL citations before committing)
+- Update procedures
+
 ### Diagram Styling Standards
 
 **When creating or updating any diagrams, schematics, or visual documents, refer to [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** for required styling standards and best practices.

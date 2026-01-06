@@ -159,7 +159,37 @@ For each section that changed:
 4. Update performance metrics if measured
 5. Add "VERIFIED" annotations where appropriate
 
-#### 2.5 Update Graphviz .dot Files
+#### 2.5 Add or Update Citations
+
+**CRITICAL**: All factual claims MUST be backed by executable citations.
+
+**See [CITATIONS.md](CITATIONS.md) for complete documentation on**:
+- Citation format and requirements
+- Tool selection (yq for YAML, jq for JSON, grep for code)
+- Verification protocols (all commands must return exit code 0)
+
+**Citation format**:
+```markdown
+Claim text.[^N]
+
+[^N]: **Bold Summary** - Description; Verify: `command`
+```
+
+**Test all citations before committing**:
+```bash
+# Create test script
+cat > /tmp/test_citations.sh <<'EOF'
+#!/bin/bash
+set -e
+cd /path/to/machina-meta
+# Test each citation command
+command1 > /dev/null && echo "✓ [1]"
+command2 > /dev/null && echo "✓ [2]"
+EOF
+bash /tmp/test_citations.sh
+```
+
+#### 2.6 Update Graphviz .dot Files
 
 **When to update .dot files:**
 - Adding new major components to system architecture
