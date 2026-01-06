@@ -58,7 +58,38 @@ Before extensive analysis:
 
 **If ANY box unchecked → STOP and validate first**
 
-## ⚠️ CRITICAL: Git Push Policy
+## ⚠️ CRITICAL: Git Rules
+
+This workspace uses **git submodules**, which means multiple independent git repositories exist within the directory structure. Follow these rules carefully to avoid corrupting repository state.
+
+### 1. Working Directory Safety
+
+**ALWAYS verify and explicitly cd into the target repository before running ANY git command.**
+
+- **NEVER assume** you are in the correct working directory
+- **ALWAYS use explicit `cd` commands** before git operations, even if you think you're already there
+- Running git commands in the wrong directory can corrupt repository state
+- This is especially critical with submodules where each repo has independent git history
+
+**Required pattern:**
+```bash
+# CORRECT - Always cd explicitly before git commands
+cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
+git status
+git commit -m "message"
+
+# WRONG - Never assume you're in the right place
+# (assuming you're already in repos/dem2)
+git status  # Dangerous! Could be in wrong repo
+```
+
+**Why this matters:**
+- Each submodule is an independent git repository
+- The workspace root (machina-meta) is ALSO a git repository
+- Running git commands in the wrong repo can corrupt state or create confusing commits
+- Path confusion can lead to committing in the wrong repo
+
+### 2. Push Policy
 
 **NEVER push to git repositories unless explicitly requested or confirmed by the user.**
 
@@ -68,11 +99,7 @@ Before extensive analysis:
 - Ask the user first: "Should I push these changes to the remote repository?"
 - Only push if the user explicitly says "yes", "push", "push it", or gives clear confirmation
 
-This applies to:
-- machina-meta repository
-- All submodule repositories (dem2, dem2-webui, dem2-infra, medical-catalog)
-
-## ⚠️ CRITICAL: Git Commit Message Policy
+### 3. Commit Message Policy
 
 **NEVER add Claude Code attribution or co-authorship credits to commit messages.**
 
@@ -81,9 +108,12 @@ This applies to:
 - Write clear, concise commit messages following conventional commit format (`feat:`, `fix:`, `chore:`, etc.)
 - Follow the existing repository's commit message style
 
-This applies to:
-- machina-meta repository
-- All submodule repositories (dem2, dem2-webui, dem2-infra, medical-catalog)
+### Applies To
+
+These rules apply to:
+- machina-meta repository (workspace root)
+- All submodule repositories (repos/dem2, repos/dem2-webui, repos/dem2-infra, repos/medical-catalog)
+- Any git command: status, commit, push, pull, checkout, branch, log, diff, tag, etc.
 
 ## Workspace Overview
 
