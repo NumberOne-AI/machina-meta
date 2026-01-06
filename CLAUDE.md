@@ -658,6 +658,7 @@ Each task entry includes:
 - [docs/AGENTS.md](docs/AGENTS.md) - Google ADK agent architecture
 - [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
 - [docs/DEVOPS.md](docs/DEVOPS.md) - DevOps, preview environments, CI/CD, and ArgoCD deployment
+- [docs/DEVOPS_SKILLS.md](docs/DEVOPS_SKILLS.md) - Claude Code skills for DevOps tools (Git, GitHub, Jira, ArgoCD, GKE, Kubernetes, Docker)
 - [docs/CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
 - [docs/DIAGRAMS.md](docs/DIAGRAMS.md) - Diagram styling standards
 
