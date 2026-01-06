@@ -1,8 +1,8 @@
 let
   sources = import ./nix/sources.nix;
   pkgs = import sources.nixpkgs-unstable { };
-  # google-cloud-sdk-with-gke = pkgs.google-cloud-sdk.withExtraComponents
-    # (with pkgs.google-cloud-sdk.components; [ gke-gcloud-auth-plugin ]);
+  google-cloud-sdk-with-gke = pkgs.google-cloud-sdk.withExtraComponents
+    (with pkgs.google-cloud-sdk.components; [ gke-gcloud-auth-plugin ]);
 in with pkgs;
 mkShell {
 
@@ -81,8 +81,8 @@ mkShell {
     nixos-generators
     # gcc8
     htmlq
-    google-cloud-sdk
-    # google-cloud-sdk-with-gke
+    # google-cloud-sdk
+    google-cloud-sdk-with-gke
     # # gke-gcloud-auth-plugin
     kubectx
     k3d

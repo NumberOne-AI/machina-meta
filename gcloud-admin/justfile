@@ -71,6 +71,14 @@ get-creds-nonprod:
 get-creds-prod:
     docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-prod-cluster --region us-central1
 
+# Export nonprod GKE credentials to host kubectl config and make it current
+export-creds-nonprod:
+    ./scripts/export-kube-config.sh gke_n1-machina1_us-central1_tusdi-nonprod-cluster
+
+# Export prod GKE credentials to host kubectl config and make it current
+export-creds-prod:
+    ./scripts/export-kube-config.sh gke_n1-machina1_us-central1_tusdi-prod-cluster
+
 # List all GKE clusters
 list-clusters:
     docker compose run --rm gcloud-admin gcloud container clusters list
