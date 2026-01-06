@@ -688,33 +688,33 @@ All claims in this document are verified from source code. Citations include fil
 
 ### Infrastructure & Configuration
 
-[^1]: **Frontend Port 3000** - frontend service in docker-compose.yaml; Verify: `grep -A5 'frontend:' docker-compose.yaml | grep '3000'`
+[^1]: **Frontend Port 3000** - frontend service in docker-compose.yaml; Verify: `yq -r '.services.frontend.ports[]' docker-compose.yaml`
 
-[^2]: **Next.js 16.0.10** - Next.js dependency in dem2-webui package.json; Verify: `grep '"next":' repos/dem2-webui/package.json`
+[^2]: **Next.js 16.0.10** - Next.js dependency in dem2-webui package.json; Verify: `jq -r '.dependencies.next' repos/dem2-webui/package.json`
 
-[^3]: **React 19.0.0** - React dependency in dem2-webui package.json; Verify: `grep '"react":' repos/dem2-webui/package.json`
+[^3]: **React 19.0.0** - React dependency in dem2-webui package.json; Verify: `jq -r '.dependencies.react' repos/dem2-webui/package.json`
 
-[^4]: **Backend Port 8000** - backend service port mapping in docker-compose.yaml; Verify: `grep '8000:8000' docker-compose.yaml`
+[^4]: **Backend Port 8000** - backend service port mapping in docker-compose.yaml; Verify: `yq -r '.services.backend.ports[]' docker-compose.yaml`
 
 [^5]: **Python 3.13** - Python version requirement in dem2; Verify: `grep 'requires-python' repos/dem2/pyproject.toml`
 
-[^6]: **Medical Catalog Port 8001** - medical-catalog service port mapping in docker-compose.yaml; Verify: `grep '8001:' docker-compose.yaml`
+[^6]: **Medical Catalog Port 8001** - medical-catalog service port mapping in docker-compose.yaml; Verify: `yq -r '.services."medical-catalog".ports[]' docker-compose.yaml`
 
-[^7]: **PostgreSQL Port 5432** - postgres service in docker-compose.yaml; Verify: `grep -A5 'postgres:' docker-compose.yaml | grep '5432'`
+[^7]: **PostgreSQL Port 5432** - postgres service in docker-compose.yaml; Verify: `yq -r '.services.postgres.ports[]' docker-compose.yaml`
 
-[^8]: **PostgreSQL 17.5** - postgres image version in docker-compose.yaml; Verify: `grep 'image: postgres:' docker-compose.yaml`
+[^8]: **PostgreSQL 17.5** - postgres image version in docker-compose.yaml; Verify: `yq -r '.services.postgres.image' docker-compose.yaml`
 
-[^9]: **Neo4j Ports 7474, 7687** - neo4j service HTTP and Bolt ports in docker-compose.yaml; Verify: `grep -A10 'neo4j:' docker-compose.yaml | grep -E '7474|7687'`
+[^9]: **Neo4j Ports 7474, 7687** - neo4j service HTTP and Bolt ports in docker-compose.yaml; Verify: `yq -r '.services.neo4j.ports[]' docker-compose.yaml`
 
-[^10]: **Neo4j 5.26** - neo4j image version in docker-compose.yaml; Verify: `grep 'image: neo4j:' docker-compose.yaml`
+[^10]: **Neo4j 5.26** - neo4j image version in docker-compose.yaml; Verify: `yq -r '.services.neo4j.image' docker-compose.yaml`
 
-[^11]: **Redis Port 6379** - redis service in docker-compose.yaml; Verify: `grep -A5 'redis:' docker-compose.yaml | grep '6379'`
+[^11]: **Redis Port 6379** - redis service in docker-compose.yaml; Verify: `yq -r '.services.redis.ports[]' docker-compose.yaml`
 
-[^12]: **Redis 7-alpine** - redis image version in docker-compose.yaml; Verify: `grep 'image: redis:' docker-compose.yaml`
+[^12]: **Redis 7-alpine** - redis image version in docker-compose.yaml; Verify: `yq -r '.services.redis.image' docker-compose.yaml`
 
-[^13]: **Qdrant Port 6333** - qdrant service REST API port in docker-compose.yaml; Verify: `grep -A5 'qdrant:' docker-compose.yaml | grep '6333'`
+[^13]: **Qdrant Port 6333** - qdrant service REST API port in docker-compose.yaml; Verify: `yq -r '.services.qdrant.ports[]' docker-compose.yaml`
 
-[^14]: **Qdrant 1.15.4** - qdrant image version in docker-compose.yaml; Verify: `grep 'image: qdrant' docker-compose.yaml`
+[^14]: **Qdrant 1.15.4** - qdrant image version in docker-compose.yaml; Verify: `yq -r '.services.qdrant.image' docker-compose.yaml`
 
 ### Agent System
 
