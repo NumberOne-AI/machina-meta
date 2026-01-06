@@ -1017,43 +1017,43 @@ All claims in this document are verified from source code. Citations include fil
 
 [^1]: **23 Deployed Agents** - Verified from agent factory configuration across 12 agent directories in `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/`
 
-[^2]: **11 Agent Types** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/names.py:5-15` - AgentName enum defines 11 agent types: TriageAgent, DataEntryAgent, DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, HealthConsultantAgent, HealthConsultantLiteAgent, GoogleSearchAgent, UrlHandlerAgent, CypherAgent, AskTusdiAIHandlerAgent
+[^2]: **11 Agent Types** - `class AgentName(StrEnum)` enum in names.py defines 11 agent types; Verify: `grep 'class AgentName' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/names.py`
 
-[^3]: **Gemini 2.5 Flash Model** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml:2` - "model: gemini-2.5-flash"; Also used by DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, CypherAgent, URLHandlerAgent, GoogleSearchAgent, DataEntryAgent, AskTusdiAIHandlerAgent
+[^3]: **Gemini 2.5 Flash Model** - model configuration in TriageAgent config.yml; Verify: `grep 'model: gemini-2.5-flash' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml`; Also used by DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, CypherAgent, URLHandlerAgent, GoogleSearchAgent, DataEntryAgent, AskTusdiAIHandlerAgent
 
-[^4]: **Gemini 2.5 Pro Model** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml:2` - "model: gemini-2.5-pro"; Also used by HealthConsultantLiteAgent
+[^4]: **Gemini 2.5 Pro Model** - model configuration in HealthConsultantAgent config.yml; Verify: `grep 'model: gemini-2.5-pro' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml`; Also used by HealthConsultantLiteAgent
 
-[^5]: **Python 3.13** - `repos/dem2/pyproject.toml:6` - "requires-python = ">=3.13""
+[^5]: **Python 3.13** - Python version requirement in dem2; Verify: `grep 'requires-python' repos/dem2/pyproject.toml`
 
 [^6]: **YAML-based Agent Configs** - All agent configurations stored in `config.yml` files within each agent directory; Total 1469 lines of configuration across all agents
 
-[^7]: **MachinaMedState** - `repos/dem2/shared/src/machina/shared/medical_agent/state.py` - Custom state class extending ADK's SessionState with patient_id, user_id, and medical context
+[^7]: **MachinaMedState** - `class MachinaMedState(SessionState)` in shared/medical_agent/state.py; Verify: `grep 'class MachinaMedState' repos/dem2/shared/src/machina/shared/medical_agent/state.py`
 
 ### Core Agent Files
 
-[^8]: **Agent Factory** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/factory.py` - ~250 lines implementing agent creation and composition patterns; Creates root ParallelAgent with sub-agents for triage and data extraction
+[^8]: **Agent Factory** - `AgentFactory` class in agents/factory.py implements agent creation and composition patterns (~250 lines); Creates root ParallelAgent with sub-agents
 
-[^9]: **TriageAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml` - 157 lines of routing logic defining when to invoke HealthConsultantAgent, URLHandlerAgent, or other specialized agents
+[^9]: **TriageAgent Configuration** - TriageAgent/config.yml contains 157 lines of routing logic; Verify file exists: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml`
 
-[^10]: **HealthConsultantAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml` - 100+ lines of medical consultation logic with full patient context access
+[^10]: **HealthConsultantAgent Configuration** - HealthConsultantAgent/config.yml contains 100+ lines of medical consultation logic; Verify file exists: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml`
 
-[^11]: **CypherAgent Configuration** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - ~50 lines defining natural language to Cypher query conversion rules
+[^11]: **CypherAgent Configuration** - CypherAgent/config.yml defines natural language to Cypher query conversion rules; Verify file exists: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml`
 
-[^12]: **MedicalContextAgent** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/MedicalContextAgent/agent.py` - Implements builder pattern for agent construction with custom tools
+[^12]: **MedicalContextAgent** - MedicalContextAgent/agent.py implements builder pattern for agent construction with custom tools
 
-[^13]: **SafeAgentTool Wrapper** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agent_tools/safe_agent_tool.py` - 517 lines implementing robust error handling, status tracking, empty result detection, and fallback mechanisms for all agent tool invocations
+[^13]: **SafeAgentTool Wrapper** - `class SafeAgentTool(AgentTool)` in agent_tools/safe_agent_tool.py (517 lines); Verify: `grep 'class SafeAgentTool' repos/dem2/services/medical-agent/src/machina/medical_agent/agent_tools/safe_agent_tool.py`
 
 [^14]: **Total Configuration Lines** - Sum of all config.yml files across 11 agent types: 1469 lines total
 
 ### CypherAgent Components
 
-[^15]: **CypherAgent Tools** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/cypher_agent_tools.py` - Implements query_graph() tool for natural language graph queries
+[^15]: **CypherAgent Tools** - cypher_agent_tools.py implements query_graph() tool for natural language graph queries
 
-[^16]: **Cypher Query Runner** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/query_runner.py` - Executes generated Cypher queries against Neo4j with error handling
+[^16]: **Cypher Query Runner** - query_runner.py executes generated Cypher queries against Neo4j with error handling
 
-[^17]: **Schema Formatter** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/schema_formatter.py` - Formats graph schema for LLM context to improve Cypher generation accuracy
+[^17]: **Schema Formatter** - schema_formatter.py formats graph schema for LLM context to improve Cypher generation accuracy
 
-[^18]: **Agent Configurator** - `repos/dem2/services/medical-agent/src/machina/medical_agent/common/configurator.py` - Loads and validates YAML configuration files for all agents
+[^18]: **Agent Configurator** - common/configurator.py loads and validates YAML configuration files for all agents
 
 ---
 

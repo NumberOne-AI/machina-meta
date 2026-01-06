@@ -688,43 +688,43 @@ All claims in this document are verified from source code. Citations include fil
 
 ### Infrastructure & Configuration
 
-[^1]: **Frontend Port 3000** - `docker-compose.yaml:163` - dem2-webui service exposes port 3000
+[^1]: **Frontend Port 3000** - frontend service in docker-compose.yaml; Verify: `grep -A5 'frontend:' docker-compose.yaml | grep '3000'`
 
-[^2]: **Next.js 16.0.10** - `repos/dem2-webui/package.json:60` - "next": "16.0.10"
+[^2]: **Next.js 16.0.10** - Next.js dependency in dem2-webui package.json; Verify: `grep '"next":' repos/dem2-webui/package.json`
 
-[^3]: **React 19.0.0** - `repos/dem2-webui/package.json:64` - "react": "19.0.0"
+[^3]: **React 19.0.0** - React dependency in dem2-webui package.json; Verify: `grep '"react":' repos/dem2-webui/package.json`
 
-[^4]: **Backend Port 8000** - `docker-compose.yaml:97` - dem2 service exposes port 8000
+[^4]: **Backend Port 8000** - backend service port mapping in docker-compose.yaml; Verify: `grep '8000:8000' docker-compose.yaml`
 
-[^5]: **Python 3.13** - `repos/dem2/pyproject.toml:6` - "requires-python = ">=3.13""
+[^5]: **Python 3.13** - Python version requirement in dem2; Verify: `grep 'requires-python' repos/dem2/pyproject.toml`
 
-[^6]: **Medical Catalog Port 8001** - `docker-compose.yaml:138` - medical-catalog service exposes port 8001
+[^6]: **Medical Catalog Port 8001** - medical-catalog service port mapping in docker-compose.yaml; Verify: `grep '8001:' docker-compose.yaml`
 
-[^7]: **PostgreSQL Port 5432** - `docker-compose.yaml:7` - postgres service exposes port 5432
+[^7]: **PostgreSQL Port 5432** - postgres service in docker-compose.yaml; Verify: `grep -A5 'postgres:' docker-compose.yaml | grep '5432'`
 
-[^8]: **PostgreSQL 17.5** - `docker-compose.yaml:5` - "image: postgres:17.5-bookworm"
+[^8]: **PostgreSQL 17.5** - postgres image version in docker-compose.yaml; Verify: `grep 'image: postgres:' docker-compose.yaml`
 
-[^9]: **Neo4j Ports 7474, 7687** - `docker-compose.yaml:24-25` - HTTP (7474) and Bolt (7687) ports
+[^9]: **Neo4j Ports 7474, 7687** - neo4j service HTTP and Bolt ports in docker-compose.yaml; Verify: `grep -A10 'neo4j:' docker-compose.yaml | grep -E '7474|7687'`
 
-[^10]: **Neo4j 5.26** - `docker-compose.yaml:22` - "image: neo4j:5.26"
+[^10]: **Neo4j 5.26** - neo4j image version in docker-compose.yaml; Verify: `grep 'image: neo4j:' docker-compose.yaml`
 
-[^11]: **Redis Port 6379** - `docker-compose.yaml:51` - redis service exposes port 6379
+[^11]: **Redis Port 6379** - redis service in docker-compose.yaml; Verify: `grep -A5 'redis:' docker-compose.yaml | grep '6379'`
 
-[^12]: **Redis 7-alpine** - `docker-compose.yaml:49` - "image: redis:7-alpine"
+[^12]: **Redis 7-alpine** - redis image version in docker-compose.yaml; Verify: `grep 'image: redis:' docker-compose.yaml`
 
-[^13]: **Qdrant Port 6333** - `docker-compose.yaml:65` - qdrant service exposes port 6333 (REST API)
+[^13]: **Qdrant Port 6333** - qdrant service REST API port in docker-compose.yaml; Verify: `grep -A5 'qdrant:' docker-compose.yaml | grep '6333'`
 
-[^14]: **Qdrant 1.15.4** - `docker-compose.yaml:63` - "image: qdrant/qdrant:v1.15.4"
+[^14]: **Qdrant 1.15.4** - qdrant image version in docker-compose.yaml; Verify: `grep 'image: qdrant' docker-compose.yaml`
 
 ### Agent System
 
-[^15]: **11 Agent Types** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/names.py:4-15` - AgentName enum defines 11 agent types (TriageAgent, DataEntryAgent, DataExtractorAgent, MedicalMeasurementsAgent, MedicalContextAgent, HealthConsultantAgent, HealthConsultantLiteAgent, GoogleSearchAgent, UrlHandlerAgent, CypherAgent, AskTusdiAIHandlerAgent)
+[^15]: **11 Agent Types** - `class AgentName(StrEnum)` enum in names.py defines 11 agent types; Verify: `grep 'class AgentName' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/names.py`
 
 [^16]: **23 Deployed Agents** - Verified from agent factory configuration across 12 agent directories in `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/`
 
-[^17]: **Gemini 2.5 Flash** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml:2` - "model: gemini-2.5-flash"
+[^17]: **Gemini 2.5 Flash** - model configuration in TriageAgent config.yml; Verify: `grep 'model: gemini-2.5-flash' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml`
 
-[^18]: **Gemini 2.5 Pro** - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml:2` - "model: gemini-2.5-pro"
+[^18]: **Gemini 2.5 Pro** - model configuration in HealthConsultantAgent config.yml; Verify: `grep 'model: gemini-2.5-pro' repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml`
 
 ### API Endpoints
 
@@ -732,45 +732,45 @@ All claims in this document are verified from source code. Citations include fil
 
 [^20]: **Medical Catalog 21 Routes** - Verified by grep search: 21 @router.* decorators found across 5 router files in `repos/medical-catalog/src/`
 
-[^21]: **Redis Pub/Sub** - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/routes.py:33-44` and `repos/dem2/shared/src/machina/shared/db/events.py:49-138` - EventManager implements pub/sub with Redis backend for WebSocket message distribution
+[^21]: **Redis Pub/Sub** - `EventManager` class in shared/db/events.py implements pub/sub; WebSocket endpoint: Verify: `grep '@router.websocket("/events")' repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/routes.py`
 
-[^22]: **Agent Tool Internal Calls** - `repos/dem2/services/medical-data-storage/src/machina/medical_data_storage/agent_tools.py` - Agents call Python functions directly, not HTTP endpoints (e.g., query_graph() method calls run_natural_language_graph_query() directly)
+[^22]: **Agent Tool Internal Calls** - Agents call Python functions directly, not HTTP endpoints; agent_tools.py contains internal function implementations
 
 ### Document Processing
 
-[^23]: **Global Concurrent Documents: 10** - `repos/dem2/services/docproc/src/machina/docproc/service.py:355` - "max_global: int = 10" in DocumentProcessorQueueConfig
+[^23]: **Global Concurrent Documents: 10** - `DocumentProcessorQueueConfig` class defines `max_global: int = 10`; Verify: `grep 'max_global: int = 10' repos/dem2/services/docproc/src/machina/docproc/service.py`
 
-[^24]: **Per-User Concurrent Documents: 5** - `repos/dem2/services/docproc/src/machina/docproc/service.py:356` - "max_per_user: int = 5" in DocumentProcessorQueueConfig
+[^24]: **Per-User Concurrent Documents: 5** - `DocumentProcessorQueueConfig` class defines `max_per_user: int = 5`; Verify: `grep 'max_per_user: int = 5' repos/dem2/services/docproc/src/machina/docproc/service.py`
 
-[^25]: **File Storage Router** - `repos/dem2/services/file-storage/src/machina/file_storage/router.py` - Defines upload, download, and file management endpoints
+[^25]: **File Storage Router** - `repos/dem2/services/file-storage/src/machina/file_storage/router.py` defines upload, download, and file management endpoints
 
-[^26]: **FileRecord Schema** - `repos/dem2/services/file-storage/src/machina/file_storage/models.py:11-22` - FileRecord model with fields: filename, original_filename, file_size, content_type, storage_path, user_id, document_reference_id
+[^26]: **FileRecord Schema** - `class FileRecord` model in file_storage/models.py; Verify: `grep 'class FileRecord' repos/dem2/services/file-storage/src/machina/file_storage/models.py`
 
-[^27]: **Extraction Pipeline** - `repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py:52-163` - Pipeline.run() method implements 4 stages: Load & Detection, Extraction, Upload/Save, Complete
+[^27]: **Extraction Pipeline** - `Pipeline` class in docproc/extractor/pipeline.py implements 4 stages in `run()` method: Load & Detection, Extraction, Upload/Save, Complete
 
-[^28]: **Page Rendering Concurrency: 3** - `repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py:35` - "PAGE_RENDER_CONCURRENCY = 3"; Line 261 uses asyncio.Semaphore(PAGE_RENDER_CONCURRENCY)
+[^28]: **Page Rendering Concurrency: 3** - `PAGE_RENDER_CONCURRENCY` constant in pipeline.py; Verify: `grep 'PAGE_RENDER_CONCURRENCY = 3' repos/dem2/services/docproc/src/machina/docproc/extractor/pipeline.py`
 
-[^29]: **Biomarker Data Model** - `repos/dem2/shared/src/machina/shared/docproc/schema.py:96-183` - Defines BiomarkerValue (lines 96-132) and Biomarker (lines 134-183) classes
+[^29]: **Biomarker Data Model** - `class Biomarker` and `class BiomarkerValue` in shared/docproc/schema.py; Verify: `grep -E 'class (Biomarker|BiomarkerValue)' repos/dem2/shared/src/machina/shared/docproc/schema.py`
 
-[^30]: **Normalization Rules** - `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/normalizer/agent.py:23-60` - Implements footnote removal, subscript conversion, and parenthetical cleanup; Detailed rules in `prompts/normalizer.md:230-250`
+[^30]: **Normalization Rules** - Normalizer agent implements footnote removal, subscript conversion, and parenthetical cleanup in docproc/extractor/agents/normalizer/; Detailed rules in prompts/normalizer.md
 
 ### Database Schemas
 
-[^31]: **Neo4j Graph Schema** - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml` - YAML schema defines all node types and properties for Neo4j graph database
+[^31]: **Neo4j Graph Schema** - YAML schema file in graph-memory/medical/graph/schema.yml defines all node types and properties for Neo4j graph database
 
-[^32]: **DocumentReferenceNode** - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml:435-456` - Schema definition for document nodes with properties: uuid, name, patient_id, user_id, file_id, content_type, url, report_date, etc.
+[^32]: **DocumentReferenceNode** - Schema definition in schema.yml; Verify: `grep 'DocumentReferenceNode:' repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml`
 
-[^33]: **ObservationTypeNode** - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml:355-372` - Schema definition for observation type nodes with properties: uuid, name, catalog_id, loinc_code, display_name, unit, unit_properties, aliases, etc.
+[^33]: **ObservationTypeNode** - Schema definition in schema.yml; Verify: `grep 'ObservationTypeNode:' repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml`
 
-[^34]: **ObservationValueNode** - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml:374-391` - Schema definition for observation value nodes with properties: uuid, patient_id, user_id, source_type, source_id, observed_at, value_numeric, value_text, unit
+[^34]: **ObservationValueNode** - Schema definition in schema.yml; Verify: `grep 'ObservationValueNode:' repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/schema.yml`
 
 [^35]: **Concurrency Configuration** - All concurrency limits documented in service.py and pipeline.py configuration classes
 
 ### Authentication & Security
 
-[^36]: **JWT Authentication & Cookies** - `repos/dem2/services/auth/src/machina/auth/auth_service.py:32-55` - _attach_cookies() method sets access_token (httponly=False, 120 min expiry) and refresh_token (httponly=True, 30 day expiry); Token creation in `utils.py:46-66`
+[^36]: **JWT Authentication & Cookies** - `_attach_cookies()` function in auth_service.py sets JWT cookies; Verify: `grep 'def _attach_cookies' repos/dem2/services/auth/src/machina/auth/auth_service.py`; HTTP-only refresh token: `grep 'httponly=True' repos/dem2/services/auth/src/machina/auth/auth_service.py`
 
-[^37]: **Patient Context Headers** - `repos/dem2/services/auth/src/machina/auth/deps.py:183-222` - get_async_current_patient() and get_async_current_patient_optional() extract X-Patient-Context-ID header; X-Client-Timezone in `repos/dem2/machina/machina-medical/src/machina_medical/fastapi.py:53-55`
+[^37]: **Patient Context Headers** - `X-Patient-Context-ID` header extracted in deps.py; Verify: `grep 'X-Patient-Context-ID' repos/dem2/services/auth/src/machina/auth/deps.py`
 
 ---
 
