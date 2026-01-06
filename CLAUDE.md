@@ -427,11 +427,14 @@ git push
 
 ## Preview Environments
 
-Create preview environments for testing:
+Create preview environments for testing. See [docs/DEVOPS.md](docs/DEVOPS.md) for comprehensive guide on preview environments, monitoring, and troubleshooting.
 
 ```bash
 # From machina-meta root
 just preview my-feature
+
+# Monitor deployment
+./scripts/monitor-preview.sh my-feature
 
 # This will:
 # 1. Tag dem2 and dem2-webui with preview-my-feature
@@ -624,6 +627,7 @@ Each task entry includes:
 - [docs/LLM.md](docs/LLM.md) - LLM integration and prompt engineering (use for prompt-related questions)
 - [docs/AGENTS.md](docs/AGENTS.md) - Google ADK agent architecture
 - [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
+- [docs/DEVOPS.md](docs/DEVOPS.md) - DevOps, preview environments, CI/CD, and ArgoCD deployment
 - [docs/CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
 - [docs/DIAGRAMS.md](docs/DIAGRAMS.md) - Diagram styling standards
 
