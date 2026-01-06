@@ -1,7 +1,4 @@
 {
-  "env": {
-    "PATH": "${workspaceFolder}/node_modules/.bin:${env:PATH}"
-  },
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true
   }
