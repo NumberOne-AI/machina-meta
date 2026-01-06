@@ -196,7 +196,22 @@ repos/dem2/services/medical-agent/src/machina/medical_agent/agents/
 │   └── config_4.yml                   # Future version
 ├── DataExtractorAgent/
 │   └── config.yml[^26]                # Extraction rules
-└── [9 more agent types...]
+├── AskTusdiAIHandlerAgent/
+│   └── config.yml                     # AI query handler
+├── CypherAgent/
+│   └── config.yml                     # Graph query agent
+├── DataEntryAgent/
+│   └── config.yml                     # Data entry agent
+├── GoogleSearchAgent/
+│   └── config.yml                     # Web search agent
+├── HealthConsultantLiteAgent/
+│   └── config.yml                     # Lightweight consultant
+├── MedicalContextAgent/
+│   └── config.yml                     # Medical context agent
+├── MedicalMeasurementsAgent/
+│   └── config.yml                     # Measurements agent
+└── UrlHandlerAgent/
+    └── config.yml                     # URL processing agent
 ```
 
 ### Key System Prompts
@@ -628,7 +643,13 @@ export const createMedicationPrompt = (medicationName: string) =>
 
 ### Document Processing Prompts
 
-**Location**: `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/*/prompts`[^35]
+**Location**: `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/`[^35]
+
+**Agent Prompt Files**:
+- `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/metadata/prompts/extract_metadata.md`
+- `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/generic/prompts/generic.md`
+- `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/normalizer/prompts/normalizer.md`
+- `repos/dem2/services/docproc/src/machina/docproc/extractor/agents/reference_range/prompts/enrich.md`
 
 **Agent Prompts**:
 
@@ -1250,7 +1271,7 @@ def evaluate_prompt_quality(agent: LlmAgent, test_cases: list[TestCase]):
 
 [^21]: **HealthConsultant Lines** - Config line count; Verify: `wc -l repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml`
 
-[^22]: **YAML Configs** - Agent configs in YAML; Verify: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/*/config.yml | head -1`
+[^22]: **YAML Configs** - Agent configs in YAML; Verify: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/TriageAgent/config.yml repos/dem2/services/medical-agent/src/machina/medical_agent/agents/HealthConsultantAgent/config.yml | wc -l`
 
 [^23]: **Global Config** - Global configuration file; Verify: `ls repos/dem2/services/medical-agent/src/machina/medical_agent/agents/global_config.yml`
 
