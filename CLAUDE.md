@@ -619,7 +619,15 @@ Each task entry includes:
 
 ## Project-Specific Documentation
 
-Refer to individual CLAUDE.md files for detailed service guidance:
+### Workspace Documentation
+
+- [docs/LLM.md](docs/LLM.md) - LLM integration and prompt engineering (use for prompt-related questions)
+- [docs/AGENTS.md](docs/AGENTS.md) - Google ADK agent architecture
+- [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
+- [docs/CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
+- [docs/DIAGRAMS.md](docs/DIAGRAMS.md) - Diagram styling standards
+
+### Service Documentation
 
 - [repos/dem2/CLAUDE.md](repos/dem2/CLAUDE.md) - Backend development, architecture, testing
 - [repos/dem2-webui/CLAUDE.md](repos/dem2-webui/CLAUDE.md) - Frontend patterns, components, API integration
@@ -692,6 +700,21 @@ See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instruct
 8. Commit all updated files together
 
 **Never let DATAFLOW.md drift from actual implementation - it's a living reference document.**
+
+### LLM.md - LLM Integration and Prompt Engineering
+
+**[docs/LLM.md](docs/LLM.md)** - Comprehensive reference for LLM provider integrations and prompt engineering.
+
+**Use this document when**:
+- Modifying agent prompts (config.yml files)
+- Adding/changing LLM providers or models
+- Debugging prompt-related issues
+- Understanding prompt template system
+- Model selection or cost optimization questions
+
+**Update when**: Agent prompts change, new LLM providers added, model configurations modified, or prompt engineering patterns updated.
+
+See **[docs/LLM_README.md](docs/LLM_README.md)** for regeneration instructions.
 
 ### Citation System - Verifiable Documentation
 

@@ -94,8 +94,14 @@ git add repos/dem2
 git commit -m "Update dem2 to latest"
 ```
 
-## Individual Repository Documentation
+## Documentation
 
+### Workspace Documentation
+- [docs/LLM.md](docs/LLM.md) - LLM integration and prompt engineering reference
+- [docs/AGENTS.md](docs/AGENTS.md) - Google ADK agent architecture
+- [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
+
+### Individual Repository Documentation
 - [dem2/CLAUDE.md](repos/dem2/CLAUDE.md) - Backend development guide
 - [dem2-webui/CLAUDE.md](repos/dem2-webui/CLAUDE.md) - Frontend development guide
 - [dem2-infra/README.md](repos/dem2-infra/README.md) - Infrastructure documentation
