@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 **gcloud-admin** is a DevOps administrative container for managing GKE deployments on Google Cloud Platform. It provides a consistent, fully-featured environment for Kubernetes cluster operations, debugging, and deployment management.
 
+**Integration with machina-meta**: This repository is integrated into the machina-meta workspace. Commands can be run from the machina-meta root using the module syntax: `just gcloud-admin::<command>`. See `../CLAUDE.md` for more details.
+
 ## Project Structure
 
 ```

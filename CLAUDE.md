@@ -97,6 +97,7 @@ This applies to:
 | **dem2-webui** | MachinaMed frontend | Next.js 15, React 19, TypeScript, pnpm |
 | **dem2-infra** | Infrastructure management | Kubernetes, ArgoCD, Helm |
 | **medical-catalog** | Biomarker/medical catalog service | Python, FastAPI, Qdrant |
+| **gcloud-admin** | DevOps tooling container for GKE cluster operations | Docker, gcloud, kubectl, helm, k9s, argocd |
 
 ## Repository Structure
 
@@ -107,6 +108,10 @@ machina-meta/
 │   ├── dem2-webui/          # Frontend (port 3000)
 │   ├── dem2-infra/          # Infrastructure configs
 │   └── medical-catalog/     # Catalog service
+├── gcloud-admin/            # DevOps container (kubectl, gcloud, k9s)
+│   ├── Dockerfile           # Admin container definition
+│   ├── docker-compose.yaml  # Container orchestration
+│   └── justfile             # kubectl/gcloud/helm wrappers
 ├── scripts/                 # Workspace automation
 │   ├── bootstrap.sh
 │   ├── monitor-preview.sh   # ArgoCD preview monitoring
@@ -134,6 +139,43 @@ The workspace uses Nix for reproducible development tooling:
   - Auto-loads when entering directory (if using direnv/nix-shell)
   - Provides: `argocd`, `gh`, `just`, and other CLI tools
   - Enter manually: `nix-shell`
+
+### gcloud-admin DevOps Container
+
+The **gcloud-admin** directory contains a DevOps container for GKE cluster operations:
+
+**Purpose**: Provides consistent kubectl/gcloud/helm access without local installation
+- Runs in Docker with all Google Cloud tools pre-installed
+- Stores credentials in Docker volumes (persistent across rebuilds)
+- Used for cluster access, ArgoCD operations, and deployment management
+
+**Common operations**:
+```bash
+cd gcloud-admin
+
+# Authenticate and setup (first time)
+just setup-nonprod   # Setup nonprod cluster access
+
+# Run kubectl commands
+just kubectl get pods -n argocd
+just kubectl get applications -n argocd
+
+# Run other tools
+just helm list -A
+just k9s             # Interactive cluster UI
+```
+
+**Integration with machina-meta**:
+- The gcloud-admin justfile is imported as a module in the root justfile
+- List gcloud-admin commands: `just --list gcloud-admin`
+- Run commands using: `just gcloud-admin::<command>`
+- Examples:
+  - `just gcloud-admin::kubectl get pods -n argocd`
+  - `just gcloud-admin::helm list -A`
+  - `just gcloud-admin::k9s`
+  - `just gcloud-admin::setup-nonprod` (first-time setup)
+- See `gcloud-admin/CLAUDE.md` for complete documentation
+- Credentials persist in Docker volume `gcp-config-volume`
 
 ## Quick Start
 

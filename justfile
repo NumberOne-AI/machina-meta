@@ -2,6 +2,9 @@
 
 set dotenv-load := true
 
+# Import gcloud-admin justfile as a module
+mod gcloud-admin 'gcloud-admin/justfile'
+
 # Show available commands
 default:
     @just --list
