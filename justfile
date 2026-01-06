@@ -5,6 +5,9 @@ set dotenv-load := true
 # Import gcloud-admin justfile as a module
 mod gcloud-admin 'gcloud-admin/justfile'
 
+# Import dem2 justfile as a module
+mod dem2 'repos/dem2/justfile'
+
 # Show available commands
 default:
     @just --list
@@ -384,6 +387,10 @@ preview-monitor id *args="":
 # Track preview deployment status (legacy - use preview-monitor)
 preview-status id *args="":
     ./scripts/track-preview.sh {{id}} {{args}}
+
+# Show detailed information about a preview environment
+preview-info id *args="":
+    ./scripts/preview-tool.sh info {{id}} {{args}}
 
 # Delete preview environment (remove tags and close PR)
 preview-delete id:
