@@ -85,43 +85,43 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${BUILDOS}/${BUILDARCH}/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/
 
 # Install Helm
-RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | \
-    tar -xzf - --strip-components=1 -C /usr/local/bin linux-amd64/helm
+RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-${BUILDOS}-${BUILDARCH}.tar.gz" | \
+    tar -xzf - --strip-components=1 -C /usr/local/bin ${BUILDOS}-${BUILDARCH}/helm
 
 # Install Kustomize
-RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | \
+RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin
 
 # Install k9s (Kubernetes TUI)
-RUN curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_amd64.tar.gz" | \
+RUN curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_${BUILDARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin k9s
 
 # Install kubectx and kubens
-RUN curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_linux_x86_64.tar.gz" | \
+RUN curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin kubectx && \
-    curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_linux_x86_64.tar.gz" | \
+    curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin kubens
 
 # Install stern (multi-pod log tailing)
-RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_linux_amd64.tar.gz" | \
+RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin stern
 
 # Install ArgoCD CLI
-RUN curl -fsSL "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-linux-amd64" -o /usr/local/bin/argocd && \
+RUN curl -fsSL "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-${BUILDOS}-${BUILDARCH}" -o /usr/local/bin/argocd && \
     chmod +x /usr/local/bin/argocd
 
 # Install yq (YAML processor)
-RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" -o /usr/local/bin/yq && \
+RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${BUILDOS}_${BUILDARCH}" -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq
 
 # Install Docker CLI (for building images, not running containers)
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable" | \
+RUN curl -fsSL https://download.docker.com/${BUILDOS}/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=${BUILDARCH} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/${BUILDOS}/debian bookworm stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     apt-get update && apt-get install -y --no-install-recommends \
     docker-ce-cli \
@@ -131,7 +131,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /
 # Install additional Kubernetes tools via krew (kubectl plugin manager)
 RUN set -x && \
     OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
-    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')" && \
+    ARCH="$(uname -m | sed -e 's/x86_64/${BUILDARCH}/' -e 's/aarch64/arm64/')" && \
     KREW="krew-${OS}_${ARCH}" && \
     curl -fsSL "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" | \
     tar -xzf - -C /tmp && \
