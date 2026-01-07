@@ -58,6 +58,40 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Multi-Repo Features
 
+- [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules
+  - Impact: HIGH | Added: 2026-01-07
+  - Create `just repo-rebase` command for rebasing feature branches onto merge-base (e.g., origin/dev)
+  - Design transactional two-phase approach:
+    - **Phase 1 (dry-run)**: Analyze and output merge plan including conflict detection
+    - **Phase 2 (execute)**: Run the plan atomically with ability to restore on failure
+  - Implement `scripts/machina_git.py` with rebase orchestration logic
+  - Handle edge cases:
+    - Detect merge-base branch per repo (usually origin/dev, but configurable)
+    - Fetch merge-base branch before rebase
+    - Detect conflicts before applying changes
+    - Save repo state (commit hashes) before rebase for rollback
+    - Provide conflict resolution workflow
+    - Allow plan adjustment and re-execution after failure
+  - Requirements:
+    - Must work across all 4 submodules (dem2, dem2-webui, dem2-infra, medical-catalog)
+    - Atomic operation: either all repos rebase successfully or none do
+    - State preservation: can restore to pre-rebase state if any repo fails
+    - Conflict reporting: clear indication of which repos have conflicts and where
+    - Interactive mode: user can review plan before execution
+  - Integration points:
+    - Extends existing `just repo-*` commands (repo-pull, repo-sync, repo-status)
+    - Uses machina-git skill principles (explicit cd, safety-first, user confirmation)
+    - Follows CLAUDE.md git rules (working directory safety, atomic operations)
+  - Planned implementation:
+    - [ ] Design Python script architecture for git state management
+    - [ ] Implement dry-run analysis phase with conflict detection
+    - [ ] Implement state save/restore mechanism
+    - [ ] Implement rebase execution phase
+    - [ ] Add conflict resolution workflow
+    - [ ] Create justfile command wrapper
+    - [ ] Write comprehensive tests for edge cases
+    - [ ] Document usage in CLAUDE.md and README.md
+
 <!-- Add tasks that span multiple repositories (e.g., coordinated releases, cross-repo refactoring) -->
 
 ---
