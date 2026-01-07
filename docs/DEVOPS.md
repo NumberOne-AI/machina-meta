@@ -365,13 +365,22 @@ argocd app sync preview-pr-421 --prune --server argo.n1-machina.dev --grpc-web
 
 ### Deleting a Preview Environment
 
-**Recommended: Use preview-tool.sh**
+**Recommended: Use preview-tool.py**
 ```bash
 # Delete preview environment (tags, close PR, trigger ArgoCD cleanup)
-just preview-delete <preview-id>
+# Must specify identifier type
 
-# Example
-just preview-delete 367
+# By PR number
+just preview-delete --pr 421
+
+# By git tag
+just preview-delete --git-tag preview-docproc-extraction-pipeline
+
+# By ArgoCD app name
+just preview-delete --argocd-app preview-pr-91
+
+# By infra branch
+just preview-delete --infra-branch preview/docproc-extraction-pipeline
 ```
 
 **Manual deletion:**

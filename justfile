@@ -403,16 +403,12 @@ preview-status id *args="":
     ./scripts/track-preview.sh {{id}} {{args}}
 
 # Show detailed information about a preview environment
-preview-info id *args="":
-    ./scripts/preview-tool.sh info {{id}} {{args}}
+preview-info *args="":
+    ./scripts/preview-tool.py info {{args}}
 
 # Delete preview environment (remove tags and close PR to trigger ArgoCD cleanup)
-preview-delete id *args="":
-    ./scripts/preview-tool.sh delete {{id}} {{args}}
-
-# Delete ArgoCD application directly (requires ArgoCD permissions)
-preview-delete-argocd id *args="":
-    ./scripts/preview-tool.sh delete-argocd {{id}} {{args}}
+preview-delete *args="":
+    ./scripts/preview-tool.py delete {{args}}
 
 # Check GitHub token permissions for preview workflows
 check-token *args="":
