@@ -90,9 +90,23 @@ repo-checkout branch:
     #!/usr/bin/env bash
     set -euo pipefail
     for dir in repos/*/; do
-        echo "Checking out {{branch}} in $(basename "$dir")..."
-        git -C "$dir" checkout {{branch}} 2>/dev/null || git -C "$dir" checkout -b {{branch}}
+        repo_name=$(basename "$dir")
+        echo ""
+        echo "=== $repo_name ==="
+
+        # Check if branch exists locally
+        if git -C "$dir" rev-parse --verify {{branch}} >/dev/null 2>&1; then
+            echo "Checking out existing branch {{branch}}..."
+            git -C "$dir" checkout {{branch}}
+            echo "✅ Checked out {{branch}}"
+        else
+            echo "Branch {{branch}} doesn't exist locally, creating..."
+            git -C "$dir" checkout -b {{branch}}
+            echo "✅ Created new branch {{branch}}"
+        fi
     done
+    echo ""
+    echo "All repos now on branch: {{branch}}"
 
 # Checkout branch in a specific repo (e.g., just checkout-repo dem2 feature/my-branch)
 checkout-repo repo branch:
