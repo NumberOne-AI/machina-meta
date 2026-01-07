@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 # preview-tool.sh - Utility for managing preview environments, PRs, and deployments
+#
+# ArgoCD Behavior Note:
+# When using the ArgoCD CLI to check if an application has been deleted, the command
+# may return "PermissionDenied" error instead of "NotFound", particularly in ArgoCD
+# versions 2.6 and later. This is intentional for security reasons to prevent potential
+# enumeration of existing applications by attackers. Therefore, "PermissionDenied"
+# errors when querying ArgoCD applications may indicate the app doesn't exist or was
+# already deleted, not necessarily a permissions issue.
 
 set -euo pipefail
 
@@ -56,6 +64,8 @@ Usage: $(basename "$0") <command> [options]
 
 Commands:
   info <id>              Show detailed information about a preview environment
+  delete <id>            Delete preview environment (tags, close PR to trigger ArgoCD cleanup)
+  delete-argocd <id>     Delete only the ArgoCD application directly
   list                   List all active preview environments (TODO)
   status <id>            Check deployment status of preview environment (TODO)
   cleanup-stale          Find and cleanup stale preview environments (TODO)
@@ -63,7 +73,8 @@ Commands:
 
 Examples:
   $(basename "$0") info pr-70
-  $(basename "$0") info my-feature
+  $(basename "$0") delete pr-70
+  $(basename "$0") delete-argocd pr-70
   $(basename "$0") list
   $(basename "$0") pr-info dem2 70
 
@@ -330,14 +341,37 @@ cmd_info() {
     # ============================================================
     print_header "ArgoCD Deployment"
 
-    local argocd_app="preview-$preview_id"
-    local argocd_url="https://argo.n1-machina.dev/applications/$argocd_app"
+    # ArgoCD app naming convention is preview-pr-{INFRA_PR_NUMBER}
+    # So we need to look up the infra PR number first
+    local argocd_app=""
+    local argocd_url=""
 
-    print_kv "Application Name" "$argocd_app"
+    if command -v gh &>/dev/null; then
+        local infra_pr_number=$(gh pr list --repo "$GITHUB_ORG/dem2-infra" \
+            --head "preview/$preview_id" \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+        if [[ -n "$infra_pr_number" ]]; then
+            argocd_app="preview-pr-$infra_pr_number"
+            argocd_url="https://argo.n1-machina.dev/applications/$argocd_app"
+            print_kv "Application Name" "$argocd_app (based on infra PR #$infra_pr_number)"
+        else
+            # Fallback to preview-{id} naming
+            argocd_app="preview-$preview_id"
+            argocd_url="https://argo.n1-machina.dev/applications/$argocd_app"
+            print_kv "Application Name" "$argocd_app (infra PR not found, using fallback)"
+        fi
+    else
+        argocd_app="preview-$preview_id"
+        argocd_url="https://argo.n1-machina.dev/applications/$argocd_app"
+        print_kv "Application Name" "$argocd_app (gh CLI not available)"
+    fi
+
     print_kv "ArgoCD URL" "$argocd_url"
 
     # Try to get ArgoCD status if CLI is available
-    if command -v argocd &>/dev/null; then
+    if command -v argocd &>/dev/null && [[ -n "$argocd_app" ]]; then
         local app_status=$(argocd app get "$argocd_app" -o json 2>/dev/null || echo "")
 
         if [[ -n "$app_status" ]]; then
@@ -347,7 +381,7 @@ cmd_info() {
             print_kv "Sync Status" "$sync_status"
             print_kv "Health Status" "$health_status"
         else
-            print_kv "Status" "$CIRCLE Cannot retrieve (app may not exist or argocd not configured)"
+            print_kv "Status" "$CIRCLE Cannot retrieve (app may not exist)"
         fi
     else
         print_kv "Status" "$CIRCLE ArgoCD CLI not available"
@@ -397,6 +431,193 @@ cmd_info() {
     echo ""
 }
 
+# Delete ArgoCD application only
+cmd_delete_argocd() {
+    local preview_id="$1"
+
+    if [[ -z "$preview_id" ]]; then
+        print_color "$RED" "Error: Preview ID required"
+        echo "Usage: $(basename "$0") delete-argocd <preview-id>"
+        exit 1
+    fi
+
+    print_header "Deleting ArgoCD Application for Preview: $preview_id"
+
+    if ! command -v argocd &>/dev/null; then
+        print_color "$RED" "$CROSS ArgoCD CLI not available"
+        echo ""
+        echo "Please install ArgoCD CLI or use 'just preview-delete $preview_id' to close the PR"
+        echo "which will trigger ArgoCD to auto-cleanup the application."
+        exit 1
+    fi
+
+    # Determine ArgoCD app name (preview-pr-{INFRA_PR_NUMBER})
+    local argocd_app=""
+    if command -v gh &>/dev/null; then
+        local infra_pr_number=$(gh pr list --repo "$GITHUB_ORG/dem2-infra" \
+            --head "preview/$preview_id" \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+        if [[ -n "$infra_pr_number" ]]; then
+            argocd_app="preview-pr-$infra_pr_number"
+            echo ""
+            print_color "$CYAN" "Found infra PR #$infra_pr_number"
+            print_color "$CYAN" "ArgoCD app name: $argocd_app"
+        else
+            # Fallback to preview-{id} naming
+            argocd_app="preview-$preview_id"
+            echo ""
+            print_color "$YELLOW" "$WARN Could not find infra PR, using fallback name: $argocd_app"
+        fi
+    else
+        argocd_app="preview-$preview_id"
+        echo ""
+        print_color "$YELLOW" "$WARN gh CLI not available, using fallback name: $argocd_app"
+    fi
+
+    # Check if app exists
+    # Note: ArgoCD 2.6+ may return PermissionDenied for deleted apps (not NotFound)
+    # This is a security feature to prevent app enumeration
+    echo ""
+    print_color "$CYAN" "Checking if ArgoCD application exists..."
+    if ! argocd app get "$argocd_app" &>/dev/null; then
+        print_color "$YELLOW" "$WARN Application '$argocd_app' not found in ArgoCD"
+        echo ""
+        echo "The application may have already been deleted or never existed."
+        echo "(Note: ArgoCD 2.6+ returns PermissionDenied for deleted apps)"
+        exit 0
+    fi
+
+    # Delete the application
+    echo ""
+    print_color "$CYAN" "Deleting ArgoCD application '$argocd_app'..."
+    if argocd app delete "$argocd_app" --yes 2>&1; then
+        echo ""
+        print_color "$GREEN" "$CHECK Successfully deleted ArgoCD application: $argocd_app"
+    else
+        echo ""
+        print_color "$RED" "$CROSS Failed to delete ArgoCD application"
+        exit 1
+    fi
+
+    echo ""
+    print_color "$YELLOW" "$WARN Note: This only deleted the ArgoCD application"
+    echo "  To fully cleanup the preview environment (tags, PRs), run:"
+    print_color "$GRAY" "    $(basename "$0") delete $preview_id"
+
+    echo ""
+}
+
+# Delete preview environment (tags, close PR, trigger ArgoCD cleanup)
+cmd_delete() {
+    local preview_id="$1"
+
+    if [[ -z "$preview_id" ]]; then
+        print_color "$RED" "Error: Preview ID required"
+        echo "Usage: $(basename "$0") delete <preview-id>"
+        exit 1
+    fi
+
+    print_header "Deleting Preview Environment: $preview_id"
+
+    # ============================================================
+    # Close PR in dem2-infra (triggers ArgoCD auto-cleanup)
+    # ============================================================
+    if command -v gh &>/dev/null; then
+        echo ""
+        print_color "$CYAN" "Looking up PR for preview/$preview_id branch in dem2-infra..."
+
+        local pr_number=$(gh pr list --repo "$GITHUB_ORG/dem2-infra" \
+            --head "preview/$preview_id" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+        if [[ -n "$pr_number" ]]; then
+            print_color "$CYAN" "Found PR #${pr_number}"
+            echo ""
+            print_color "$CYAN" "Closing PR to remove preview environment..."
+
+            if gh pr close "$pr_number" --repo "$GITHUB_ORG/dem2-infra" \
+                --comment "Closing preview environment: $preview_id" 2>/dev/null; then
+                print_color "$GREEN" "$CHECK Closed PR #${pr_number}"
+            else
+                print_color "$YELLOW" "$WARN Could not close PR #${pr_number} (may already be closed)"
+            fi
+        else
+            print_color "$GRAY" "$CIRCLE No open PR found for preview/$preview_id"
+        fi
+    else
+        print_color "$YELLOW" "$WARN gh CLI not available, skipping PR closure"
+    fi
+
+    # ============================================================
+    # Remove tags from dem2 and dem2-webui repos
+    # ============================================================
+    echo ""
+    print_color "$CYAN" "Removing preview tags from application repositories..."
+
+    local removed_count=0
+    local skipped_count=0
+
+    for repo in dem2 dem2-webui; do
+        local repo_path="$WORKSPACE_ROOT/repos/$repo"
+        echo ""
+        print_color "$CYAN" "Processing $repo..."
+
+        if [[ ! -d "$repo_path" ]]; then
+            print_color "$YELLOW" "  $WARN Repository not found: $repo_path"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
+        if git -C "$repo_path" rev-parse "preview-$preview_id" &>/dev/null; then
+            # Delete local tag
+            git -C "$repo_path" tag -d "preview-$preview_id" 2>&1 | sed 's/^/  /'
+
+            # Delete remote tag
+            if git -C "$repo_path" push origin ":refs/tags/preview-$preview_id" 2>&1 | sed 's/^/  /'; then
+                print_color "$GREEN" "  $CHECK Removed preview-$preview_id from $repo"
+                removed_count=$((removed_count + 1))
+            else
+                print_color "$YELLOW" "  $WARN Tag not on remote or already deleted"
+                removed_count=$((removed_count + 1))
+            fi
+        else
+            print_color "$GRAY" "  $CIRCLE Tag doesn't exist in $repo"
+            skipped_count=$((skipped_count + 1))
+        fi
+    done
+
+    # ============================================================
+    # Summary
+    # ============================================================
+    echo ""
+    print_header "Summary"
+
+    # Determine ArgoCD app name for monitoring
+    local argocd_app="preview-$preview_id"
+    if [[ -n "$pr_number" ]]; then
+        argocd_app="preview-pr-$pr_number"
+    fi
+
+    echo ""
+    print_color "$GREEN" "$CHECK Preview environment deletion completed"
+    echo ""
+    echo "  Tags removed: $removed_count"
+    echo "  Tags skipped: $skipped_count"
+    echo ""
+    print_color "$CYAN" "Note: ArgoCD application will auto-delete in 30-60 seconds after PR closure"
+    echo "Monitor: https://argo.n1-machina.dev/applications/$argocd_app"
+    echo ""
+    echo "When checking deletion status with 'argocd app get $argocd_app':"
+    echo "• PermissionDenied error = app was deleted (ArgoCD 2.6+ security feature)"
+    echo "• Application details shown = app still exists"
+
+    echo ""
+}
+
 # Main command router
 main() {
     if [[ $# -eq 0 ]]; then
@@ -410,6 +631,12 @@ main() {
     case "$command" in
         info)
             cmd_info "$@"
+            ;;
+        delete)
+            cmd_delete "$@"
+            ;;
+        delete-argocd)
+            cmd_delete_argocd "$@"
             ;;
         list|status|cleanup-stale|pr-info)
             print_color "$YELLOW" "Command '$command' is not yet implemented"

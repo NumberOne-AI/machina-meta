@@ -259,6 +259,9 @@ argocd app rollback <app-name> <revision> --server argo.n1-machina.dev --grpc-we
 argocd app delete <app-name> --server argo.n1-machina.dev --grpc-web
 ```
 
+**Note on Checking Deleted Applications:**
+When using `argocd app get` to check if an application has been deleted, ArgoCD 2.6+ returns a `PermissionDenied` error instead of `NotFound`. This is an intentional security feature to prevent enumeration of existing applications. Therefore, a `PermissionDenied` error when querying an application typically indicates it doesn't exist or was already deleted, not necessarily a permissions issue.
+
 ## Monitoring and Observability
 
 ### Checking Application Status
@@ -362,15 +365,28 @@ argocd app sync preview-pr-421 --prune --server argo.n1-machina.dev --grpc-web
 
 ### Deleting a Preview Environment
 
+**Recommended: Use preview-tool.sh**
+```bash
+# Delete preview environment (tags, close PR, trigger ArgoCD cleanup)
+just preview-delete <preview-id>
+
+# Example
+just preview-delete 367
+```
+
+**Manual deletion:**
 ```bash
 # 1. Delete preview branch in dem2-infra
 cd repos/dem2-infra
 git push origin --delete preview/docproc-extraction-pipeline
 
 # 2. ArgoCD will automatically clean up the application
-# Or manually delete
+# Or manually delete (requires permissions)
 argocd app delete preview-pr-421 --server argo.n1-machina.dev --grpc-web
 ```
+
+**Verifying deletion:**
+When checking if an application was deleted with `argocd app get`, a `PermissionDenied` error indicates the app was successfully deleted (ArgoCD 2.6+ security feature).
 
 ## Troubleshooting
 
