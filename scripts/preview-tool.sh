@@ -161,17 +161,290 @@ format_timestamp() {
     fi
 }
 
+# Resolve identifier to canonical preview ID based on explicit type
+# Arguments: type, identifier
+# Types: git-tag, argocd-app, gke-namespace, infra-branch, pr, git-branch, direct
+resolve_preview_id_by_type() {
+    local id_type="$1"
+    local identifier="$2"
+    local preview_id=""
+
+    case "$id_type" in
+        git-tag)
+            # Format: preview-docproc-extraction-pipeline
+            if [[ "$identifier" =~ ^preview-(.+)$ ]]; then
+                preview_id="${BASH_REMATCH[1]}"
+            else
+                print_color "$RED" "Error: Git tag must start with 'preview-'"
+                exit 1
+            fi
+            ;;
+
+        argocd-app)
+            # Format: preview-pr-91
+            if [[ "$identifier" =~ ^preview-pr-([0-9]+)$ ]]; then
+                local infra_pr_num="${BASH_REMATCH[1]}"
+
+                if ! command -v gh &>/dev/null; then
+                    print_color "$RED" "Error: gh CLI required for ArgoCD app resolution"
+                    exit 1
+                fi
+
+                # Look up infra PR to get the actual preview ID
+                local branch=$(gh pr view "$infra_pr_num" --repo "$GITHUB_ORG/dem2-infra" \
+                    --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+
+                if [[ -n "$branch" ]] && [[ "$branch" =~ ^preview/(.+)$ ]]; then
+                    preview_id="${BASH_REMATCH[1]}"
+                else
+                    print_color "$RED" "Error: Could not resolve ArgoCD app '$identifier' to preview ID"
+                    exit 1
+                fi
+            else
+                print_color "$RED" "Error: ArgoCD app must be in format 'preview-pr-NUMBER'"
+                exit 1
+            fi
+            ;;
+
+        gke-namespace)
+            # Format: tusdi-preview-91
+            if [[ "$identifier" =~ ^tusdi-preview-([0-9]+)$ ]]; then
+                local infra_pr_num="${BASH_REMATCH[1]}"
+
+                if ! command -v gh &>/dev/null; then
+                    print_color "$YELLOW" "Warning: gh CLI not available, using fallback"
+                    preview_id="$infra_pr_num"
+                else
+                    local branch=$(gh pr view "$infra_pr_num" --repo "$GITHUB_ORG/dem2-infra" \
+                        --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+
+                    if [[ -n "$branch" ]] && [[ "$branch" =~ ^preview/(.+)$ ]]; then
+                        preview_id="${BASH_REMATCH[1]}"
+                    else
+                        preview_id="$infra_pr_num"
+                    fi
+                fi
+            else
+                print_color "$RED" "Error: GKE namespace must be in format 'tusdi-preview-NUMBER'"
+                exit 1
+            fi
+            ;;
+
+        infra-branch)
+            # Format: preview/docproc-extraction-pipeline
+            if [[ "$identifier" =~ ^preview/(.+)$ ]]; then
+                preview_id="${BASH_REMATCH[1]}"
+            else
+                print_color "$RED" "Error: Infra branch must start with 'preview/'"
+                exit 1
+            fi
+            ;;
+
+        pr)
+            # Format: 421 (PR number in dem2, dem2-webui, or dem2-infra)
+            if ! [[ "$identifier" =~ ^[0-9]+$ ]]; then
+                print_color "$RED" "Error: PR number must be numeric"
+                exit 1
+            fi
+
+            if ! command -v gh &>/dev/null; then
+                print_color "$RED" "Error: gh CLI required for PR resolution"
+                exit 1
+            fi
+
+            # Check dem2-infra first (this gives us the current preview environment)
+            local branch=$(gh pr view "$identifier" --repo "$GITHUB_ORG/dem2-infra" \
+                --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+
+            if [[ -n "$branch" ]] && [[ "$branch" =~ ^preview/(.+)$ ]]; then
+                preview_id="${BASH_REMATCH[1]}"
+            else
+                # Check dem2 for PR - find the LATEST preview tag, not just any ancestor
+                local dem2_branch=$(gh pr view "$identifier" --repo "$GITHUB_ORG/dem2" \
+                    --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+
+                if [[ -n "$dem2_branch" ]]; then
+                    # First, try to find an active preview in dem2-infra by searching for the branch name
+                    # Look for preview branches in infra that might match this PR
+                    if [[ -d "$INFRA_REPO" ]]; then
+                        # Get all preview branches from infra
+                        for infra_branch in $(git -C "$INFRA_REPO" branch -r | grep "origin/preview/" | sed 's|.*origin/preview/||'); do
+                            # Check if there's a matching preview tag in dem2
+                            if git -C "$DEM2_REPO" rev-parse "preview-$infra_branch" &>/dev/null 2>&1; then
+                                # Check if this tag is on the PR branch
+                                if git -C "$DEM2_REPO" merge-base --is-ancestor "preview-$infra_branch" "origin/$dem2_branch" 2>/dev/null; then
+                                    preview_id="$infra_branch"
+                                    break
+                                fi
+                            fi
+                        done
+                    fi
+
+                    # Fallback: look for ANY preview tag on this branch (least preferred)
+                    if [[ -z "$preview_id" ]]; then
+                        for tag in $(git -C "$DEM2_REPO" tag -l "preview-*" --sort=-creatordate 2>/dev/null); do
+                            local tag_id="${tag#preview-}"
+                            if git -C "$DEM2_REPO" merge-base --is-ancestor "$tag" "origin/$dem2_branch" 2>/dev/null; then
+                                preview_id="$tag_id"
+                                break
+                            fi
+                        done
+                    fi
+                fi
+
+                if [[ -z "$preview_id" ]]; then
+                    print_color "$RED" "Error: Could not find preview environment for PR #$identifier"
+                    exit 1
+                fi
+            fi
+            ;;
+
+        git-branch)
+            # Format: feature/docproc-extraction-pipeline
+            if ! command -v gh &>/dev/null; then
+                print_color "$RED" "Error: gh CLI required for git branch resolution"
+                exit 1
+            fi
+
+            # Find PR for this branch in dem2
+            local pr_num=$(gh pr list --repo "$GITHUB_ORG/dem2" \
+                --head "$identifier" \
+                --json number \
+                --jq '.[0].number' 2>/dev/null || echo "")
+
+            if [[ -n "$pr_num" ]]; then
+                # First, try to find an active preview in dem2-infra by searching for the branch name
+                if [[ -d "$INFRA_REPO" ]]; then
+                    # Get all preview branches from infra
+                    for infra_branch in $(git -C "$INFRA_REPO" branch -r | grep "origin/preview/" | sed 's|.*origin/preview/||'); do
+                        # Check if there's a matching preview tag in dem2
+                        if git -C "$DEM2_REPO" rev-parse "preview-$infra_branch" &>/dev/null 2>&1; then
+                            # Check if this tag is on the git branch
+                            if git -C "$DEM2_REPO" rev-parse --verify "origin/$identifier" &>/dev/null 2>&1; then
+                                if git -C "$DEM2_REPO" merge-base --is-ancestor "preview-$infra_branch" "origin/$identifier" 2>/dev/null; then
+                                    preview_id="$infra_branch"
+                                    break
+                                fi
+                            fi
+                        fi
+                    done
+                fi
+
+                # Fallback: look for ANY preview tag on this branch (least preferred)
+                if [[ -z "$preview_id" ]]; then
+                    for tag in $(git -C "$DEM2_REPO" tag -l "preview-*" --sort=-creatordate 2>/dev/null); do
+                        local tag_id="${tag#preview-}"
+                        if git -C "$DEM2_REPO" rev-parse --verify "origin/$identifier" &>/dev/null 2>&1; then
+                            if git -C "$DEM2_REPO" merge-base --is-ancestor "$tag" "origin/$identifier" 2>/dev/null; then
+                                preview_id="$tag_id"
+                                break
+                            fi
+                        fi
+                    done
+                fi
+            fi
+
+            if [[ -z "$preview_id" ]]; then
+                print_color "$RED" "Error: Could not find preview environment for branch '$identifier'"
+                exit 1
+            fi
+            ;;
+
+        *)
+            print_color "$RED" "Error: Unknown identifier type '$id_type'"
+            exit 1
+            ;;
+    esac
+
+    echo "$preview_id|$id_type|$identifier"
+    return 0
+}
+
 # Show detailed info about a preview environment
 cmd_info() {
-    local preview_id="$1"
+    local id_type=""
+    local identifier=""
 
-    if [[ -z "$preview_id" ]]; then
-        print_color "$RED" "Error: Preview ID required"
-        echo "Usage: $(basename "$0") info <preview-id>"
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --git-tag)
+                id_type="git-tag"
+                identifier="$2"
+                shift 2
+                ;;
+            --argocd-app)
+                id_type="argocd-app"
+                identifier="$2"
+                shift 2
+                ;;
+            --gke-namespace)
+                id_type="gke-namespace"
+                identifier="$2"
+                shift 2
+                ;;
+            --infra-branch)
+                id_type="infra-branch"
+                identifier="$2"
+                shift 2
+                ;;
+            --pr)
+                id_type="pr"
+                identifier="$2"
+                shift 2
+                ;;
+            --git-branch)
+                id_type="git-branch"
+                identifier="$2"
+                shift 2
+                ;;
+            *)
+                print_color "$RED" "Error: Unknown option '$1'"
+                echo ""
+                echo "You must specify the type of identifier."
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$identifier" ]] || [[ -z "$id_type" ]]; then
+        print_color "$RED" "Error: Preview identifier and type required"
+        echo ""
+        echo "Usage: $(basename "$0") info [OPTIONS] <identifier>"
+        echo ""
+        echo "Required Options (one of):"
+        echo "  --git-tag <tag>              Git tag (preview-docproc-extraction-pipeline)"
+        echo "  --argocd-app <app>           ArgoCD app name (preview-pr-91)"
+        echo "  --gke-namespace <ns>         GKE namespace (tusdi-preview-91)"
+        echo "  --infra-branch <branch>      dem2-infra branch (preview/docproc-extraction-pipeline)"
+        echo "  --pr <number>                PR number (421)"
+        echo "  --git-branch <branch>        Git branch (feature/docproc-extraction-pipeline)"
+        echo ""
+        echo "Examples:"
+        echo "  $(basename "$0") info --git-tag preview-docproc-extraction-pipeline"
+        echo "  $(basename "$0") info --argocd-app preview-pr-91"
+        echo "  $(basename "$0") info --gke-namespace tusdi-preview-91"
+        echo "  $(basename "$0") info --infra-branch preview/docproc-extraction-pipeline"
+        echo "  $(basename "$0") info --pr 421"
+        echo "  $(basename "$0") info --git-branch feature/docproc-extraction-pipeline"
         exit 1
     fi
 
+    # Resolve identifier to preview ID
+    local resolution=$(resolve_preview_id_by_type "$id_type" "$identifier")
+    local preview_id=$(echo "$resolution" | cut -d'|' -f1)
+    local resolved_type=$(echo "$resolution" | cut -d'|' -f2)
+    local original_identifier=$(echo "$resolution" | cut -d'|' -f3)
+
     print_header "Preview Environment: $preview_id"
+
+    # Show identifier resolution
+    echo ""
+    print_color "$CYAN" "Identifier Resolution:"
+    print_kv "  Input Type" "$id_type"
+    print_kv "  Input Value" "$original_identifier"
+    print_kv "  Resolved Preview ID" "$preview_id"
+    echo ""
 
     # Extract PR number if the ID is in format "pr-XX"
     local pr_number=""
@@ -404,10 +677,10 @@ cmd_info() {
         has_infra_branch=true
     fi
 
-    # Determine if this is a stale environment
+    # Show artifact summary
     if [[ "$has_tags" == true ]] || [[ "$has_infra_branch" == true ]]; then
         echo ""
-        print_color "$YELLOW" "  $WARN This preview environment has artifacts that may need cleanup:"
+        print_color "$CYAN" "  Preview Environment Artifacts:"
 
         if [[ "$dem2_tag_status" == "EXISTS" ]]; then
             echo "    • dem2 has preview tag: preview-$preview_id"
@@ -420,10 +693,6 @@ cmd_info() {
         if [[ "$has_infra_branch" == true ]]; then
             echo "    • dem2-infra has preview branch: preview/$preview_id"
         fi
-
-        echo ""
-        print_color "$CYAN" "  To cleanup this preview environment, run:"
-        print_color "$GRAY" "    just preview-delete $preview_id"
     else
         print_color "$GREEN" "  $CHECK No preview artifacts found - environment is clean"
     fi
@@ -433,13 +702,17 @@ cmd_info() {
 
 # Delete ArgoCD application only
 cmd_delete_argocd() {
-    local preview_id="$1"
+    local input_identifier="$1"
 
-    if [[ -z "$preview_id" ]]; then
-        print_color "$RED" "Error: Preview ID required"
-        echo "Usage: $(basename "$0") delete-argocd <preview-id>"
+    if [[ -z "$input_identifier" ]]; then
+        print_color "$RED" "Error: Preview identifier required"
+        echo "Usage: $(basename "$0") delete-argocd <identifier>"
         exit 1
     fi
+
+    # Resolve identifier to preview ID
+    local resolution=$(resolve_preview_id "$input_identifier")
+    local preview_id=$(echo "$resolution" | cut -d'|' -f1)
 
     print_header "Deleting ArgoCD Application for Preview: $preview_id"
 
@@ -511,13 +784,17 @@ cmd_delete_argocd() {
 
 # Delete preview environment (tags, close PR, trigger ArgoCD cleanup)
 cmd_delete() {
-    local preview_id="$1"
+    local input_identifier="$1"
 
-    if [[ -z "$preview_id" ]]; then
-        print_color "$RED" "Error: Preview ID required"
-        echo "Usage: $(basename "$0") delete <preview-id>"
+    if [[ -z "$input_identifier" ]]; then
+        print_color "$RED" "Error: Preview identifier required"
+        echo "Usage: $(basename "$0") delete <identifier>"
         exit 1
     fi
+
+    # Resolve identifier to preview ID
+    local resolution=$(resolve_preview_id "$input_identifier")
+    local preview_id=$(echo "$resolution" | cut -d'|' -f1)
 
     print_header "Deleting Preview Environment: $preview_id"
 
