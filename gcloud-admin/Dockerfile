@@ -7,6 +7,13 @@ FROM debian:bookworm-slim
 LABEL maintainer="NumberOne-AI"
 LABEL description="GCP/GKE administrative container with full Kubernetes tooling"
 
+# Docker automatic platform ARGs (provided by BuildKit)
+# Docker containers always run Linux, so we only need architecture
+ARG TARGETARCH
+
+# Convert ARG to ENV for use in all RUN commands
+ENV TARGETARCH=${TARGETARCH}
+
 # Versions - update these as needed
 ENV KUBECTL_VERSION=1.31.4
 ENV HELM_VERSION=3.16.3
@@ -74,6 +81,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# =============================================================================
+# Platform Architecture Variables
+# =============================================================================
+# Docker containers always run Linux, so OS is constant.
+# Only architecture varies: amd64 (Intel) or arm64 (Apple Silicon/ARM).
+# Some packages use x86_64 instead of amd64, so we define ARCH_ALT for those.
+#
+#   TARGETARCH    - Architecture (amd64, arm64) - from Docker BuildKit
+#   ARCH_ALT      - Alternative arch name (x86_64, arm64) - for kubectx/kubens
+# =============================================================================
+
+# Create platform variables script for use in all RUN commands
+RUN echo '#!/bin/bash' > /usr/local/bin/platform-vars.sh && \
+    echo "export TARGETARCH=${TARGETARCH}" >> /usr/local/bin/platform-vars.sh && \
+    echo "export ARCH_ALT=\$(echo \${TARGETARCH} | sed 's/amd64/x86_64/')" >> /usr/local/bin/platform-vars.sh && \
+    chmod +x /usr/local/bin/platform-vars.sh && \
+    /usr/local/bin/platform-vars.sh && \
+    cat /usr/local/bin/platform-vars.sh
+
 # Install Google Cloud SDK with gke-gcloud-auth-plugin
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
@@ -85,43 +111,44 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${BUILDOS}/${BUILDARCH}/kubectl" && \
+RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/
 
 # Install Helm
-RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-${BUILDOS}-${BUILDARCH}.tar.gz" | \
-    tar -xzf - --strip-components=1 -C /usr/local/bin ${BUILDOS}-${BUILDARCH}/helm
+RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz" | \
+    tar -xzf - --strip-components=1 -C /usr/local/bin linux-${TARGETARCH}/helm
 
 # Install Kustomize
-RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
+RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${TARGETARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin
 
 # Install k9s (Kubernetes TUI)
-RUN curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_${BUILDARCH}.tar.gz" | \
+RUN curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_${TARGETARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin k9s
 
 # Install kubectx and kubens
-RUN curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
+RUN . /usr/local/bin/platform-vars.sh && \
+    curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_linux_${ARCH_ALT}.tar.gz" | \
     tar -xzf - -C /usr/local/bin kubectx && \
-    curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
+    curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_linux_${ARCH_ALT}.tar.gz" | \
     tar -xzf - -C /usr/local/bin kubens
 
 # Install stern (multi-pod log tailing)
-RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${BUILDOS}_${BUILDARCH}.tar.gz" | \
+RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_linux_${TARGETARCH}.tar.gz" | \
     tar -xzf - -C /usr/local/bin stern
 
 # Install ArgoCD CLI
-RUN curl -fsSL "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-${BUILDOS}-${BUILDARCH}" -o /usr/local/bin/argocd && \
+RUN curl -fsSL "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-linux-${TARGETARCH}" -o /usr/local/bin/argocd && \
     chmod +x /usr/local/bin/argocd
 
 # Install yq (YAML processor)
-RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_${BUILDOS}_${BUILDARCH}" -o /usr/local/bin/yq && \
+RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TARGETARCH}" -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq
 
 # Install Docker CLI (for building images, not running containers)
-RUN curl -fsSL https://download.docker.com/${BUILDOS}/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=${BUILDARCH} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/${BUILDOS}/debian bookworm stable" | \
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=${TARGETARCH} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     apt-get update && apt-get install -y --no-install-recommends \
     docker-ce-cli \
@@ -130,9 +157,7 @@ RUN curl -fsSL https://download.docker.com/${BUILDOS}/debian/gpg | gpg --dearmor
 
 # Install additional Kubernetes tools via krew (kubectl plugin manager)
 RUN set -x && \
-    OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
-    ARCH="$(uname -m | sed -e 's/x86_64/${BUILDARCH}/' -e 's/aarch64/arm64/')" && \
-    KREW="krew-${OS}_${ARCH}" && \
+    KREW="krew-linux_${TARGETARCH}" && \
     curl -fsSL "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" | \
     tar -xzf - -C /tmp && \
     /tmp/${KREW} install krew && \
@@ -142,6 +167,7 @@ RUN set -x && \
 ENV PATH="${PATH}:/root/.krew/bin"
 
 # Install useful kubectl plugins via krew
+# Note: Some plugins may not be available for all architectures
 RUN kubectl krew install \
     ctx \
     ns \
@@ -151,9 +177,9 @@ RUN kubectl krew install \
     get-all \
     resource-capacity \
     whoami \
-    access-matrix \
     node-shell \
-    view-secret
+    view-secret || true && \
+    kubectl krew install access-matrix || echo "access-matrix not available for this platform"
 
 # Setup bash completion for all tools
 RUN echo 'source /usr/share/bash-completion/bash_completion' >> /root/.bashrc && \
