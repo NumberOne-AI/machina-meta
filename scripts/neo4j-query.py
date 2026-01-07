@@ -158,6 +158,64 @@ def format_results(results: list[dict[str, Any]], output_format: str) -> str:
         return "\n".join(output_lines)
 
 
+def count_biomarkers(config: dict[str, Any]) -> dict[str, int]:
+    """Count ObservationTypeNode and ObservationValueNode in Neo4j.
+
+    Args:
+        config: Neo4j connection configuration
+
+    Returns:
+        dict with 'type_count' and 'value_count'
+    """
+    type_results = run_cypher_query(
+        "MATCH (n:ObservationTypeNode) RETURN count(n) as count", config
+    )
+    type_count = type_results[0]["row"][0] if type_results else 0
+
+    value_results = run_cypher_query(
+        "MATCH (n:ObservationValueNode) RETURN count(n) as count", config
+    )
+    value_count = value_results[0]["row"][0] if value_results else 0
+
+    return {"type_count": type_count, "value_count": value_count}
+
+
+def clear_biomarkers(config: dict[str, Any]) -> dict[str, int]:
+    """Clear all ObservationTypeNode and ObservationValueNode from Neo4j.
+
+    This is commonly used when re-processing documents to validate extraction performance,
+    ensuring a clean slate for testing biomarker extraction against the medical catalog.
+
+    Args:
+        config: Neo4j connection configuration
+
+    Returns:
+        dict with 'type_count' and 'value_count' of deleted nodes
+    """
+    # Count before deletion
+    print("Counting ObservationTypeNode...")
+    counts = count_biomarkers(config)
+    type_count = counts["type_count"]
+    value_count = counts["value_count"]
+
+    print(f"Found {type_count} ObservationTypeNode nodes")
+    print(f"Found {value_count} ObservationValueNode nodes")
+
+    # Delete nodes
+    if type_count > 0 or value_count > 0:
+        print("Deleting ObservationTypeNode nodes...")
+        run_cypher_query("MATCH (n:ObservationTypeNode) DETACH DELETE n", config)
+
+        print("Deleting ObservationValueNode nodes...")
+        run_cypher_query("MATCH (n:ObservationValueNode) DETACH DELETE n", config)
+
+        print("Done! All observation nodes cleared.")
+    else:
+        print("No observation nodes to delete.")
+
+    return {"type_count": type_count, "value_count": value_count}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run Cypher queries against local Neo4j instance",
@@ -178,6 +236,12 @@ Examples:
 
   # Output as JSON
   %(prog)s --format json "MATCH (n) RETURN n LIMIT 5"
+
+  # Clear biomarkers (for testing/re-processing)
+  %(prog)s --clear-biomarkers
+
+  # Count biomarkers
+  %(prog)s --count-biomarkers
         """,
     )
 
@@ -198,20 +262,45 @@ Examples:
         default="rows",
         help="Output format (default: rows)",
     )
+    parser.add_argument(
+        "--clear-biomarkers",
+        action="store_true",
+        help="Clear all ObservationTypeNode and ObservationValueNode (for testing)",
+    )
+    parser.add_argument(
+        "--count-biomarkers",
+        action="store_true",
+        help="Count ObservationTypeNode and ObservationValueNode",
+    )
 
     args = parser.parse_args()
-
-    # Get query from args or file
-    if args.file:
-        query = args.file.read_text().strip()
-    elif args.query:
-        query = args.query
-    else:
-        parser.error("Either query or --file must be provided")
 
     try:
         # Load configuration
         config = load_neo4j_config()
+
+        # Handle count-biomarkers command
+        if args.count_biomarkers:
+            result = count_biomarkers(config)
+            print(f"ObservationTypeNode: {result['type_count']}")
+            print(f"ObservationValueNode: {result['value_count']}")
+            return
+
+        # Handle clear-biomarkers command
+        if args.clear_biomarkers:
+            result = clear_biomarkers(config)
+            print(
+                f"\nDeleted {result['type_count']} type nodes and {result['value_count']} value nodes"
+            )
+            return
+
+        # Get query from args or file
+        if args.file:
+            query = args.file.read_text().strip()
+        elif args.query:
+            query = args.query
+        else:
+            parser.error("Either query, --file, or --clear-biomarkers must be provided")
 
         # Run query
         results = run_cypher_query(query, config)
