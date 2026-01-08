@@ -362,6 +362,48 @@ def close_pr(repo: str, pr_number: int, comment: str) -> bool:
 
 
 # ============================================================
+# Kubernetes Operations
+# ============================================================
+
+def get_namespace_annotations(namespace: str) -> Optional[dict]:
+    """Get annotations for a Kubernetes namespace."""
+    if not check_command_available("kubectl"):
+        return None
+
+    result = run_command([
+        "kubectl", "get", "namespace", namespace,
+        "-o", "json"
+    ])
+
+    if result.returncode != 0:
+        return None
+
+    try:
+        data = json.loads(result.stdout)
+        return data.get("metadata", {}).get("annotations", {})
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
+def get_argocd_app_from_namespace(namespace: str) -> Optional[str]:
+    """Get ArgoCD application name from namespace annotations."""
+    annotations = get_namespace_annotations(namespace)
+    if not annotations:
+        return None
+
+    # Look for common ArgoCD annotations
+    # ArgoCD sets annotations like argocd.argoproj.io/instance or similar
+    for key, value in annotations.items():
+        if "argocd" in key.lower() and "app" in key.lower():
+            return value
+        # Also check for common naming patterns in labels
+        if key == "app.kubernetes.io/instance":
+            return value
+
+    return None
+
+
+# ============================================================
 # ArgoCD Operations
 # ============================================================
 
@@ -379,6 +421,39 @@ def get_argocd_app_status(app_name: str) -> Optional[dict]:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
         return None
+
+
+def list_argocd_apps() -> Optional[List[dict]]:
+    """List all ArgoCD applications."""
+    if not check_command_available("argocd"):
+        return None
+
+    result = run_command(["argocd", "app", "list", "-o", "json"])
+
+    if result.returncode != 0:
+        return None
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def get_argocd_app_for_namespace(namespace: str) -> Optional[str]:
+    """Find ArgoCD application deploying to a specific namespace."""
+    apps = list_argocd_apps()
+    if not apps:
+        return None
+
+    for app in apps:
+        try:
+            app_namespace = app.get("spec", {}).get("destination", {}).get("namespace")
+            if app_namespace == namespace:
+                return app.get("metadata", {}).get("name")
+        except (AttributeError, KeyError):
+            continue
+
+    return None
 
 
 def delete_argocd_app(app_name: str) -> bool:
@@ -457,26 +532,59 @@ class PreviewEnvironment:
     @classmethod
     def _resolve_gke_namespace(cls, identifier: str) -> "PreviewEnvironment":
         """Resolve GKE namespace to preview ID."""
+        # Try preview namespace format first: tusdi-preview-NUMBER
         match = re.match(r"^tusdi-preview-(\d+)$", identifier)
-        if not match:
-            raise ResolutionError("GKE namespace must be in format 'tusdi-preview-NUMBER'")
+        if match:
+            infra_pr_num = int(match.group(1))
 
-        infra_pr_num = int(match.group(1))
-
-        if not check_command_available("gh"):
-            print_color(Color.YELLOW, "Warning: gh CLI not available, using fallback")
-            preview_id = str(infra_pr_num)
-        else:
-            pr_info = get_pr_info("dem2-infra", infra_pr_num)
-            if pr_info:
-                branch_match = re.match(r"^preview/(.+)$", pr_info.head_ref)
-                if branch_match:
-                    preview_id = branch_match.group(1)
+            if not check_command_available("gh"):
+                print_color(Color.YELLOW, "Warning: gh CLI not available, using fallback")
+                preview_id = str(infra_pr_num)
+            else:
+                pr_info = get_pr_info("dem2-infra", infra_pr_num)
+                if pr_info:
+                    branch_match = re.match(r"^preview/(.+)$", pr_info.head_ref)
+                    if branch_match:
+                        preview_id = branch_match.group(1)
+                    else:
+                        preview_id = str(infra_pr_num)
                 else:
                     preview_id = str(infra_pr_num)
-            else:
-                preview_id = str(infra_pr_num)
 
+            return cls(preview_id, IdentifierType.GKE_NAMESPACE, identifier)
+
+        # For any other namespace, try multiple resolution strategies
+
+        # Strategy 1: Check namespace annotations for ArgoCD app
+        argocd_app = get_argocd_app_from_namespace(identifier)
+
+        # Strategy 2: List ArgoCD apps and find one deploying to this namespace
+        if not argocd_app:
+            argocd_app = get_argocd_app_for_namespace(identifier)
+
+        if argocd_app:
+            # Try to parse ArgoCD app name to get preview ID
+            # Format: preview-pr-NUMBER
+            app_match = re.match(r"^preview-pr-(\d+)$", argocd_app)
+            if app_match:
+                infra_pr_num = int(app_match.group(1))
+                if check_command_available("gh"):
+                    pr_info = get_pr_info("dem2-infra", infra_pr_num)
+                    if pr_info:
+                        branch_match = re.match(r"^preview/(.+)$", pr_info.head_ref)
+                        if branch_match:
+                            preview_id = branch_match.group(1)
+                            return cls(preview_id, IdentifierType.GKE_NAMESPACE, identifier)
+
+                preview_id = str(infra_pr_num)
+                return cls(preview_id, IdentifierType.GKE_NAMESPACE, identifier)
+
+            # Use ArgoCD app name directly as preview ID
+            preview_id = argocd_app
+            return cls(preview_id, IdentifierType.GKE_NAMESPACE, identifier)
+
+        # Fallback: use namespace name directly as the preview ID
+        preview_id = identifier
         return cls(preview_id, IdentifierType.GKE_NAMESPACE, identifier)
 
     @classmethod

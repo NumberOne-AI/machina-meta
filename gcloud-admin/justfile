@@ -159,6 +159,38 @@ argocd-login:
 argocd-logout:
     docker compose run --rm gcloud-admin argocd logout "$ARGOCD_SERVER"
 
+# Import GitHub token from host's gh CLI using token export (preferred)
+gh-import-host-token:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v gh &>/dev/null; then
+        echo "Exporting token from host's gh CLI..."
+        TOKEN=$(gh auth token 2>/dev/null || echo "")
+        if [ -n "$TOKEN" ]; then
+            echo "Importing token to container..."
+            echo "$TOKEN" | docker compose run --rm -T gcloud-admin gh auth login --with-token
+            echo "Done. Verify with: just gh-status"
+        else
+            echo "No valid token found on host"
+            echo "Authenticate on host first: gh auth login"
+        fi
+    else
+        echo "GitHub CLI not found on host"
+        echo "Install gh or use 'just gh-login' to authenticate in container"
+    fi
+
+# Login to GitHub with token (prompts for token)
+gh-login:
+    docker compose run --rm gcloud-admin gh auth login
+
+# Logout from GitHub
+gh-logout:
+    docker compose run --rm gcloud-admin gh auth logout
+
+# Check GitHub authentication status
+gh-status:
+    docker compose run --rm gcloud-admin gh auth status
+
 # Check ArgoCD app status
 argo-status app:
     @just argocd app get {{ app }}
@@ -206,3 +238,13 @@ workspace-branches:
 # Show recent commits across all workspace repos
 workspace-log lines="5":
     docker compose run --rm gcloud-admin bash -c 'for dir in /workspace/repos/*/; do echo ""; echo "=== $$$$(basename "$$$$dir") ==="; git -C "$$$$dir" log --oneline -n {{ lines }}; done'
+
+# === Preview Environment Management ===
+
+# Show detailed information about a preview environment
+preview-info *args:
+    docker compose run --rm gcloud-admin python3 /workspace/gcloud-admin/preview-tool.py info {{ args }}
+
+# Delete preview environment (remove tags and close PR to trigger ArgoCD cleanup)
+preview-delete *args:
+    docker compose run --rm gcloud-admin python3 /workspace/gcloud-admin/preview-tool.py delete {{ args }}

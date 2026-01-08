@@ -13,10 +13,11 @@ services:
       - gcloud-config:/root/.config/gcloud
       - kube-config:/root/.kube
       - argocd-config:/root/.config/argocd
+      - gh-config:/root/.config/gh
       # Mount SSH keys for git operations
       - ${HOME}/.ssh:/root/.ssh:ro
-      # Mount machina-meta workspace
-      - ../machina-meta:/workspace
+      # Mount machina-meta workspace (parent directory)
+      - ..:/workspace
       # Docker socket for building images (optional - requires host Docker)
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -41,10 +42,12 @@ services:
       - NET_RAW
 
 volumes:
-  # Named volumes for persistent Google Cloud, Kubernetes, and ArgoCD credentials
+  # Named volumes for persistent credentials
   gcloud-config:
     driver: local
   kube-config:
     driver: local
   argocd-config:
+    driver: local
+  gh-config:
     driver: local
