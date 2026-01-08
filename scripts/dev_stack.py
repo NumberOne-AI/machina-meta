@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet --script
 # /// script
 # requires-python = ">=3.13"
-# dependencies = []
+# dependencies = ["tabulate"]
 # ///
 """Development stack management script.
 
@@ -16,6 +16,8 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+
+from tabulate import tabulate
 
 
 def run_command(
@@ -432,14 +434,11 @@ def format_status_markdown(services: list[dict]) -> str:
         services: List of service status dictionaries
 
     Returns:
-        Markdown table string
+        Markdown table string with aligned columns
     """
-    lines = [
-        "# Development Stack Status",
-        "",
-        "| Category | Service | Type | Port(s) | Status | URL |",
-        "|----------|---------|------|---------|--------|-----|",
-    ]
+    # Prepare table data
+    headers = ["Category", "Service", "Type", "Port(s)", "Status", "URL"]
+    rows = []
 
     for svc in services:
         is_optional = svc.get("optional", False)
@@ -453,12 +452,19 @@ def format_status_markdown(services: list[dict]) -> str:
             status = "❌ Stopped"
             url = "-"
 
-        lines.append(
-            f"| {svc['category']} | {svc['service']} | {svc['type']} | "
-            f"{svc['ports']} | {status} | {url} |"
-        )
+        rows.append([
+            svc["category"],
+            svc["service"],
+            svc["type"],
+            svc["ports"],
+            status,
+            url,
+        ])
 
-    return "\n".join(lines)
+    # Format as markdown table with pipe format
+    table = tabulate(rows, headers=headers, tablefmt="pipe")
+
+    return f"# Development Stack Status\n\n{table}"
 
 
 def format_status_json(services: list[dict]) -> str:
