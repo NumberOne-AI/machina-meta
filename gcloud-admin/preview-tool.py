@@ -703,78 +703,97 @@ class PreviewEnvironment:
         else:
             return f"preview-{self.preview_id}", None
 
-    def show_info(self) -> None:
-        """Display detailed information about the preview environment."""
-        print_header(f"Preview Environment: {self.preview_id}")
-
-        # Show identifier resolution
-        print()
-        print_color(Color.CYAN, "Identifier Resolution:")
-        print_kv("  Input Type", self.id_type.value)
-        print_kv("  Input Value", self.original_identifier)
-        print_kv("  Resolved Preview ID", self.preview_id)
-        print()
+    def collect_info(self) -> dict:
+        """Collect all preview environment information into a structured dictionary."""
+        data = {
+            "preview_id": self.preview_id,
+            "identifier": {
+                "type": self.id_type.value,
+                "value": self.original_identifier
+            },
+            "repositories": {},
+            "argocd": {},
+            "summary": {}
+        }
 
         # Extract PR number if in format "pr-XX"
         pr_match = re.match(r"^pr-(\d+)$", self.preview_id)
         pr_number = int(pr_match.group(1)) if pr_match else None
 
-        # Check dem2 repository
-        self._show_repo_info("dem2", DEM2_REPO, pr_number)
+        # Collect dem2 repository info
+        data["repositories"]["dem2"] = self._collect_repo_info("dem2", DEM2_REPO, pr_number)
 
-        # Check dem2-webui repository
-        self._show_repo_info("dem2-webui", WEBUI_REPO, pr_number)
+        # Collect dem2-webui repository info
+        data["repositories"]["dem2-webui"] = self._collect_repo_info("dem2-webui", WEBUI_REPO, pr_number)
 
-        # Check dem2-infra repository
-        self._show_infra_info()
+        # Collect dem2-infra repository info
+        data["repositories"]["dem2-infra"] = self._collect_infra_info()
 
-        # Check ArgoCD deployment
-        self._show_argocd_info()
+        # Collect ArgoCD deployment info
+        data["argocd"] = self._collect_argocd_info()
 
-        # Show summary
-        self._show_summary()
+        # Collect summary
+        dem2_tag = check_git_tag(DEM2_REPO, f"preview-{self.preview_id}")
+        webui_tag = check_git_tag(WEBUI_REPO, f"preview-{self.preview_id}")
+        infra_branch = check_git_branch(INFRA_REPO, f"preview/{self.preview_id}")
 
-    def _show_repo_info(self, repo_name: str, repo_path: Path, pr_number: Optional[int]) -> None:
-        """Show information about a repository."""
-        print_header(f"{repo_name} ({'Backend' if repo_name == 'dem2' else 'Frontend'})")
+        data["summary"] = {
+            "has_dem2_tag": dem2_tag.exists,
+            "has_webui_tag": webui_tag.exists,
+            "has_infra_branch": infra_branch.exists,
+            "is_clean": not (dem2_tag.exists or webui_tag.exists or infra_branch.exists)
+        }
+
+        return data
+
+    def _collect_repo_info(self, repo_name: str, repo_path: Path, pr_number: Optional[int]) -> dict:
+        """Collect information about a repository."""
+        info = {
+            "name": repo_name,
+            "tag": {},
+            "pr": None
+        }
 
         tag_info = check_git_tag(repo_path, f"preview-{self.preview_id}")
-        if tag_info.exists:
-            print_kv("Preview Tag", f"{Symbol.CHECK} preview-{self.preview_id}")
-            if tag_info.commit:
-                print_kv("Tag Commit", tag_info.commit[:8])
-            if tag_info.date:
-                print_kv("Tag Date", tag_info.date)
-        else:
-            print_kv("Preview Tag", f"{Symbol.CROSS} Not found")
+        info["tag"] = {
+            "name": f"preview-{self.preview_id}",
+            "exists": tag_info.exists,
+            "commit": tag_info.commit[:8] if tag_info.commit else None,
+            "date": tag_info.date
+        }
 
-        # Show PR info if we have a number
+        # Collect PR info if we have a number
         if pr_number:
             pr_info = get_pr_info(repo_name, pr_number)
             if pr_info:
-                print_kv(f"PR #{pr_number}", pr_info.title)
+                info["pr"] = {
+                    "number": pr_number,
+                    "title": pr_info.title,
+                    "state": pr_info.state,
+                    "branch": pr_info.head_ref,
+                    "author": pr_info.author,
+                    "created_at": pr_info.created_at,
+                    "merged_at": pr_info.merged_at,
+                    "closed_at": pr_info.closed_at,
+                    "url": pr_info.url
+                }
 
-                if pr_info.state == "OPEN":
-                    status = f"{Color.GREEN}{Symbol.CHECK} OPEN{Color.NC}"
-                elif pr_info.state == "MERGED":
-                    status = f"{Color.BLUE}{Symbol.CHECK} MERGED{Color.NC} ({format_timestamp(pr_info.merged_at)})"
-                else:
-                    status = f"{Color.RED}{Symbol.CROSS} CLOSED{Color.NC} ({format_timestamp(pr_info.closed_at)})"
+        return info
 
-                print_kv("Status", status)
-                print_kv("Branch", pr_info.head_ref)
-                print_kv("Author", pr_info.author)
-                print_kv("Created", format_timestamp(pr_info.created_at))
-                print_kv("URL", pr_info.url)
-            else:
-                print_kv(f"PR #{pr_number}", f"{Symbol.CIRCLE} Not found or no access")
-
-    def _show_infra_info(self) -> None:
-        """Show information about dem2-infra repository."""
-        print_header("dem2-infra (Infrastructure)")
+    def _collect_infra_info(self) -> dict:
+        """Collect information about dem2-infra repository."""
+        info = {
+            "branch": {
+                "name": f"preview/{self.preview_id}",
+                "exists": False,
+                "location": None
+            },
+            "pr": None
+        }
 
         branch_info = check_git_branch(INFRA_REPO, f"preview/{self.preview_id}")
-        print_kv("Preview Branch", f"preview/{self.preview_id}: {branch_info.location if branch_info.exists else 'NOT_FOUND'}")
+        info["branch"]["exists"] = branch_info.exists
+        info["branch"]["location"] = branch_info.location if branch_info.exists else None
 
         # Look for associated PR
         if check_command_available("gh"):
@@ -791,85 +810,278 @@ class PreviewEnvironment:
                     prs = json.loads(result.stdout)
                     if prs:
                         pr_data = prs[0]
-                        pr_number = pr_data["number"]
-                        pr_state = pr_data["state"]
-                        pr_title = pr_data["title"]
-                        pr_url = pr_data["url"]
-                        pr_author = pr_data["author"]["login"]
-                        pr_created = pr_data["createdAt"]
-                        pr_merged = pr_data.get("mergedAt")
-                        pr_closed = pr_data.get("closedAt")
-
-                        print_kv(f"PR #{pr_number}", pr_title)
-
-                        if pr_state == "OPEN":
-                            status = f"{Color.GREEN}{Symbol.CHECK} OPEN{Color.NC}"
-                        elif pr_state == "MERGED":
-                            status = f"{Color.BLUE}{Symbol.CHECK} MERGED{Color.NC} ({format_timestamp(pr_merged)})"
-                        else:
-                            status = f"{Color.RED}{Symbol.CROSS} CLOSED{Color.NC} ({format_timestamp(pr_closed)})"
-
-                        print_kv("Status", status)
-                        print_kv("Author", pr_author)
-                        print_kv("Created", format_timestamp(pr_created))
-                        print_kv("URL", pr_url)
-                    else:
-                        print_kv("Infra PR", f"{Symbol.CIRCLE} Not found")
+                        info["pr"] = {
+                            "number": pr_data["number"],
+                            "title": pr_data["title"],
+                            "state": pr_data["state"],
+                            "author": pr_data["author"]["login"],
+                            "created_at": pr_data["createdAt"],
+                            "merged_at": pr_data.get("mergedAt"),
+                            "closed_at": pr_data.get("closedAt"),
+                            "url": pr_data["url"]
+                        }
                 except (json.JSONDecodeError, KeyError):
-                    print_kv("Infra PR", f"{Symbol.CIRCLE} Error parsing PR info")
+                    pass
 
-    def _show_argocd_info(self) -> None:
-        """Show ArgoCD deployment information."""
-        print_header("ArgoCD Deployment")
+        return info
 
+    def _collect_argocd_info(self) -> dict:
+        """Collect ArgoCD deployment information."""
         argocd_app, infra_pr_num = self.get_argocd_app_name()
         argocd_url = f"https://argo.n1-machina.dev/applications/{argocd_app}"
 
-        if infra_pr_num:
-            print_kv("Application Name", f"{argocd_app} (based on infra PR #{infra_pr_num})")
-        else:
-            print_kv("Application Name", f"{argocd_app} (infra PR not found, using fallback)")
-
-        print_kv("ArgoCD URL", argocd_url)
+        info = {
+            "app_name": argocd_app,
+            "infra_pr_number": infra_pr_num,
+            "url": argocd_url,
+            "sync_status": None,
+            "health_status": None,
+            "available": check_command_available("argocd")
+        }
 
         # Try to get ArgoCD status
-        if check_command_available("argocd"):
+        if info["available"]:
             app_status = get_argocd_app_status(argocd_app)
             if app_status:
-                sync_status = app_status.get("status", {}).get("sync", {}).get("status", "Unknown")
-                health_status = app_status.get("status", {}).get("health", {}).get("status", "Unknown")
+                info["sync_status"] = app_status.get("status", {}).get("sync", {}).get("status", "Unknown")
+                info["health_status"] = app_status.get("status", {}).get("health", {}).get("status", "Unknown")
 
-                print_kv("Sync Status", sync_status)
-                print_kv("Health Status", health_status)
+        return info
+
+    def show_info(self, output_format: str = "terminal") -> None:
+        """Display detailed information about the preview environment.
+
+        Args:
+            output_format: Output format - 'terminal' (default), 'json', or 'markdown'
+        """
+        data = self.collect_info()
+
+        if output_format == "json":
+            self._show_info_json(data)
+        elif output_format == "markdown":
+            self._show_info_markdown(data)
+        else:
+            self._show_info_terminal(data)
+
+    def _show_info_json(self, data: dict) -> None:
+        """Display information in JSON format."""
+        print(json.dumps(data, indent=2))
+
+    def _show_info_markdown(self, data: dict) -> None:
+        """Display information in Markdown table format (single giant table)."""
+        print(f"# Preview Environment: {data['preview_id']}\n")
+
+        print("| Section | Field | Value |")
+        print("|---------|-------|-------|")
+
+        # Identifier Resolution
+        print(f"| **Identifier** | Input Type | {data['identifier']['type']} |")
+        print(f"| **Identifier** | Input Value | {data['identifier']['value']} |")
+        print(f"| **Identifier** | Resolved Preview ID | {data['preview_id']} |")
+
+        # dem2 Repository
+        dem2 = data["repositories"]["dem2"]
+        print(f"| **dem2 (Backend)** | Preview Tag | {'✅ ' + dem2['tag']['name'] if dem2['tag']['exists'] else '❌ Not found'} |")
+        if dem2['tag']['exists']:
+            if dem2['tag']['commit']:
+                print(f"| **dem2 (Backend)** | Tag Commit | {dem2['tag']['commit']} |")
+            if dem2['tag']['date']:
+                print(f"| **dem2 (Backend)** | Tag Date | {dem2['tag']['date']} |")
+        if dem2['pr']:
+            pr = dem2['pr']
+            status_emoji = "✅" if pr['state'] == "OPEN" else "🔵" if pr['state'] == "MERGED" else "❌"
+            print(f"| **dem2 (Backend)** | PR #{pr['number']} | {pr['title']} |")
+            print(f"| **dem2 (Backend)** | PR Status | {status_emoji} {pr['state']} |")
+            print(f"| **dem2 (Backend)** | PR Branch | {pr['branch']} |")
+            print(f"| **dem2 (Backend)** | PR Author | {pr['author']} |")
+            print(f"| **dem2 (Backend)** | PR Created | {format_timestamp(pr['created_at'])} |")
+            print(f"| **dem2 (Backend)** | PR URL | {pr['url']} |")
+
+        # dem2-webui Repository
+        webui = data["repositories"]["dem2-webui"]
+        print(f"| **dem2-webui (Frontend)** | Preview Tag | {'✅ ' + webui['tag']['name'] if webui['tag']['exists'] else '❌ Not found'} |")
+        if webui['tag']['exists']:
+            if webui['tag']['commit']:
+                print(f"| **dem2-webui (Frontend)** | Tag Commit | {webui['tag']['commit']} |")
+            if webui['tag']['date']:
+                print(f"| **dem2-webui (Frontend)** | Tag Date | {webui['tag']['date']} |")
+        if webui['pr']:
+            pr = webui['pr']
+            status_emoji = "✅" if pr['state'] == "OPEN" else "🔵" if pr['state'] == "MERGED" else "❌"
+            print(f"| **dem2-webui (Frontend)** | PR #{pr['number']} | {pr['title']} |")
+            print(f"| **dem2-webui (Frontend)** | PR Status | {status_emoji} {pr['state']} |")
+            print(f"| **dem2-webui (Frontend)** | PR Branch | {pr['branch']} |")
+            print(f"| **dem2-webui (Frontend)** | PR Author | {pr['author']} |")
+            print(f"| **dem2-webui (Frontend)** | PR Created | {format_timestamp(pr['created_at'])} |")
+            print(f"| **dem2-webui (Frontend)** | PR URL | {pr['url']} |")
+
+        # Infrastructure
+        infra = data["repositories"]["dem2-infra"]
+        branch_status = f"{infra['branch']['location']}" if infra['branch']['exists'] else "NOT_FOUND"
+        print(f"| **dem2-infra (Infrastructure)** | Preview Branch | {infra['branch']['name']}: {branch_status} |")
+        if infra['pr']:
+            pr = infra['pr']
+            status_emoji = "✅" if pr['state'] == "OPEN" else "🔵" if pr['state'] == "MERGED" else "❌"
+            print(f"| **dem2-infra (Infrastructure)** | PR #{pr['number']} | {pr['title']} |")
+            print(f"| **dem2-infra (Infrastructure)** | PR Status | {status_emoji} {pr['state']} |")
+            print(f"| **dem2-infra (Infrastructure)** | PR Author | {pr['author']} |")
+            print(f"| **dem2-infra (Infrastructure)** | PR Created | {format_timestamp(pr['created_at'])} |")
+            print(f"| **dem2-infra (Infrastructure)** | PR URL | {pr['url']} |")
+        else:
+            print(f"| **dem2-infra (Infrastructure)** | Infra PR | ⚪ Not found |")
+
+        # ArgoCD Deployment
+        argocd = data["argocd"]
+        if argocd['infra_pr_number']:
+            print(f"| **ArgoCD** | Application Name | {argocd['app_name']} (based on infra PR #{argocd['infra_pr_number']}) |")
+        else:
+            print(f"| **ArgoCD** | Application Name | {argocd['app_name']} (infra PR not found, using fallback) |")
+        print(f"| **ArgoCD** | URL | {argocd['url']} |")
+        if argocd['sync_status']:
+            print(f"| **ArgoCD** | Sync Status | {argocd['sync_status']} |")
+            print(f"| **ArgoCD** | Health Status | {argocd['health_status']} |")
+        elif argocd['available']:
+            print(f"| **ArgoCD** | Status | ⚪ Cannot retrieve (app may not exist) |")
+        else:
+            print(f"| **ArgoCD** | Status | ⚪ ArgoCD CLI not available |")
+
+        # Summary
+        summary = data["summary"]
+        if not summary["is_clean"]:
+            artifacts = []
+            if summary["has_dem2_tag"]:
+                artifacts.append(f"dem2 tag: preview-{data['preview_id']}")
+            if summary["has_webui_tag"]:
+                artifacts.append(f"webui tag: preview-{data['preview_id']}")
+            if summary["has_infra_branch"]:
+                artifacts.append(f"infra branch: preview/{data['preview_id']}")
+            print(f"| **Summary** | Artifacts | {', '.join(artifacts)} |")
+        else:
+            print(f"| **Summary** | Status | ✅ No preview artifacts found - environment is clean |")
+
+    def _show_info_terminal(self, data: dict) -> None:
+        """Display information in terminal format (original colorized output)."""
+        print_header(f"Preview Environment: {data['preview_id']}")
+
+        # Show identifier resolution
+        print()
+        print_color(Color.CYAN, "Identifier Resolution:")
+        print_kv("  Input Type", data['identifier']['type'])
+        print_kv("  Input Value", data['identifier']['value'])
+        print_kv("  Resolved Preview ID", data['preview_id'])
+        print()
+
+        # Show dem2 repository
+        self._show_repo_info_terminal(data['repositories']['dem2'], "Backend")
+
+        # Show dem2-webui repository
+        self._show_repo_info_terminal(data['repositories']['dem2-webui'], "Frontend")
+
+        # Show dem2-infra repository
+        self._show_infra_info_terminal(data['repositories']['dem2-infra'])
+
+        # Show ArgoCD deployment
+        self._show_argocd_info_terminal(data['argocd'])
+
+        # Show summary
+        self._show_summary_terminal(data['summary'], data['preview_id'])
+
+    def _show_repo_info_terminal(self, repo: dict, label: str) -> None:
+        """Show repository information in terminal format."""
+        print_header(f"{repo['name']} ({label})")
+
+        tag = repo['tag']
+        if tag['exists']:
+            print_kv("Preview Tag", f"{Symbol.CHECK} {tag['name']}")
+            if tag['commit']:
+                print_kv("Tag Commit", tag['commit'])
+            if tag['date']:
+                print_kv("Tag Date", tag['date'])
+        else:
+            print_kv("Preview Tag", f"{Symbol.CROSS} Not found")
+
+        # Show PR info if available
+        if repo['pr']:
+            pr = repo['pr']
+            print_kv(f"PR #{pr['number']}", pr['title'])
+
+            if pr['state'] == "OPEN":
+                status = f"{Color.GREEN}{Symbol.CHECK} OPEN{Color.NC}"
+            elif pr['state'] == "MERGED":
+                status = f"{Color.BLUE}{Symbol.CHECK} MERGED{Color.NC} ({format_timestamp(pr['merged_at'])})"
             else:
-                print_kv("Status", f"{Symbol.CIRCLE} Cannot retrieve (app may not exist)")
+                status = f"{Color.RED}{Symbol.CROSS} CLOSED{Color.NC} ({format_timestamp(pr['closed_at'])})"
+
+            print_kv("Status", status)
+            print_kv("Branch", pr['branch'])
+            print_kv("Author", pr['author'])
+            print_kv("Created", format_timestamp(pr['created_at']))
+            print_kv("URL", pr['url'])
+
+    def _show_infra_info_terminal(self, infra: dict) -> None:
+        """Show dem2-infra information in terminal format."""
+        print_header("dem2-infra (Infrastructure)")
+
+        branch = infra['branch']
+        branch_status = branch['location'] if branch['exists'] else 'NOT_FOUND'
+        print_kv("Preview Branch", f"{branch['name']}: {branch_status}")
+
+        # Show PR info if available
+        if infra['pr']:
+            pr = infra['pr']
+            print_kv(f"PR #{pr['number']}", pr['title'])
+
+            if pr['state'] == "OPEN":
+                status = f"{Color.GREEN}{Symbol.CHECK} OPEN{Color.NC}"
+            elif pr['state'] == "MERGED":
+                status = f"{Color.BLUE}{Symbol.CHECK} MERGED{Color.NC} ({format_timestamp(pr['merged_at'])})"
+            else:
+                status = f"{Color.RED}{Symbol.CROSS} CLOSED{Color.NC} ({format_timestamp(pr['closed_at'])})"
+
+            print_kv("Status", status)
+            print_kv("Author", pr['author'])
+            print_kv("Created", format_timestamp(pr['created_at']))
+            print_kv("URL", pr['url'])
+        else:
+            print_kv("Infra PR", f"{Symbol.CIRCLE} Not found")
+
+    def _show_argocd_info_terminal(self, argocd: dict) -> None:
+        """Show ArgoCD deployment information in terminal format."""
+        print_header("ArgoCD Deployment")
+
+        if argocd['infra_pr_number']:
+            print_kv("Application Name", f"{argocd['app_name']} (based on infra PR #{argocd['infra_pr_number']})")
+        else:
+            print_kv("Application Name", f"{argocd['app_name']} (infra PR not found, using fallback)")
+
+        print_kv("ArgoCD URL", argocd['url'])
+
+        # Show ArgoCD status if available
+        if argocd['sync_status']:
+            print_kv("Sync Status", argocd['sync_status'])
+            print_kv("Health Status", argocd['health_status'])
+        elif argocd['available']:
+            print_kv("Status", f"{Symbol.CIRCLE} Cannot retrieve (app may not exist)")
         else:
             print_kv("Status", f"{Symbol.CIRCLE} ArgoCD CLI not available")
 
-    def _show_summary(self) -> None:
-        """Show summary of preview environment."""
+    def _show_summary_terminal(self, summary: dict, preview_id: str) -> None:
+        """Show summary of preview environment in terminal format."""
         print_header("Summary")
 
-        dem2_tag = check_git_tag(DEM2_REPO, f"preview-{self.preview_id}")
-        webui_tag = check_git_tag(WEBUI_REPO, f"preview-{self.preview_id}")
-        infra_branch = check_git_branch(INFRA_REPO, f"preview/{self.preview_id}")
-
-        has_tags = dem2_tag.exists or webui_tag.exists
-        has_infra_branch = infra_branch.exists
-
         # Show artifact summary
-        if has_tags or has_infra_branch:
+        if not summary['is_clean']:
             print()
             print_color(Color.CYAN, "  Preview Environment Artifacts:")
 
-            if dem2_tag.exists:
-                print(f"    • dem2 has preview tag: preview-{self.preview_id}")
+            if summary['has_dem2_tag']:
+                print(f"    • dem2 has preview tag: preview-{preview_id}")
 
-            if webui_tag.exists:
-                print(f"    • dem2-webui has preview tag: preview-{self.preview_id}")
+            if summary['has_webui_tag']:
+                print(f"    • dem2-webui has preview tag: preview-{preview_id}")
 
-            if has_infra_branch:
-                print(f"    • dem2-infra has preview branch: preview/{self.preview_id}")
+            if summary['has_infra_branch']:
+                print(f"    • dem2-infra has preview branch: preview/{preview_id}")
         else:
             print_color(Color.GREEN, f"  {Symbol.CHECK} No preview artifacts found - environment is clean")
 
@@ -971,10 +1183,11 @@ class PreviewEnvironment:
 def cmd_info(args: argparse.Namespace) -> None:
     """Show detailed information about a preview environment."""
     id_type, identifier = _parse_identifier_args(args)
+    output_format = getattr(args, 'format', 'terminal')
 
     try:
         env = PreviewEnvironment.resolve(id_type, identifier)
-        env.show_info()
+        env.show_info(output_format=output_format)
     except (ResolutionError, CommandNotFoundError) as e:
         print_color(Color.RED, f"Error: {e}")
         sys.exit(1)
@@ -1046,6 +1259,8 @@ def main() -> None:
     # info command
     info_parser = subparsers.add_parser("info", help="Show detailed information about a preview environment")
     add_identifier_args(info_parser)
+    info_parser.add_argument("--format", choices=["terminal", "json", "markdown"], default="markdown",
+                            help="Output format (default: markdown)")
     info_parser.set_defaults(func=cmd_info)
 
     # delete command
