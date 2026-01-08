@@ -1177,6 +1177,105 @@ class PreviewEnvironment:
 
 
 # ============================================================
+# Preview Tagging Operations
+# ============================================================
+
+PROTECTED_BRANCHES = {"dev", "staging", "prod", "main"}
+TAGGING_BLACKLIST = {"dem2-infra", "medical-catalog"}
+
+
+def get_current_branch(repo_path: Path) -> str:
+    """Get the current branch name for a repository."""
+    if not repo_path.exists():
+        raise PreviewToolError(f"Repository not found: {repo_path}")
+
+    result = run_command([
+        "git", "-C", str(repo_path), "rev-parse", "--abbrev-ref", "HEAD"
+    ], check=False)
+
+    if result.returncode != 0:
+        raise PreviewToolError(f"Could not determine current branch in {repo_path}")
+
+    return result.stdout.strip()
+
+
+def derive_preview_id(branch_name: str) -> str:
+    """Derive preview ID from branch name by replacing slashes with dashes."""
+    return branch_name.replace("/", "-")
+
+
+def get_taggable_repos() -> List[Tuple[str, Path]]:
+    """Get all repositories under repos/ that are eligible for preview tagging.
+
+    Returns:
+        List of (repo_name, repo_path) tuples for repos not in blacklist
+    """
+    repos_dir = WORKSPACE_ROOT / "repos"
+    if not repos_dir.exists():
+        return []
+
+    taggable = []
+    for repo_dir in repos_dir.iterdir():
+        if not repo_dir.is_dir():
+            continue
+
+        repo_name = repo_dir.name
+        if repo_name in TAGGING_BLACKLIST:
+            continue
+
+        # Check if it's a git repository
+        if (repo_dir / ".git").exists():
+            taggable.append((repo_name, repo_dir))
+
+    return sorted(taggable)
+
+
+def tag_repository(repo_name: str, repo_path: Path) -> str:
+    """Tag a repository with preview tag derived from current branch.
+
+    Returns:
+        The preview ID that was tagged
+
+    Raises:
+        PreviewToolError: If branch is protected or tagging fails
+    """
+    # Get current branch
+    branch = get_current_branch(repo_path)
+
+    # Check for protected branches
+    if branch in PROTECTED_BRANCHES:
+        raise PreviewToolError(
+            f"Cannot create preview from protected branch '{branch}' in {repo_name}"
+        )
+
+    # Derive preview ID
+    preview_id = derive_preview_id(branch)
+    tag_name = f"preview-{preview_id}"
+
+    print_color(Color.CYAN, f"Tagging {repo_name} (branch: {branch}) with {tag_name}...")
+
+    # Create tag
+    result = run_command([
+        "git", "-C", str(repo_path), "tag", "-f", tag_name
+    ], check=False)
+
+    if result.returncode != 0:
+        raise PreviewToolError(f"Failed to create tag in {repo_name}: {result.stderr}")
+
+    # Push tag
+    result = run_command([
+        "git", "-C", str(repo_path), "push", "origin", tag_name, "--force"
+    ], check=False, capture_output=False)
+
+    if result.returncode != 0:
+        raise PreviewToolError(f"Failed to push tag in {repo_name}")
+
+    print_color(Color.GREEN, f"{Symbol.CHECK} Tagged {repo_name} with {tag_name}")
+
+    return preview_id
+
+
+# ============================================================
 # CLI Commands
 # ============================================================
 
@@ -1201,6 +1300,81 @@ def cmd_delete(args: argparse.Namespace) -> None:
         env = PreviewEnvironment.resolve(id_type, identifier)
         env.delete()
     except (ResolutionError, CommandNotFoundError) as e:
+        print_color(Color.RED, f"Error: {e}")
+        sys.exit(1)
+
+
+def cmd_tag(args: argparse.Namespace) -> None:
+    """Tag repository/repositories to create/update preview environment."""
+    repo = args.repo
+
+    try:
+        if repo == "all":
+            # Get all taggable repos
+            taggable_repos = get_taggable_repos()
+
+            if not taggable_repos:
+                print_color(Color.YELLOW, "No taggable repositories found")
+                sys.exit(0)
+
+            print_header(f"Tagging All Repositories ({len(taggable_repos)} repos)")
+            print()
+
+            preview_ids = {}
+            for repo_name, repo_path in taggable_repos:
+                preview_id = tag_repository(repo_name, repo_path)
+                preview_ids[repo_name] = preview_id
+                print()
+
+            # Check if all repos are on the same branch
+            unique_preview_ids = set(preview_ids.values())
+            if len(unique_preview_ids) > 1:
+                print_color(
+                    Color.YELLOW,
+                    f"{Symbol.WARN} Warning: Repositories are on different branches:"
+                )
+                for repo_name, preview_id in sorted(preview_ids.items()):
+                    print(f"  {repo_name:<20} {preview_id}")
+                print()
+
+            print_color(Color.GREEN, f"{Symbol.CHECK} All repositories tagged successfully!")
+            print()
+            print_color(
+                Color.CYAN,
+                "Preview environment will be created in a few minutes."
+            )
+            print("Check https://argo.n1-machina.dev/applications for deployment status.")
+        else:
+            # Find specific repository
+            repo_path = WORKSPACE_ROOT / "repos" / repo
+
+            if not repo_path.exists():
+                print_color(
+                    Color.RED,
+                    f"Error: Repository not found: {repo}"
+                )
+                sys.exit(1)
+
+            if repo in TAGGING_BLACKLIST:
+                print_color(
+                    Color.RED,
+                    f"Error: Repository '{repo}' is blacklisted and cannot be tagged"
+                )
+                sys.exit(1)
+
+            print_header(f"Tagging {repo}")
+            print()
+
+            tag_repository(repo, repo_path)
+            print()
+
+            print_color(
+                Color.CYAN,
+                "Preview environment will be created in a few minutes."
+            )
+            print("Check https://argo.n1-machina.dev/applications for deployment status.")
+
+    except PreviewToolError as e:
         print_color(Color.RED, f"Error: {e}")
         sys.exit(1)
 
@@ -1267,6 +1441,12 @@ def main() -> None:
     delete_parser = subparsers.add_parser("delete", help="Delete preview environment (tags, close PR, trigger ArgoCD cleanup)")
     add_identifier_args(delete_parser)
     delete_parser.set_defaults(func=cmd_delete)
+
+    # tag command
+    tag_parser = subparsers.add_parser("tag", help="Tag repository to create/update preview environment (auto-detects branch)")
+    tag_parser.add_argument("repo",
+                           help="Repository to tag (repo name under repos/, or 'all' for all taggable repos)")
+    tag_parser.set_defaults(func=cmd_tag)
 
     # Parse arguments
     args = parser.parse_args()

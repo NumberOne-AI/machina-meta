@@ -187,6 +187,10 @@ k9s:
 argocd *args:
     docker compose run --rm gcloud-admin argocd {{ args }}
 
+# Run arbitrary command in gcloud-admin container
+run *args:
+    docker compose run --rm gcloud-admin {{ args }}
+
 # Show current context
 context:
     docker compose run --rm gcloud-admin kubectl config current-context
@@ -332,3 +336,18 @@ preview-info *args:
 # Delete preview environment (remove tags and close PR to trigger ArgoCD cleanup)
 preview-delete *args:
     docker compose run --rm gcloud-admin python3 /workspace/scripts/preview-tool.py delete {{ args }}
+
+# Tag repository to create/update preview environment (auto-detects branch)
+# Usage: just preview-tag <repo>
+#   <repo>: Repository name under repos/ (dem2, dem2-webui, etc), or 'all' for all taggable repos
+# Examples:
+#   just preview-tag dem2          # Tags dem2 with current branch
+#   just preview-tag dem2-webui    # Tags dem2-webui with current branch
+#   just preview-tag all           # Tags all repos (excludes dem2-infra, medical-catalog)
+preview-tag repo:
+    docker compose run --rm gcloud-admin python3 /workspace/scripts/preview-tool.py tag {{ repo }}
+
+# Create/update preview environment (tags all taggable repos)
+# Shortcut for: just preview-tag all
+preview:
+    @just preview-tag all

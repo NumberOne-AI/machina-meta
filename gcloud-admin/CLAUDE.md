@@ -73,6 +73,12 @@ just argo-list          # List ArgoCD applications
 just argo-status <app>  # Check app status
 just argo-sync <app>    # Sync application
 
+# Preview Environment Management
+just preview-tag <repo>   # Tag repository (auto-detects branch, creates preview)
+just preview              # Tag all repos (shortcut for: preview-tag all)
+just preview-info <id>    # Show detailed preview environment information
+just preview-delete <id>  # Delete preview environment
+
 # Network debugging
 just dig <host>         # DNS lookup
 just nc <host> <port>   # TCP connectivity test
