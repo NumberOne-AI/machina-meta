@@ -342,9 +342,10 @@ Details: [What was tested, results]
 **3. Static Analysis Status:**
 ```
 Has static analysis been performed?
-- [ ] Linting (ruff check) - passed
-- [ ] Type checking (mypy) - passed
+- [ ] Linting (ruff check --fix) - passed
+- [ ] Type checking (mypy --strict) - passed
 - [ ] Code formatting (ruff format) - applied
+- [ ] Shell script checking (shellcheck) - passed (for .sh files)
 - [ ] Security scanning - passed
 - [ ] Other checks: ___
 
@@ -393,9 +394,10 @@ Mitigation: [How to reduce risk, rollback plan]
    Details: Verified symptoms/conditions now preserved in graph
 
 3. Static Analysis:
-   ✅ Linting: ruff check passed
-   ✅ Type checking: mypy passed
+   ✅ Linting: ruff check --fix passed
+   ✅ Type checking: mypy --strict passed
    ✅ Formatting: ruff format applied
+   ✅ Shell scripts: shellcheck passed
    Static Analysis: PASSED
 
 4. Problem Solved:
