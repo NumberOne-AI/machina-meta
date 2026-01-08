@@ -9,6 +9,32 @@ Git workflow assistance specifically designed for the machina-meta workspace wit
 
 **This skill governs ALL git operations** including status checks, commits, pushes, and multi-repo workflows.
 
+## ⚠️ CRITICAL: MANDATORY SKILL USAGE
+
+**DO NOT BYPASS THIS SKILL. EVER.**
+
+**100% of git commits MUST use this skill. NO EXCEPTIONS.**
+
+If you attempt to use the Bash tool directly for ANY git operation (status, diff, add, commit, push, etc.), you are violating critical safety protocols for this workspace.
+
+**Before ANY git operation:**
+1. **STOP** - Do not use Bash tool
+2. **INVOKE** - Call `Skill` tool with `skill: "machina-git"`
+3. **LET THE SKILL HANDLE IT** - The skill will execute the proper workflow
+
+**Why this is mandatory:**
+- machina-meta has 5 independent git repositories (submodules)
+- Running git commands in wrong directory corrupts repository state
+- This skill enforces: working directory safety, security scanning, commit readiness evaluation, atomic commits
+- Bypassing this skill has caused production issues in the past
+
+**User expectations:**
+- When user says "commit this" or any git-related request → IMMEDIATELY invoke machina-git skill
+- Do not perform git operations yourself
+- Do not "help" by running git commands via Bash tool
+
+**This is a hard requirement. Treat any attempt to bypass this skill as a critical error.**
+
 ## When to Use This Skill
 
 This skill activates for ALL git-related requests:
