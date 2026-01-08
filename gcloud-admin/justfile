@@ -243,8 +243,8 @@ workspace-log lines="5":
 
 # Show detailed information about a preview environment
 preview-info *args:
-    docker compose run --rm gcloud-admin python3 /workspace/gcloud-admin/preview-tool.py info {{ args }}
+    docker compose run --rm gcloud-admin python3 /workspace/scripts/preview-tool.py info {{ args }}
 
 # Delete preview environment (remove tags and close PR to trigger ArgoCD cleanup)
 preview-delete *args:
-    docker compose run --rm gcloud-admin python3 /workspace/gcloud-admin/preview-tool.py delete {{ args }}
+    docker compose run --rm gcloud-admin python3 /workspace/scripts/preview-tool.py delete {{ args }}
