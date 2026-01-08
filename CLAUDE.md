@@ -248,17 +248,8 @@ just status
 just branches
 just dev-status
 
-# Start development (choose one mode):
-
-# Option 1: Production mode (full stack in containers)
+# Start development (full stack in containers)
 just dev-up
-
-# Option 2: Hot-reload mode (databases only, run apps manually)
-just dev-up-hot
-# Then in separate terminals:
-cd repos/dem2 && just run
-cd repos/dem2-webui && pnpm dev
-cd repos/medical-catalog && just run
 ```
 
 ## Working with the Workspace
@@ -324,14 +315,9 @@ just repo-pull      # Pull latest in each repo
 
 ```bash
 just dev-status   # Check what's running
-just dev-up       # Start full stack (production mode - containers)
-just dev-up-hot   # Start databases only (hot-reload mode)
+just dev-up       # Start full stack (containers)
 just dev-down     # Stop all services
 ```
-
-**Two Development Modes:**
-- **Production Mode** (`just dev-up`): Full stack in Docker containers (frontend + backend + medical-catalog + databases)
-- **Hot-Reload Mode** (`just dev-up-hot`): Databases only, run apps with `just run` and `pnpm dev` for instant code changes
 
 ## Development Setup by Service
 
@@ -822,8 +808,7 @@ See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for complete workflow, standard entity 
 | `just repo-checkout <branch>` | Checkout across all repos |
 | `just checkout-repo <repo> <branch>` | Checkout in specific repo |
 | `just dev-status` | Check all services |
-| `just dev-up` | Start full stack (production mode) |
-| `just dev-up-hot` | Start databases only (hot-reload mode) |
+| `just dev-up` | Start full stack |
 | `just dev-down` | Stop all services |
 | `just repo-check` | Lint/type check all |
 | `just repo-test` | Test all repos |

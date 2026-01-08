@@ -14,7 +14,7 @@ default:
 
 # Show detailed help for all commands
 help:
-    @cat HELP.md
+    @cat README.md
 
 # Bootstrap: clone and setup all repos
 bootstrap:

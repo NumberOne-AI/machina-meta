@@ -35,18 +35,32 @@ just dev-up
 ### Development Stack
 ```bash
 just dev-status       # Check status of all dev servers
-just dev-up           # Start development stack
+just dev-up           # Start full stack in Docker containers
 just dev-down         # Stop all services
 ```
 
+The `dev-up` command starts:
+- **Frontend** (Next.js) on port 3000
+- **Backend** (FastAPI) on port 8000
+- **Medical Catalog** (FastAPI) on port 8001
+- **Databases**: PostgreSQL (5432), Neo4j (7474/7687), Redis (6379), Qdrant (6333)
+- **Dev Tools**: RedisInsight (5540)
+- Migrations are applied automatically on backend startup
+- Total startup time: ~90 seconds
+
 ### Cross-Repo Operations
 ```bash
-just status           # Git status across all repos
-just branches         # Show current branch in each repo
-just checkout <name>  # Checkout branch across all repos
-just pull-all         # Pull latest for all repos
-just check-all        # Run linting/type checks
-just test-all         # Run tests across repos
+just repo-status               # Git status across all repos
+just repo-branches             # Show current branch in each repo
+just repo-checkout <branch>    # Checkout branch across all repos (creates if needed)
+just checkout-repo <repo> <branch>  # Checkout in specific repo
+just repo-pull                 # Pull latest for all repos
+just repo-sync                 # Update all submodules to latest
+just repo-diff                 # Show diffs across all repos
+just repo-log [n]              # Show last n commits (default: 10)
+just repo-check                # Run linting/type checks
+just repo-test                 # Run tests across repos
+just repo-tag <version>        # Tag all repos with version
 ```
 
 ## Development Workflow
@@ -55,22 +69,23 @@ just test-all         # Run tests across repos
 
 ```bash
 # Create feature branch in relevant repos
-just checkout feature/my-feature
+just repo-checkout feature/my-feature
 
 # Work in individual repos
 cd repos/dem2
 # ... make changes ...
 git commit -m "feat: backend changes"
+git push origin feature/my-feature
 
 cd ../dem2-webui
 # ... make changes ...
 git commit -m "feat: frontend changes"
+git push origin feature/my-feature
 
-# Push branches
-cd ../dem2
-git push origin feature/my-feature
-cd ../dem2-webui
-git push origin feature/my-feature
+# Check status across all repos
+cd ../..
+just repo-status
+just repo-branches
 ```
 
 ### Creating Preview Environment
@@ -78,13 +93,43 @@ git push origin feature/my-feature
 ```bash
 just preview my-test
 # Creates preview tags and branches
+
+# Monitor deployment
+./scripts/monitor-preview.sh my-test
+```
+
+### Service-Specific Development
+
+**dem2 (Backend)**
+```bash
+cd repos/dem2
+just run              # Start dev server (http://localhost:8000)
+just check            # Lint + format + typecheck
+just test             # Run tests
+just graph-generate   # Regenerate graph models
+```
+
+**dem2-webui (Frontend)**
+```bash
+cd repos/dem2-webui
+pnpm dev              # Start dev server (http://localhost:3000)
+pnpm check            # Lint + format + typecheck
+pnpm test             # Run tests
+pnpm generate         # Generate API types from OpenAPI (backend must be running)
+```
+
+**medical-catalog (Catalog Service)**
+```bash
+cd repos/medical-catalog
+just run              # Start service (http://localhost:8001)
+just check            # Lint + format + typecheck
 ```
 
 ## Updating Submodules
 
 ```bash
 # Update all to latest
-just sync-all
+just repo-sync
 
 # Update specific submodule
 cd repos/dem2
@@ -92,6 +137,36 @@ git pull origin dev
 cd ../..
 git add repos/dem2
 git commit -m "Update dem2 to latest"
+```
+
+## Troubleshooting
+
+### Submodules out of sync
+```bash
+git submodule update --init --recursive
+just repo-sync
+```
+
+### Database connection issues
+```bash
+cd repos/dem2
+just dev-env-down
+just dev-env-up -d
+# Wait 10 seconds, then:
+uv run alembic upgrade head
+```
+
+### Port conflicts
+```bash
+just dev-status    # Check what's running
+just dev-down      # Stop everything
+# Kill any lingering processes on ports 3000, 8000, 5432, etc.
+```
+
+### Frontend types out of date
+```bash
+cd repos/dem2-webui
+pnpm generate  # Backend must be running
 ```
 
 ## Documentation
