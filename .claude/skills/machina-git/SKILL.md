@@ -483,10 +483,7 @@ Add detailed body for commits that:
      - "Error reduction: ~95%"
      - "Accuracy: 97.1%"
 
-5. **Files Modified** (for complex changes):
-   - List key files changed with brief description
-
-6. **Related** (critical - always include when applicable):
+5. **Related** (critical - always include when applicable):
    - TODO.md references: "Related: TODO.md task marked as DONE"
    - PROBLEMS.md references: "Related: PROBLEMS.md [SOLVED]"
    - Jira tickets: "Resolves: DEM-123" or "Related: DEM-456"
@@ -633,10 +630,6 @@ Brief explanation of why this change is needed
 - Quantifiable metrics when available
 - User or developer experience improvements
 
-[Files Modified:]
-- file1.py: description
-- file2.py: description
-
 [Related:]
 - TODO.md reference
 - PROBLEMS.md reference
@@ -707,11 +700,6 @@ Testing Results:
 ✅ Query with manual session: HTTP 200
 ✅ Automatic session creation successful
 ✅ Query with auto-created session: HTTP 200
-
-Files Modified:
-- scripts/curl_api.sh: Added session management functions
-- TODO.md: Marked task as DONE
-- PROBLEMS.md: Marked issue as SOLVED
 
 The med-agent endpoint is now fully functional. Users can query processed
 medical documents without manual session management.
