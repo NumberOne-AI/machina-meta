@@ -24,6 +24,16 @@ This skill activates for ALL git-related requests:
 - "draft a commit message"
 - Any git command or git workflow question
 
+## Skill Activation Notice
+
+**CRITICAL: Whenever this skill is employed, ALWAYS emit this message to the user first:**
+
+```
+NOTE: Using machina-git skill for this operation.
+```
+
+This informs the user that strict git safety protocols are being applied.
+
 ## Core Principles (from CLAUDE.md)
 
 ### 1. Working Directory Safety (CRITICAL)
@@ -149,6 +159,13 @@ just repo-diff      # Show diffs across all repos
 
 ## Workflow Pattern
 
+### Step 0: Emit Skill Activation Notice
+
+**ALWAYS start by informing the user:**
+```
+NOTE: Using machina-git skill for this operation.
+```
+
 ### Step 1: Identify Target Repository
 
 When user requests a git operation, first identify which repository:
@@ -209,6 +226,59 @@ git add -A  # BAD
 - May include sensitive files (.env, credentials)
 - Less explicit and harder to review
 - Always specify exactly what should be committed
+
+### Step 4.5: Security Scan Staged Changes (CRITICAL)
+
+**ALWAYS scan staged diff for secrets before committing. STOP if detected.**
+
+```bash
+# Check staged diff for potential secrets
+git diff --cached
+```
+
+**Scan the output for these patterns (case-insensitive):**
+- API keys: `api_key`, `apikey`, `api-key`, `GOOGLE_API_KEY`, etc.
+- Secret keys: `secret_key`, `secret`, `SECRET_KEY`, `AWS_SECRET_ACCESS_KEY`, etc.
+- Tokens: `token`, `auth_token`, `access_token`, `bearer`, `jwt`, etc.
+- Passwords: `password`, `passwd`, `pwd`, `pass =`, etc.
+- Private keys: `PRIVATE KEY`, `-----BEGIN`, `.pem`, `.key` file contents
+- Database URLs: `postgres://`, `mysql://`, `mongodb://` with credentials
+- OAuth credentials: `client_secret`, `client_id` with actual values
+- Service account keys: `private_key_id`, `"type": "service_account"`
+- Authentication headers: `Authorization:`, `X-API-Key:`
+
+**Pattern indicators to look for:**
+```
++    API_KEY = "sk-..."
++    SECRET_KEY = "abc123..."
++    password = "my-secret-pass"
++    token: "eyJhbGciOiJ..."
++    private_key: "-----BEGIN PRIVATE KEY-----"
++    DATABASE_URL = "postgres://user:password@host/db"
+```
+
+**If ANY secrets are detected:**
+1. **STOP immediately** - Do not proceed with commit
+2. Alert the user: "⚠️ SECURITY WARNING: Potential secrets detected in staged changes!"
+3. Show the detected lines
+4. Ask: "These look like secrets. Should I unstage these files?"
+5. Wait for user confirmation before proceeding
+
+**Example:**
+```bash
+# After git diff --cached, if you see:
++    GOOGLE_API_KEY = "AIzaSyC..."
++    secret_token = "abc123xyz..."
+
+# STOP and alert:
+⚠️ SECURITY WARNING: Potential secrets detected in staged changes!
+
+Lines 45-46 in config.py:
++    GOOGLE_API_KEY = "AIzaSyC..."
++    secret_token = "abc123xyz..."
+
+These look like secrets. Should I unstage these files?
+```
 
 ### Step 5: Craft Commit Message
 
@@ -406,6 +476,7 @@ Common commit types:
 
 Before executing any git operation:
 
+- [ ] **Emit skill activation notice to user first**
 - [ ] Explicitly cd into target repository
 - [ ] Show full absolute path in cd command
 - [ ] Review git status and git diff (for commits)
@@ -413,6 +484,7 @@ Before executing any git operation:
 - [ ] Ensure changes are related and atomic (separate unrelated changes)
 - [ ] Stage specific files only (NEVER use `git add .` or `git add -A`)
 - [ ] Verify no sensitive files are being staged (.env, credentials, keys)
+- [ ] **Run security scan on staged diff (git diff --cached) - STOP if secrets detected**
 - [ ] Craft conventional commit message (no Claude attribution)
 - [ ] Execute commit with heredoc for multi-line
 - [ ] Verify commit with git log -1 --stat
@@ -457,6 +529,20 @@ git add *.key
 git add *.pem
 ```
 
+❌ **Skip security scanning of staged diff:**
+```bash
+# BAD - Never commit without scanning for secrets first
+git add file.py
+git commit -m "message"  # Without running git diff --cached and checking for secrets
+```
+
+❌ **Commit after detecting secrets:**
+```bash
+# BAD - If secrets detected, STOP immediately
+# After git diff --cached shows API_KEY = "sk-..."
+git commit -m "message"  # NEVER proceed if secrets found
+```
+
 ❌ **Use git commit with -a flag blindly:**
 ```bash
 # BAD - Stages everything including unintended files
@@ -471,10 +557,12 @@ git commit -m "message" && git push
 
 ## Best Practices
 
+✅ **Emit skill activation notice at the start of every operation**
 ✅ **Always show full paths in cd commands**
 ✅ **Review changes before staging**
 ✅ **ALWAYS stage specific files explicitly (never `git add .` or `git add -A`)**
 ✅ **Verify no .env or credential files are being staged**
+✅ **Run security scan on staged diff (git diff --cached) - STOP if secrets detected**
 ✅ **Draft commit message and get user approval**
 ✅ **Use heredoc for multi-line commits**
 ✅ **Verify commit after creation**
@@ -539,11 +627,33 @@ git status --short
 
 ### Scenario 2: Single File Change
 
+```
+NOTE: Using machina-git skill for this operation.
+```
+
 ```bash
+# Step 1: Navigate to repo
 cd /home/dbeal/repos/NumberOne-AI/machina-meta
+
+# Step 2: Review changes
+git status
+git diff CLAUDE.md
+
+# Step 3: Stage specific file
 git add CLAUDE.md
+
+# Step 4: Security scan staged diff
+git diff --cached
+# Review output for any secrets, API keys, tokens, passwords, etc.
+# If secrets detected: STOP and alert user
+
+# Step 5: Commit (if no secrets detected)
 git commit -m "docs: consolidate git rules into unified section"
+
+# Step 6: Verify
 git log -1 --stat
+
+# Step 7: Ask about push
 # Ask: "Should I push these changes to the remote repository?"
 ```
 
