@@ -188,15 +188,27 @@ Show the user what will be committed. Ask if this looks correct.
 
 ### Step 4: Stage Changes
 
-Stage specific files (preferred) or all changes if requested:
+**ALWAYS stage specific files explicitly. NEVER use `git add .` or `git add -A`.**
 
 ```bash
-# Specific files (preferred)
+# CORRECT - Stage specific files
 git add path/to/file1.py path/to/file2.py
 
-# All changes (if user confirms)
-git add .
+# WRONG - Never use these
+git add .   # BAD
+git add -A  # BAD
 ```
+
+⚠️ **NEVER stage sensitive files:**
+- `.env` files containing secrets
+- Credential files (`.pem`, `.key`, service account JSON, etc.)
+- Configuration files with sensitive data
+
+⚠️ **Why no `git add -A` or `git add .`:**
+- Can accidentally stage unintended files
+- May include sensitive files (.env, credentials)
+- Less explicit and harder to review
+- Always specify exactly what should be committed
 
 ### Step 5: Craft Commit Message
 
@@ -399,7 +411,8 @@ Before executing any git operation:
 - [ ] Review git status and git diff (for commits)
 - [ ] Confirm changes with user (for commits)
 - [ ] Ensure changes are related and atomic (separate unrelated changes)
-- [ ] Stage appropriate files
+- [ ] Stage specific files only (NEVER use `git add .` or `git add -A`)
+- [ ] Verify no sensitive files are being staged (.env, credentials, keys)
 - [ ] Craft conventional commit message (no Claude attribution)
 - [ ] Execute commit with heredoc for multi-line
 - [ ] Verify commit with git log -1 --stat
@@ -428,6 +441,22 @@ git commit -m "feat: add feature
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+❌ **Use git add with . or -A:**
+```bash
+# BAD - Never use blanket staging
+git add .
+git add -A
+```
+
+❌ **Stage sensitive files:**
+```bash
+# BAD - Never stage secrets or credentials
+git add .env
+git add config/credentials.json
+git add *.key
+git add *.pem
+```
+
 ❌ **Use git commit with -a flag blindly:**
 ```bash
 # BAD - Stages everything including unintended files
@@ -444,7 +473,8 @@ git commit -m "message" && git push
 
 ✅ **Always show full paths in cd commands**
 ✅ **Review changes before staging**
-✅ **Use specific file staging when possible**
+✅ **ALWAYS stage specific files explicitly (never `git add .` or `git add -A`)**
+✅ **Verify no .env or credential files are being staged**
 ✅ **Draft commit message and get user approval**
 ✅ **Use heredoc for multi-line commits**
 ✅ **Verify commit after creation**
