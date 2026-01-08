@@ -147,21 +147,29 @@ node-resources:
 whoami:
     docker compose run --rm gcloud-admin kubectl whoami
 
-# Login to ArgoCD server
-argo-login:
-    docker compose run --rm gcloud-admin argocd login ${ARGOCD_SERVER}
+# Login to ArgoCD server (using SSO)
+argocd-login:
+    docker run --rm -it --network host \
+        -v gcloud-admin_argocd-config:/root/.config/argocd \
+        -e ARGOCD_SERVER=${ARGOCD_SERVER} \
+        gcloud-admin:latest \
+        bash -c 'argocd login "$ARGOCD_SERVER" --sso --grpc-web --sso-launch-browser=false'
+
+# Logout from ArgoCD server
+argocd-logout:
+    docker compose run --rm gcloud-admin argocd logout "$ARGOCD_SERVER"
 
 # Check ArgoCD app status
 argo-status app:
-    docker compose run --rm gcloud-admin argocd app get {{ app }}
+    @just argocd app get {{ app }}
 
 # Sync ArgoCD app
 argo-sync app:
-    docker compose run --rm gcloud-admin argocd app sync {{ app }}
+    @just argocd app sync {{ app }}
 
 # List ArgoCD apps
 argo-list:
-    docker compose run --rm gcloud-admin argocd app list
+    @just argocd app list
 
 # Port forward to a service (e.g., just port-forward svc/argocd-server 8080:443 -n argocd)
 port-forward *args:

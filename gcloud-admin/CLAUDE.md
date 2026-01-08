@@ -52,7 +52,8 @@ just deployments        # List all deployments
 just services           # List all services
 
 # ArgoCD operations
-just argo-login         # Login to ArgoCD server
+just argocd-login       # Login to ArgoCD server (SSO)
+just argocd-logout      # Logout from ArgoCD server
 just argo-list          # List ArgoCD applications
 just argo-status <app>  # Check app status
 just argo-sync <app>    # Sync application
@@ -130,22 +131,49 @@ Copy `.env.example` to `.env` and configure:
 |-------------|----------------|---------|
 | `gcloud-config` | `/root/.config/gcloud` | Google Cloud authentication & config |
 | `kube-config` | `/root/.kube` | Kubernetes config & contexts |
+| `argocd-config` | `/root/.config/argocd` | ArgoCD authentication tokens |
+
+**ArgoCD Authentication:**
+
+First-time setup with SSO:
+```bash
+# Login to ArgoCD using SSO (prints URL for manual browser authentication)
+just argocd-login
+
+# The command will print a URL like:
+# https://argo.n1-machina.dev/api/dex/auth?...
+# Open this URL in your browser to authenticate
+
+# After authentication, credentials are stored in argocd-config volume
+
+# Verify authentication
+just argo-list
+
+# Logout (if needed)
+just argocd-logout
+```
+
+The `argocd-login` command uses SSO with manual URL opening (no automatic browser launch).
+Uses host networking so the OAuth callback on localhost:8085 is accessible from your browser.
+Credentials persist across container restarts.
 
 **Managing credentials volumes:**
 ```bash
 # List volumes
-docker volume ls | grep -E 'gcloud-config|kube-config'
+docker volume ls | grep -E 'gcloud-config|kube-config|argocd-config'
 
 # Backup credentials
-docker run --rm -v gcloud-config:/data -v $(pwd):/backup alpine tar czf /backup/gcloud-config-backup.tar.gz -C /data .
-docker run --rm -v kube-config:/data -v $(pwd):/backup alpine tar czf /backup/kube-config-backup.tar.gz -C /data .
+docker run --rm -v gcloud-admin_gcloud-config:/data -v $(pwd):/backup alpine tar czf /backup/gcloud-config-backup.tar.gz -C /data .
+docker run --rm -v gcloud-admin_kube-config:/data -v $(pwd):/backup alpine tar czf /backup/kube-config-backup.tar.gz -C /data .
+docker run --rm -v gcloud-admin_argocd-config:/data -v $(pwd):/backup alpine tar czf /backup/argocd-config-backup.tar.gz -C /data .
 
 # Restore credentials
-docker run --rm -v gcloud-config:/data -v $(pwd):/backup alpine tar xzf /backup/gcloud-config-backup.tar.gz -C /data
-docker run --rm -v kube-config:/data -v $(pwd):/backup alpine tar xzf /backup/kube-config-backup.tar.gz -C /data
+docker run --rm -v gcloud-admin_gcloud-config:/data -v $(pwd):/backup alpine tar xzf /backup/gcloud-config-backup.tar.gz -C /data
+docker run --rm -v gcloud-admin_kube-config:/data -v $(pwd):/backup alpine tar xzf /backup/kube-config-backup.tar.gz -C /data
+docker run --rm -v gcloud-admin_argocd-config:/data -v $(pwd):/backup alpine tar xzf /backup/argocd-config-backup.tar.gz -C /data
 
 # Remove volumes (WARNING: deletes all credentials)
-docker volume rm gcloud-admin_gcloud-config gcloud-admin_kube-config
+docker volume rm gcloud-admin_gcloud-config gcloud-admin_kube-config gcloud-admin_argocd-config
 ```
 
 ### Host Directories
