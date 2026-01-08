@@ -31,9 +31,97 @@ down:
 logs:
     docker compose logs -f
 
-# Authenticate with Google Cloud (run inside container)
-auth:
+# Check authentication status for all services
+auth-status:
+    @echo "=== Authentication Status ==="
+    @echo ""
+    @echo ">>> Google Cloud:"
+    @just auth-gcloud-status || true
+    @echo ""
+    @echo ">>> Kubernetes (GKE):"
+    @just auth-gke-status || true
+    @echo ""
+    @echo ">>> GitHub:"
+    @just auth-github-status || true
+    @echo ""
+    @echo ">>> ArgoCD:"
+    @just auth-argocd-status || true
+    @echo ""
+    @echo "To authenticate all services, run: just auth-login"
+
+# Check Google Cloud authentication status
+auth-gcloud-status:
+    @docker compose run --rm gcloud-admin gcloud auth list
+    @echo ""
+    @docker compose run --rm gcloud-admin gcloud config list
+
+# Check Kubernetes (GKE) connection status
+auth-gke-status:
+    @docker compose run --rm gcloud-admin kubectl cluster-info 2>&1 | head -1 || echo "  Cannot connect to cluster"
+    @echo "Current context:"
+    @docker compose run --rm gcloud-admin kubectl config current-context
+
+# Check GitHub authentication status
+auth-github-status:
+    #!/usr/bin/env bash
+    set +e
+    OUTPUT=$(docker compose run --rm gcloud-admin gh auth status 2>&1)
+    STATUS=$?
+    # Filter out the "gh auth login" recommendation and display the rest
+    echo "$OUTPUT" | sed '/gh auth login/d'
+    if [ $STATUS -ne 0 ]; then
+        echo ""
+        echo "To authenticate GitHub, run one of:"
+        echo "  just auth-login                # Complete authentication (recommended)"
+        echo "  just auth-github-import        # Import token from host gh CLI"
+        echo "  just auth-github-login         # Login directly in container"
+    fi
+    exit $STATUS
+
+# Check ArgoCD authentication status
+auth-argocd-status:
+    @docker compose run --rm gcloud-admin argocd account get-user-info
+
+# Complete authentication setup: GCloud + GKE + GitHub + ArgoCD
+auth-login:
+    @echo "=== Step 1: Authenticating with Google Cloud ==="
     docker compose run --rm gcloud-admin gcloud auth login --update-adc
+    @echo ""
+    @echo "=== Step 2: Getting GKE cluster credentials (nonprod) ==="
+    docker compose run --rm gcloud-admin gcloud container clusters get-credentials tusdi-nonprod-cluster --region us-central1
+    @echo ""
+    @echo "=== Step 3: Importing GitHub credentials from host ==="
+    @just auth-github-import
+    @echo ""
+    @echo "=== Step 4: Authenticating with ArgoCD (SSO) ==="
+    @just auth-argocd-login
+    @echo ""
+    @echo "=== Authentication complete! ==="
+    @echo "Verify with: just auth-status"
+
+# Logout from all services: GCloud + GitHub + ArgoCD
+auth-logout:
+    @echo "=== Logging out from all services ==="
+    @echo ""
+    @echo ">>> Google Cloud:"
+    @just auth-gcloud-logout || true
+    @echo ""
+    @echo ">>> GitHub:"
+    @just auth-github-logout || true
+    @echo ""
+    @echo ">>> ArgoCD:"
+    @just auth-argocd-logout || true
+    @echo ""
+    @echo "=== Logout complete! ==="
+
+# Authenticate with Google Cloud only
+auth-gcloud-login:
+    docker compose run --rm gcloud-admin gcloud auth login --update-adc
+
+# Revoke Google Cloud authentication (including Application Default Credentials)
+auth-gcloud-logout:
+    docker compose run --rm gcloud-admin gcloud auth application-default revoke --quiet
+    docker compose run --rm gcloud-admin gcloud auth revoke
 
 # Complete first-time setup: auth + get nonprod credentials + verify
 setup-nonprod:
@@ -147,20 +235,8 @@ node-resources:
 whoami:
     docker compose run --rm gcloud-admin kubectl whoami
 
-# Login to ArgoCD server (using SSO)
-argocd-login:
-    docker run --rm -it --network host \
-        -v gcloud-admin_argocd-config:/root/.config/argocd \
-        -e ARGOCD_SERVER=${ARGOCD_SERVER} \
-        gcloud-admin:latest \
-        bash -c 'argocd login "$ARGOCD_SERVER" --sso --grpc-web --sso-launch-browser=false'
-
-# Logout from ArgoCD server
-argocd-logout:
-    docker compose run --rm gcloud-admin argocd logout "$ARGOCD_SERVER"
-
-# Import GitHub token from host's gh CLI using token export (preferred)
-gh-import-host-token:
+# Import GitHub token from host's gh CLI (preferred method)
+auth-github-import:
     #!/usr/bin/env bash
     set -euo pipefail
     if command -v gh &>/dev/null; then
@@ -169,27 +245,35 @@ gh-import-host-token:
         if [ -n "$TOKEN" ]; then
             echo "Importing token to container..."
             echo "$TOKEN" | docker compose run --rm -T gcloud-admin gh auth login --with-token
-            echo "Done. Verify with: just gh-status"
+            echo "Done. Verify with: just auth-github-status"
         else
             echo "No valid token found on host"
             echo "Authenticate on host first: gh auth login"
         fi
     else
         echo "GitHub CLI not found on host"
-        echo "Install gh or use 'just gh-login' to authenticate in container"
+        echo "Install gh or use 'just auth-github-login' to authenticate in container"
     fi
 
-# Login to GitHub with token (prompts for token)
-gh-login:
+# Login to GitHub directly in container (prompts for token)
+auth-github-login:
     docker compose run --rm gcloud-admin gh auth login
 
 # Logout from GitHub
-gh-logout:
+auth-github-logout:
     docker compose run --rm gcloud-admin gh auth logout
 
-# Check GitHub authentication status
-gh-status:
-    docker compose run --rm gcloud-admin gh auth status
+# Login to ArgoCD server (using SSO)
+auth-argocd-login:
+    docker run --rm -it --network host \
+        -v gcloud-admin_argocd-config:/root/.config/argocd \
+        -e ARGOCD_SERVER=${ARGOCD_SERVER} \
+        gcloud-admin:latest \
+        bash -c 'argocd login "$ARGOCD_SERVER" --sso --grpc-web --sso-launch-browser=false'
+
+# Logout from ArgoCD server
+auth-argocd-logout:
+    docker compose run --rm gcloud-admin argocd logout "$ARGOCD_SERVER"
 
 # Check ArgoCD app status
 argo-status app:

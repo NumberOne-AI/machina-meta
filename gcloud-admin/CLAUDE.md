@@ -33,12 +33,27 @@ just build              # Build the container image
 just build-fresh        # Build with no cache
 just shell              # Start interactive shell
 
+# Authentication
+just auth-login            # Complete auth: GCloud + GKE (nonprod) + GitHub + ArgoCD
+just auth-logout           # Logout from all services: GCloud + GitHub + ArgoCD
+just auth-status           # Check authentication status for all services
+just auth-gcloud-login     # Authenticate with Google Cloud only
+just auth-gcloud-logout    # Revoke Google Cloud authentication
+just auth-gcloud-status    # Check Google Cloud authentication status
+just auth-gke-status       # Check Kubernetes (GKE) connection status
+just auth-github-import    # Import GitHub token from host gh CLI (preferred)
+just auth-github-login     # Login to GitHub directly in container
+just auth-github-logout    # Logout from GitHub
+just auth-github-status    # Check GitHub authentication status
+just auth-argocd-login     # Login to ArgoCD (SSO)
+just auth-argocd-logout    # Logout from ArgoCD
+just auth-argocd-status    # Check ArgoCD authentication status
+
 # First-time setup (automated)
 just setup-nonprod      # Complete setup: auth + nonprod credentials + verify
 just setup-prod         # Complete setup: auth + prod credentials + verify
 
 # GCP/GKE operations
-just auth               # Authenticate with Google Cloud
 just get-creds-nonprod  # Get nonprod cluster credentials
 just get-creds-prod     # Get prod cluster credentials
 just list-clusters      # List all GKE clusters
