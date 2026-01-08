@@ -280,11 +280,128 @@ Lines 45-46 in config.py:
 These look like secrets. Should I unstage these files?
 ```
 
+### Step 4.6: Evaluate Commit Readiness (CRITICAL)
+
+**ALWAYS perform this evaluation before crafting commit message. Present findings to user.**
+
+Analyze the staged changes and answer these questions:
+
+**1. Impact/Value Assessment:**
+```
+What is the impact or value of this commit?
+- [ ] Fixes critical bug affecting users
+- [ ] Adds new feature with user benefit
+- [ ] Improves performance or reliability
+- [ ] Refactors code for maintainability
+- [ ] Updates documentation
+- [ ] Other: ___
+
+Estimated Impact: [HIGH / MEDIUM / LOW]
+Reasoning: [Brief explanation]
+```
+
+**2. Testing Status:**
+```
+Has testing been performed?
+- [ ] Unit tests run and passing
+- [ ] Integration tests run and passing
+- [ ] Manual testing performed
+- [ ] End-to-end testing completed
+- [ ] No testing performed (explain why)
+
+Testing Status: [PASSED / PARTIAL / NONE]
+Details: [What was tested, results]
+```
+
+**3. Static Analysis Status:**
+```
+Has static analysis been performed?
+- [ ] Linting (ruff check) - passed
+- [ ] Type checking (mypy) - passed
+- [ ] Code formatting (ruff format) - applied
+- [ ] Security scanning - passed
+- [ ] Other checks: ___
+
+Static Analysis: [PASSED / PARTIAL / NONE]
+Issues: [Any warnings or errors to address]
+```
+
+**4. Problem Solved:**
+```
+What problem does this solve?
+- Root cause: [What was broken or why change is needed]
+- Symptoms: [How problem manifested]
+- Solution: [How this change addresses it]
+- References: [TODO.md, PROBLEMS.md, Jira tickets]
+```
+
+**5. Risk Assessment:**
+```
+What is the potential risk in pushing this commit?
+- [ ] Breaking changes to API/contracts
+- [ ] Database migration required
+- [ ] Dependency changes
+- [ ] Performance impact
+- [ ] Security implications
+- [ ] Affects critical path
+- [ ] Low risk / no breaking changes
+
+Risk Level: [HIGH / MEDIUM / LOW]
+Mitigation: [How to reduce risk, rollback plan]
+```
+
+**Example Evaluation:**
+
+```
+=== COMMIT READINESS EVALUATION ===
+
+1. Impact/Value:
+   ✅ Fixes critical bug: symptoms and conditions lost during document processing
+   Estimated Impact: HIGH
+   Reasoning: Core functionality broken, affects all document processing
+
+2. Testing Status:
+   ✅ Unit tests added and passing (test_prepare_resource_data.py)
+   ✅ Manual testing with sample documents confirmed fix
+   Testing Status: PASSED
+   Details: Verified symptoms/conditions now preserved in graph
+
+3. Static Analysis:
+   ✅ Linting: ruff check passed
+   ✅ Type checking: mypy passed
+   ✅ Formatting: ruff format applied
+   Static Analysis: PASSED
+
+4. Problem Solved:
+   Root cause: Duplicate PreparedResourceData assignment overwriting data
+   Symptoms: Symptoms and conditions missing from graph after processing
+   Solution: Removed duplicate assignment, preserved all resource types
+   References: TODO.md "Fix biomarker extraction bug" [DONE]
+              PROBLEMS.md "Missing symptoms in graph" [SOLVED]
+
+5. Risk Assessment:
+   ✅ No breaking changes to API
+   ✅ No database migration required
+   ✅ Backwards compatible
+   Risk Level: LOW
+   Mitigation: Changes isolated to single method, well-tested
+
+=== RECOMMENDATION: READY TO COMMIT ===
+```
+
+**If evaluation reveals issues:**
+- Missing tests → Run tests or document why not needed
+- Static analysis failures → Fix issues before committing
+- High risk → Discuss mitigation with user
+- Unclear problem → Clarify what this solves
+
+**Present evaluation to user and ask: "Does this evaluation look correct? Should I proceed with the commit?"**
+
 ### Step 5: Craft Commit Message
 
-Use conventional commit format:
+Use conventional commit format with structured body for significant changes.
 
-**Format:** `<type>(<scope>): <description>`
+**Format:** `<type>(<scope>): <summary>`
 
 **Types:**
 - `feat` - New feature
@@ -298,27 +415,134 @@ Use conventional commit format:
 - `ci` - CI/CD changes
 - `build` - Build system changes
 
-**Scope (optional):**
+**Scope (optional but recommended):**
 - Component, module, or area affected
-- Examples: `api`, `frontend`, `auth`, `infra`, `docker`
+- Examples: `api`, `agents`, `docproc`, `auth`, `infra`, `scripts`
 
-**Description:**
+**Summary Line:**
 - Concise summary in imperative mood ("add" not "added")
 - No period at the end
 - Lowercase first letter
-- Max 72 characters for first line
+- Max 72 characters
+- For phased work, prefix with "Phase N - " (e.g., "feat: Phase 2 - Implement automatic session management")
+
+**When to Add Multi-Line Body:**
+
+Add detailed body for commits that:
+- Fix bugs (explain root cause and impact)
+- Implement significant features (explain approach and benefits)
+- Make architectural changes (explain reasoning)
+- Resolve TODO.md tasks or PROBLEMS.md issues (reference them)
+- Are part of multi-step/phased work (reference related commits)
+- Have measurable impact (include metrics)
+
+**Body Structure Sections (use as applicable):**
+
+1. **Root Cause / Problem** (for fixes):
+   - Why the change is needed
+   - What was broken
+
+2. **Changes / Solution Implemented**:
+   - What was done (bullet points)
+   - Key implementation details
+
+3. **Testing Results** (when tested):
+   - Use ✅ / ❌ checkmarks for test outcomes
+   - Include metrics when available
+
+4. **Impact / Benefits**:
+   - User impact or developer experience improvement
+   - Quantifiable metrics when possible:
+     - "Time savings: 15+ minutes per run"
+     - "Error reduction: ~95%"
+     - "Accuracy: 97.1%"
+
+5. **Files Modified** (for complex changes):
+   - List key files changed with brief description
+
+6. **Related** (critical - always include when applicable):
+   - TODO.md references: "Related: TODO.md task marked as DONE"
+   - PROBLEMS.md references: "Related: PROBLEMS.md [SOLVED]"
+   - Jira tickets: "Resolves: DEM-123" or "Related: DEM-456"
+   - Related commits: "Follows: abc1234 (Phase 1 diagnostics)"
+   - Preview environments: "Deployed to: preview-90"
 
 **Examples:**
+
+Simple change:
 ```
 feat(api): add patient biomarker reconciliation endpoint
-fix(auth): resolve token refresh race condition
-docs: update CLAUDE.md with git rules section
-chore(deps): update dem2 submodule to latest dev
-refactor(agents): simplify tool calling pattern in medical agent
-test(biomarkers): add integration tests for extraction pipeline
+```
+
+Bug fix with detail:
+```
+fix(docproc): disable aggressive parenthetical stripping in biomarker names
+
+Disable Maxim's _PARENTHETICAL_SUFFIX_PATTERN regex that was incorrectly
+stripping integral parentheticals like "Lp(a)" → "Lp".
+
+Changes:
+- Add _ENABLE_PARENTHETICAL_STRIPPING flag (default: False)
+- Conditionally apply parenthetical stripping only when flag is True
+- Rely on LLM extraction prompt for abbreviation handling
+
+Impact:
+- Lp(a) now correctly preserved with parentheses
+- Extraction accuracy improved from 63.8% to 65.2% (44→45 exact matches)
+- No regressions introduced
+
+Testing:
+- Verified Lp(a) extracted as exact match: "<15 mg/dL"
+- Generated comparison reports confirming fix
+
+Related:
+- Issue discovered: 2025-12-19 (David Beal)
+- Root cause: Maxim's Boston Heart processor (2025-12-11)
+```
+
+Feature with phasing:
+```
+feat: Phase 2 - Implement automatic session management for med-agent
+
+Completed Phase 2: Investigated session API and implemented automatic session creation.
+
+Root Cause:
+- SessionNotFoundError: API requires pre-existing sessions
+- Original query_agent() generated UUID without creating session
+
+Solution Implemented:
+1. Added create_session() function
+2. Added list_sessions() function
+3. Updated query_agent() to auto-create sessions
+
+Testing Results:
+✅ Manual session creation successful
+✅ Query with manual session: HTTP 200
+✅ Automatic session creation successful
+
+Related: TODO.md "Fix med-agent endpoint" [DONE]
+Related: PROBLEMS.md "Med-agent endpoint" [SOLVED]
+Follows: 2859d1ca (Phase 1 diagnostics)
+```
+
+Documentation update:
+```
+docs: add comprehensive document processing monitoring guide
+
+- Created DOCUMENT_PROCESSING.md with complete API reference
+- Tested shell helper functions (curl_api.sh)
+- Pipeline architecture and processing stages
+- Common troubleshooting workflows
+
+All example commands tested against running backend (2024-12-30)
 ```
 
 ### Step 6: Execute Commit
+
+**Only proceed if:**
+- Security scan passed (no secrets detected)
+- Commit readiness evaluation looks good
+- User confirmed to proceed
 
 ```bash
 git commit -m "type(scope): description"
@@ -343,7 +567,7 @@ EOF
 git log -1 --stat
 ```
 
-Show the user the commit that was created.
+Show the user the commit that was created and confirm it matches expectations.
 
 ### Step 8: Push Confirmation (If Needed)
 
@@ -359,24 +583,121 @@ Show the user the commit that was created.
 
 ## Multi-Line Commit Messages
 
-For complex changes, use multi-line format:
+For complex changes, use multi-line format with structured sections.
 
+**Template:**
 ```bash
 git commit -m "$(cat <<'EOF'
 <type>(<scope>): <summary>
 
-<detailed description>
+[Root Cause / Problem:]
+Brief explanation of why this change is needed
 
+[Changes / Solution Implemented:]
 - Bullet point 1
 - Bullet point 2
 - Bullet point 3
 
-Additional context or reasoning.
+[Testing Results:]
+✅ Test case 1 passed
+✅ Test case 2 passed
+❌ Known limitation (if any)
+
+[Impact / Benefits:]
+- Quantifiable metrics when available
+- User or developer experience improvements
+
+[Files Modified:]
+- file1.py: description
+- file2.py: description
+
+[Related:]
+- TODO.md reference
+- PROBLEMS.md reference
+- Jira ticket
+- Related commit hash
 EOF
 )"
 ```
 
-**Example:**
+**Important Notes:**
+- Section headers (e.g., "Changes:", "Testing Results:") are optional labels for clarity
+- Use only the sections that are relevant to your commit
+- Always include "Related:" section when the commit resolves/references TODO.md, PROBLEMS.md, or Jira tickets
+- Quantify impact when possible ("Time savings: 15+ minutes", "Accuracy: 97.1%")
+
+**Example - Bug Fix:**
+```bash
+git commit -m "$(cat <<'EOF'
+fix(medical-data-engine): remove duplicate PreparedResourceData assignment
+
+The duplicate assignment was overwriting prepared after setting biomarkers,
+symptoms, and conditions, causing symptoms and conditions to be lost.
+
+Before (buggy):
+  prepared.biomarkers = data.biomarkers
+  prepared.symptoms = data.basic_resources.symptoms
+  prepared.conditions = data.basic_resources.conditions
+  prepared = PreparedResourceData(biomarkers=data.biomarkers)  # ❌ Overwrites!
+
+After (fixed):
+  prepared.biomarkers = data.biomarkers
+  prepared.symptoms = data.basic_resources.symptoms  # ✅ Preserved
+  prepared.conditions = data.basic_resources.conditions  # ✅ Preserved
+
+Impact: Symptoms and conditions are now correctly included in prepared data.
+
+Related: TODO.md "Fix biomarker extraction bug" [DONE]
+Related: PROBLEMS.md "Missing symptoms in graph" [SOLVED]
+EOF
+)"
+```
+
+**Example - Feature with Phasing:**
+```bash
+git commit -m "$(cat <<'EOF'
+feat: Phase 2 - Implement automatic session management for med-agent
+
+Completed Phase 2: Investigated session API and implemented automatic session creation.
+
+Root Cause:
+- SessionNotFoundError: API requires pre-existing sessions
+- Original query_agent() generated UUID without creating session
+
+Solution Implemented:
+1. Added create_session() function:
+   - POST /api/v1/med-agent/users/sessions
+   - Requires X-Patient-Context-ID header
+
+2. Added list_sessions() function:
+   - GET /api/v1/med-agent/users/sessions
+
+3. Updated query_agent() function:
+   - Automatically creates session if session_id not provided
+   - Enables conversation continuity across queries
+
+Testing Results:
+✅ Manual session creation successful
+✅ Query with manual session: HTTP 200
+✅ Automatic session creation successful
+✅ Query with auto-created session: HTTP 200
+
+Files Modified:
+- scripts/curl_api.sh: Added session management functions
+- TODO.md: Marked task as DONE
+- PROBLEMS.md: Marked issue as SOLVED
+
+The med-agent endpoint is now fully functional. Users can query processed
+medical documents without manual session management.
+
+Related: TODO.md "Fix med-agent endpoint" [DONE]
+Related: PROBLEMS.md "Med-agent endpoint" [SOLVED]
+Follows: 2859d1ca (Phase 1 diagnostics)
+EOF
+)"
+```
+
+**Example - Refactoring:**
 ```bash
 git commit -m "$(cat <<'EOF'
 refactor(agents): consolidate tool calling patterns
@@ -387,8 +708,12 @@ Unified tool execution across all agent types:
 - Add type safety for tool parameters
 - Improve logging for tool invocations
 
-This reduces code duplication and makes the system more maintainable.
-Addresses technical debt noted in TODO.md.
+Benefits:
+- Reduces code duplication by ~200 lines
+- Makes system more maintainable
+- Improves error diagnostics
+
+Related: TODO.md "Refactor agent tool patterns" [DONE]
 EOF
 )"
 ```
@@ -485,7 +810,11 @@ Before executing any git operation:
 - [ ] Stage specific files only (NEVER use `git add .` or `git add -A`)
 - [ ] Verify no sensitive files are being staged (.env, credentials, keys)
 - [ ] **Run security scan on staged diff (git diff --cached) - STOP if secrets detected**
+- [ ] **Perform commit readiness evaluation (impact, testing, static analysis, problem, risk)**
+- [ ] **Present evaluation to user and get confirmation to proceed**
 - [ ] Craft conventional commit message (no Claude attribution)
+- [ ] Include relevant sections in body (Root Cause, Changes, Testing, Impact, Related)
+- [ ] Reference TODO.md, PROBLEMS.md, or Jira tickets in "Related:" section
 - [ ] Execute commit with heredoc for multi-line
 - [ ] Verify commit with git log -1 --stat
 - [ ] Only push if explicitly requested and confirmed
@@ -563,12 +892,16 @@ git commit -m "message" && git push
 ✅ **ALWAYS stage specific files explicitly (never `git add .` or `git add -A`)**
 ✅ **Verify no .env or credential files are being staged**
 ✅ **Run security scan on staged diff (git diff --cached) - STOP if secrets detected**
-✅ **Draft commit message and get user approval**
+✅ **Perform commit readiness evaluation (impact, testing, static analysis, problem, risk)**
+✅ **Present evaluation to user and wait for confirmation**
+✅ **Draft commit message with structured body for significant changes**
+✅ **Include "Related:" section referencing TODO.md, PROBLEMS.md, Jira tickets**
+✅ **Quantify impact when possible ("Time savings: 15+ minutes", "Accuracy: 97.1%")**
 ✅ **Use heredoc for multi-line commits**
 ✅ **Verify commit after creation**
 ✅ **Keep commits focused and atomic**
 ✅ **Separate unrelated changes into different commits**
-✅ **Reference issue/PR numbers when applicable**
+✅ **For phased work, use "Phase N - " prefix in summary**
 ✅ **Use just repo-* commands for multi-repo operations**
 
 ## Integration with TODO.md
@@ -647,13 +980,45 @@ git diff --cached
 # Review output for any secrets, API keys, tokens, passwords, etc.
 # If secrets detected: STOP and alert user
 
-# Step 5: Commit (if no secrets detected)
+# Step 5: Evaluate commit readiness
+# Present evaluation to user:
+=== COMMIT READINESS EVALUATION ===
+
+1. Impact/Value:
+   ✅ Updates documentation for git workflow consistency
+   Estimated Impact: MEDIUM
+   Reasoning: Improves developer experience and prevents git errors
+
+2. Testing Status:
+   N/A - Documentation change
+   Testing Status: N/A
+
+3. Static Analysis:
+   N/A - Markdown file
+   Static Analysis: N/A
+
+4. Problem Solved:
+   Root cause: Git rules scattered across multiple sections
+   Solution: Consolidate into unified "Git Rules" section for easier reference
+   References: N/A
+
+5. Risk Assessment:
+   ✅ No code changes
+   ✅ Documentation only
+   Risk Level: LOW
+   Mitigation: N/A
+
+=== RECOMMENDATION: READY TO COMMIT ===
+
+Does this evaluation look correct? Should I proceed with the commit?
+
+# Step 6: Commit (after user confirmation)
 git commit -m "docs: consolidate git rules into unified section"
 
-# Step 6: Verify
+# Step 7: Verify
 git log -1 --stat
 
-# Step 7: Ask about push
+# Step 8: Ask about push
 # Ask: "Should I push these changes to the remote repository?"
 ```
 
