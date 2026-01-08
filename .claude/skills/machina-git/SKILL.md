@@ -1,6 +1,6 @@
 ---
 name: machina-git
-description: Git workflow assistance for machina-meta workspace with submodules. Enforces working directory safety, conventional commits, and controlled push policy. Governs ALL git operations.
+description: Git workflow for machina-meta workspace with submodules. Use ALWAYS for ALL git operations including commit, push, pull, status, diff, add, checkout, branch, tag, log, show, submodule updates. Enforces working directory safety, conventional commits, push confirmation, secret scanning, and commit readiness evaluation. MANDATORY - invoke this skill via Skill tool before ANY bash git command. DO NOT bypass this skill.
 ---
 
 # Machina Git Skill

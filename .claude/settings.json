@@ -1,5 +1,18 @@
 {
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(command=git*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '❌ ERROR: Must use /machina-git skill for git operations. Do not run git commands via Bash tool.' && exit 1"
+          }
+        ]
+      }
+    ]
   }
 }

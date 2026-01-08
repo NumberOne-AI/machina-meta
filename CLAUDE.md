@@ -58,6 +58,32 @@ Before extensive analysis:
 
 **If ANY box unchecked → STOP and validate first**
 
+## ⚠️ CRITICAL: Machina-Git Skill Requirement
+
+**When the user requests ANY git operation (commit, push, pull, status, diff, add, checkout, branch, tag, log, show, etc.):**
+
+1. **IMMEDIATELY invoke the machina-git skill** using the Skill tool
+2. **DO NOT run git commands via Bash first**
+3. **DO NOT bypass the skill for "simple" operations** like `git status` or `git diff`
+4. **If you're about to type a bash git command, STOP** and invoke `/machina-git` instead
+
+**This is a hard requirement for workspace safety with submodules.**
+
+- The machina-git skill enforces working directory safety, prevents repo corruption
+- Running git commands directly via Bash bypasses critical safety checks
+- Each of the 5 repositories has independent git history - wrong directory = corrupted state
+- The skill provides secret scanning, commit readiness evaluation, and atomic commit guidance
+
+**Pattern:**
+```
+User: "commit these changes"
+Assistant: [Immediately invokes Skill tool with skill: "machina-git"]
+
+NOT:
+User: "commit these changes"
+Assistant: [Runs bash git commands directly] ❌ WRONG
+```
+
 ## ⚠️ CRITICAL: Git Rules
 
 This workspace uses **git submodules**, which means multiple independent git repositories exist within the directory structure. Follow these rules carefully to avoid corrupting repository state.
