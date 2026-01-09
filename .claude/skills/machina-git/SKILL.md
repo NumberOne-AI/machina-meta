@@ -64,16 +64,36 @@ This informs the user that strict git safety protocols are being applied.
 
 ### 1. Working Directory Safety (CRITICAL)
 
-**ALWAYS explicitly cd into the target repository before ANY git command.**
+**⚠️ CRITICAL WARNING: ALWAYS cd and run git command in the SAME Bash tool call.**
+
+**The cd command does NOT persist between Bash tool invocations due to the SessionStart hook. You MUST combine cd and git command using `&&` in a SINGLE Bash call.**
+
+- ✅ CORRECT: `cd /full/path/to/target/repo && git status` (single Bash call)
+- ❌ WRONG: Run `cd /path` in one Bash call, then `git status` in another Bash call
+- ❌ NEVER assume you are already in the correct directory
+- ❌ This applies to ALL git commands: status, diff, add, commit, **push**, pull, tag, log, show, etc.
+- ⚠️ **ESPECIALLY `git push` - failure to cd first can push to wrong repository!**
 
 ```bash
-# CORRECT - Always cd explicitly
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git status
-git commit -m "message"
+# CORRECT - cd and git command in SAME Bash call using &&
+cd repos/dem2 && git status
+
+cd repos/dem2 && git commit -m "message"
+
+cd repos/dem2 && git push origin feature/branch
+
+# CORRECT - Multiple git commands after single cd
+cd repos/dem2 && git status && git diff
 
 # WRONG - Never assume current directory
-git status  # Dangerous in submodule environment
+git status  # Dangerous! Which repo am I in?
+git push    # CATASTROPHIC! Could push to wrong repo!
+
+# WRONG - Separate Bash tool calls (cd won't persist!)
+# First Bash call:
+cd repos/dem2
+# Second Bash call (will run in workspace root, NOT repos/dem2):
+git status  # ❌ WILL RUN IN WRONG DIRECTORY!
 ```
 
 **Why this matters:**
@@ -82,12 +102,24 @@ git status  # Dangerous in submodule environment
 - Running git commands in wrong repo corrupts state
 - Path confusion causes commits in wrong repo
 
-**Repository Paths:**
-- Workspace root: `/home/dbeal/repos/NumberOne-AI/machina-meta`
-- Backend: `/home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2`
-- Frontend: `/home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-webui`
-- Infrastructure: `/home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-infra`
-- Catalog: `/home/dbeal/repos/NumberOne-AI/machina-meta/repos/medical-catalog`
+**Repository Paths (relative to workspace root):**
+- Workspace root: `.` or omit cd entirely
+- Backend: `repos/dem2`
+- Frontend: `repos/dem2-webui`
+- Infrastructure: `repos/dem2-infra`
+- Catalog: `repos/medical-catalog`
+
+**Examples:**
+```bash
+# Backend
+cd repos/dem2 && git status
+
+# Frontend
+cd repos/dem2-webui && git status
+
+# Workspace root (no cd needed, already at workspace root)
+git status
+```
 
 ### 2. Push Policy (CRITICAL)
 
@@ -154,36 +186,35 @@ git commit -m "feat: add machina-git and kubernetes skills"
 When checking status across multiple repositories, always show which repo you're checking:
 
 ```bash
-echo "=== Checking machina-meta (workspace root) ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
-git status
+# CORRECT - Each cd and git command in same Bash call
+echo "=== Checking machina-meta (workspace root) ===" && git status
 
-echo "=== Checking repos/dem2 (backend) ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git status
+echo "=== Checking repos/dem2 (backend) ===" && cd repos/dem2 && git status
 
-echo "=== Checking repos/dem2-webui (frontend) ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-webui
-git status
+echo "=== Checking repos/dem2-webui (frontend) ===" && cd repos/dem2-webui && git status
 
-echo "=== Checking repos/dem2-infra (infrastructure) ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-infra
-git status
+echo "=== Checking repos/dem2-infra (infrastructure) ===" && cd repos/dem2-infra && git status
 
-echo "=== Checking repos/medical-catalog (catalog service) ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/medical-catalog
-git status
+echo "=== Checking repos/medical-catalog (catalog service) ===" && cd repos/medical-catalog && git status
 ```
 
 **Alternative:** Use workspace-level just commands:
 ```bash
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
+# Already at workspace root, no cd needed
 just repo-status    # Git status across all repos
 just repo-branches  # Show current branches
 just repo-diff      # Show diffs across all repos
 ```
 
 ## Workflow Pattern
+
+**⚠️ CRITICAL REQUIREMENT FOR ALL STEPS:**
+
+Every git command MUST be combined with its `cd` command in the SAME Bash tool call using `&&`:
+- ✅ CORRECT: `cd repos/dem2 && git status` (single Bash call)
+- ❌ WRONG: First call `cd repos/dem2`, then separate call `git status`
+- **Why:** The SessionStart hook resets working directory for each Bash invocation
+- **Impact:** Running cd and git in separate calls = infinite loop or wrong repository operations
 
 ### Step 0: Emit Skill Activation Notice
 
@@ -212,19 +243,16 @@ User mentions: "check status of all repos"
 
 If unclear, ask: "Which repository should I work with?"
 
-### Step 2: Explicit Directory Change
+### Step 2: Review Current State
 
-Always show and execute the `cd` command:
-
-```bash
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-```
-
-### Step 3: Review Current State
+**CRITICAL: cd and git commands must be in same Bash call**
 
 ```bash
-git status
-git diff
+# Single Bash call with cd && git status
+cd repos/dem2 && git status
+
+# Single Bash call with cd && git diff
+cd repos/dem2 && git diff
 ```
 
 Show the user what will be committed. Ask if this looks correct.
@@ -234,12 +262,12 @@ Show the user what will be committed. Ask if this looks correct.
 **ALWAYS stage specific files explicitly. NEVER use `git add .` or `git add -A`.**
 
 ```bash
-# CORRECT - Stage specific files
-git add path/to/file1.py path/to/file2.py
+# CORRECT - cd and git add in same Bash call
+cd repos/dem2 && git add path/to/file1.py path/to/file2.py
 
-# WRONG - Never use these
-git add .   # BAD
-git add -A  # BAD
+# WRONG - Never use blanket staging
+cd repos/dem2 && git add .   # BAD
+cd repos/dem2 && git add -A  # BAD
 ```
 
 ⚠️ **NEVER stage sensitive files:**
@@ -258,8 +286,8 @@ git add -A  # BAD
 **ALWAYS scan staged diff for secrets before committing. STOP if detected.**
 
 ```bash
-# Check staged diff for potential secrets
-git diff --cached
+# Check staged diff for potential secrets (cd and git in same call)
+cd repos/dem2 && git diff --cached
 ```
 
 **Scan the output for these patterns (case-insensitive):**
@@ -570,12 +598,14 @@ All example commands tested against running backend (2024-12-30)
 - User confirmed to proceed
 
 ```bash
-git commit -m "type(scope): description"
+# cd and git commit in same Bash call
+cd repos/dem2 && git commit -m "type(scope): description"
 ```
 
 **For multi-line commits:**
 ```bash
-git commit -m "$(cat <<'EOF'
+# cd and git commit in same Bash call with heredoc
+cd repos/dem2 && git commit -m "$(cat <<'EOF'
 feat(api): add patient biomarker reconciliation endpoint
 
 - Implement POST /api/v1/biomarkers/reconcile
@@ -589,7 +619,8 @@ EOF
 ### Step 7: Verify Commit
 
 ```bash
-git log -1 --stat
+# cd and git log in same Bash call
+cd repos/dem2 && git log -1 --stat
 ```
 
 Show the user the commit that was created and confirm it matches expectations.
@@ -603,7 +634,7 @@ Show the user the commit that was created and confirm it matches expectations.
 3. Wait for explicit confirmation
 4. If confirmed, execute:
    ```bash
-   git push
+   cd repos/dem2 && git push
    ```
 
 ## Multi-Line Commit Messages
@@ -739,15 +770,11 @@ EOF
 ### Committing in a Submodule
 
 ```bash
-# Step 1: cd into submodule
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-
-# Step 2: Make changes, stage, commit
-git add services/medical-agent/src/machina/medical_agent/agents/config.yml
-git commit -m "feat(agents): update medical agent prompt template"
-
-# Step 3: Push to submodule's remote (if confirmed)
-git push origin dev
+# All steps in single Bash call using &&
+cd repos/dem2 && \
+  git add services/medical-agent/src/machina/medical_agent/agents/config.yml && \
+  git commit -m "feat(agents): update medical agent prompt template" && \
+  git push origin dev
 ```
 
 ### Updating Parent Workspace to Track Submodule Change
@@ -755,17 +782,10 @@ git push origin dev
 After committing in a submodule, the parent workspace needs to track the new commit:
 
 ```bash
-# Step 1: cd back to workspace root
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
-
-# Step 2: Stage the submodule update
-git add repos/dem2
-
-# Step 3: Commit in parent workspace
-git commit -m "chore: update dem2 submodule to latest dev"
-
-# Step 4: Push parent workspace (if confirmed)
-git push
+# Already at workspace root, stage and commit submodule update
+git add repos/dem2 && \
+  git commit -m "chore: update dem2 submodule to latest dev" && \
+  git push
 ```
 
 ## Repository-Specific Commit Patterns
@@ -818,8 +838,9 @@ Common commit types:
 Before executing any git operation:
 
 - [ ] **Emit skill activation notice to user first**
-- [ ] Explicitly cd into target repository
-- [ ] Show full absolute path in cd command
+- [ ] **⚠️ CRITICAL: cd and git command MUST be in SAME Bash tool call using `&&`**
+- [ ] **⚠️ NEVER run cd in one Bash call and git in another - ESPECIALLY for `git push`**
+- [ ] Use relative paths from workspace root (e.g., `cd repos/dem2 && git status`)
 - [ ] Review git status and git diff (for commits)
 - [ ] Confirm changes with user (for commits)
 - [ ] Ensure changes are related and atomic (separate unrelated changes)
@@ -837,10 +858,26 @@ Before executing any git operation:
 
 ## Anti-Patterns (DO NOT DO)
 
+❌ **Run cd and git in separate Bash calls (CATASTROPHIC for git push):**
+```bash
+# CATASTROPHIC - cd won't persist to next Bash call!
+# Bash call 1:
+cd repos/dem2
+# Bash call 2 (will run in workspace root, NOT repos/dem2!):
+git push    # DISASTER - pushes wrong repository!
+
+# CORRECT - cd and git in SAME Bash call
+cd repos/dem2 && git push origin feature/branch
+```
+
 ❌ **Assume current directory:**
 ```bash
 # BAD - Never assume you're in the right place
-git status
+git status  # Which repo am I in?
+git push    # Could be wrong repo!
+
+# CORRECT - Always cd && git in same call
+cd repos/dem2 && git status
 ```
 
 ❌ **Auto-push without confirmation:**
@@ -903,7 +940,8 @@ git commit -m "message" && git push
 ## Best Practices
 
 ✅ **Emit skill activation notice at the start of every operation**
-✅ **Always show full paths in cd commands**
+✅ **Always combine cd and git commands in SAME Bash call using `&&`**
+✅ **Use relative paths from workspace root (e.g., `repos/dem2`)**
 ✅ **Review changes before staging**
 ✅ **ALWAYS stage specific files explicitly (never `git add .` or `git add -A`)**
 ✅ **Verify no .env or credential files are being staged**
@@ -930,16 +968,15 @@ When making commits related to TODO.md tasks:
 
 Example workflow:
 ```bash
-# Make code changes
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git add services/medical-agent/
-git commit -m "feat(agents): add biomarker extraction validation"
+# Make code changes in submodule (cd && git in same call)
+cd repos/dem2 && \
+  git add services/medical-agent/ && \
+  git commit -m "feat(agents): add biomarker extraction validation"
 
-# Update TODO.md
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
+# Update TODO.md in workspace root (already at workspace root)
 # (edit TODO.md to mark task as DONE)
-git add TODO.md
-git commit -m "docs: mark biomarker validation task as DONE"
+git add TODO.md && \
+  git commit -m "docs: mark biomarker validation task as DONE"
 ```
 
 ## Common Scenarios
@@ -947,31 +984,21 @@ git commit -m "docs: mark biomarker validation task as DONE"
 ### Scenario 1: Check Status Across All Repos
 
 ```bash
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
+# Using just command (already at workspace root)
 just repo-status
 ```
 
-Or manually:
+Or manually (each cd && git in same Bash call):
 ```bash
-echo "=== machina-meta ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
-git status --short
+echo "=== machina-meta ===" && git status --short
 
-echo "=== repos/dem2 ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git status --short
+echo "=== repos/dem2 ===" && cd repos/dem2 && git status --short
 
-echo "=== repos/dem2-webui ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-webui
-git status --short
+echo "=== repos/dem2-webui ===" && cd repos/dem2-webui && git status --short
 
-echo "=== repos/dem2-infra ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-infra
-git status --short
+echo "=== repos/dem2-infra ===" && cd repos/dem2-infra && git status --short
 
-echo "=== repos/medical-catalog ==="
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/medical-catalog
-git status --short
+echo "=== repos/medical-catalog ===" && cd repos/medical-catalog && git status --short
 ```
 
 ### Scenario 2: Single File Change
@@ -981,22 +1008,18 @@ NOTE: Using machina-git skill for this operation.
 ```
 
 ```bash
-# Step 1: Navigate to repo
-cd /home/dbeal/repos/NumberOne-AI/machina-meta
+# Step 1: Review changes (already at workspace root)
+git status && git diff CLAUDE.md
 
-# Step 2: Review changes
-git status
-git diff CLAUDE.md
-
-# Step 3: Stage specific file
+# Step 2: Stage specific file
 git add CLAUDE.md
 
-# Step 4: Security scan staged diff
+# Step 3: Security scan staged diff
 git diff --cached
 # Review output for any secrets, API keys, tokens, passwords, etc.
 # If secrets detected: STOP and alert user
 
-# Step 5: Evaluate commit readiness
+# Step 4: Evaluate commit readiness
 # Present evaluation to user:
 === COMMIT READINESS EVALUATION ===
 
@@ -1028,50 +1051,50 @@ git diff --cached
 
 Does this evaluation look correct? Should I proceed with the commit?
 
-# Step 6: Commit (after user confirmation)
+# Step 5: Commit (after user confirmation)
 git commit -m "docs: consolidate git rules into unified section"
 
-# Step 7: Verify
+# Step 6: Verify
 git log -1 --stat
 
-# Step 8: Ask about push
+# Step 7: Ask about push
 # Ask: "Should I push these changes to the remote repository?"
 ```
 
 ### Scenario 3: Multiple Files in Backend
 
 ```bash
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git status
-git add services/medical-agent/src/machina/medical_agent/agents/medical_agent.py
-git add services/medical-agent/src/machina/medical_agent/agents/config.yml
-git commit -m "$(cat <<'EOF'
+# All commands in single Bash call with cd
+cd repos/dem2 && \
+  git status && \
+  git add services/medical-agent/src/machina/medical_agent/agents/medical_agent.py \
+       services/medical-agent/src/machina/medical_agent/agents/config.yml && \
+  git commit -m "$(cat <<'EOF'
 refactor(agents): improve error handling in medical agent
 
 - Add try/catch blocks around tool execution
 - Log errors with full context
 - Return structured error responses to frontend
 EOF
-)"
-git log -1 --stat
+)" && \
+  git log -1 --stat
 ```
 
 ### Scenario 4: Preview Environment (multi-repo)
 
 ```bash
-# Step 1: Tag backend
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2
-git tag -f preview-my-feature
-# Push tag (if confirmed): git push origin preview-my-feature --force
+# Step 1: Tag backend (cd && commands in single Bash call)
+cd repos/dem2 && git tag -f preview-my-feature
+# Push tag (if confirmed):
+cd repos/dem2 && git push origin preview-my-feature --force
 
-# Step 2: Tag frontend
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-webui
-git tag -f preview-my-feature
-# Push tag (if confirmed): git push origin preview-my-feature --force
+# Step 2: Tag frontend (cd && commands in single Bash call)
+cd repos/dem2-webui && git tag -f preview-my-feature
+# Push tag (if confirmed):
+cd repos/dem2-webui && git push origin preview-my-feature --force
 
-# Step 3: Update infra
-cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2-infra
-git checkout -b preview/my-feature
+# Step 3: Update infra (cd && commands in single Bash call)
+cd repos/dem2-infra && git checkout -b preview/my-feature
 # Make changes, commit, push (if confirmed)
 ```
 
@@ -1081,7 +1104,7 @@ Git push is a **protected operation**. Never execute `git push` without:
 
 1. Showing the commit(s) that will be pushed:
    ```bash
-   git log origin/main..HEAD --oneline
+   cd repos/dem2 && git log origin/main..HEAD --oneline
    ```
 
 2. Asking explicitly: "Should I push these changes to the remote repository?"
@@ -1090,17 +1113,17 @@ Git push is a **protected operation**. Never execute `git push` without:
 
 4. Only then executing:
    ```bash
-   git push
+   cd repos/dem2 && git push
    ```
 
 For force pushes (tags, rewrites), extra caution:
 ```bash
-# Show what will be force pushed
-git show preview-my-feature
+# Show what will be force pushed (cd && git in same call)
+cd repos/dem2 && git show preview-my-feature
 
 # Ask: "This is a force push. Should I proceed?"
-# Only if confirmed:
-git push origin preview-my-feature --force
+# Only if confirmed (cd && git in same call):
+cd repos/dem2 && git push origin preview-my-feature --force
 ```
 
 ## Related Documentation
