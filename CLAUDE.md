@@ -66,15 +66,11 @@ Before extensive analysis:
 
 **All bash commands automatically start from the workspace root via SessionStart hook.**
 
-The `.claude/hooks/session-startup.sh` script (configured in `.claude/settings.json`) executes `cd "$CLAUDE_PROJECT_DIR"` for every bash command:
-
-```bash
-# Automatically executed before every bash command
-cd "$CLAUDE_PROJECT_DIR"
-```
+The `.claude/hooks/session-startup.sh` script (configured in `.claude/settings.json`) captures the workspace root path at session startup and writes it to `$CLAUDE_ENV_FILE`. This file is sourced before every bash command.
 
 **This provides:**
 - Every bash command starts from a known location (workspace root)
+- `$WS` environment variable set to workspace root path for convenient reference
 - Forces explicit directory specification for all operations
 - Eliminates ambiguity about current working directory
 - Protection against path confusion
@@ -84,32 +80,41 @@ cd "$CLAUDE_PROJECT_DIR"
 # Pattern: (cd target/dir && command)
 (cd repos/dem2 && pytest tests/)
 (cd repos/dem2-webui && pnpm dev)
+
+# Alternative: Use $WS variable for absolute paths
+(cd $WS/repos/dem2 && pytest tests/)
+(cd $WS/repos/dem2-webui && pnpm dev)
 ```
 
 ### Directory Awareness Protocol
 
 Before executing any bash command:
 
-1. **Acknowledge workspace root** - All commands start from `$CLAUDE_PROJECT_DIR` (project root)
+1. **Acknowledge workspace root** - All commands start from the workspace root (project root)
 2. **Explicitly specify target directory** - Use subshell pattern: `(cd target && command)`
 3. **Verify if uncertain** - Use `pwd` to check current location
 4. **Maintain awareness** - Keep mental model of filesystem hierarchy and where commands execute
 
 **Why this is critical:**
 - Commands execute relative to current working directory
-- SessionStart hook ensures all commands start from `$CLAUDE_PROJECT_DIR` (workspace root)
+- SessionStart hook ensures all commands start from the workspace root
 - Wrong directory = wrong files affected, wrong outputs, potential corruption
 - Especially critical in machina-meta with 5 independent git repositories (submodules)
 - Path confusion leads to: wrong repo operations, file not found errors, unexpected behavior
 
 **Required pattern:**
 ```bash
-# CORRECT - Use subshell pattern (cd target && command)
+# CORRECT - Use subshell pattern with relative paths
 (cd repos/dem2 && pytest tests/)
 (cd repos/dem2-webui && pnpm dev)
 
+# CORRECT - Use $WS variable for clarity
+(cd $WS/repos/dem2 && pytest tests/)
+(cd $WS/repos/dem2-webui && pnpm dev)
+
 # CORRECT - Verify first if uncertain
-pwd  # Should show $CLAUDE_PROJECT_DIR (workspace root)
+pwd  # Should show workspace root
+echo $WS  # Should show workspace root path
 (cd repos/dem2 && pwd && pytest tests/)
 
 # WRONG - Never assume current directory without explicit cd
@@ -120,18 +125,18 @@ pytest tests/  # Where are tests/? Unclear!
 ```
 
 **Repository path references:**
-Use these relative paths consistently throughout the session (all relative to `$CLAUDE_PROJECT_DIR`):
-- Workspace root: `.` (equals `$CLAUDE_PROJECT_DIR` after SessionStart hook)
-- Backend: `repos/dem2`
-- Frontend: `repos/dem2-webui`
-- Infrastructure: `repos/dem2-infra`
-- Catalog: `repos/medical-catalog`
+Use these paths consistently throughout the session:
+- Workspace root: `$WS` or `.` (both refer to workspace root)
+- Backend: `repos/dem2` or `$WS/repos/dem2`
+- Frontend: `repos/dem2-webui` or `$WS/repos/dem2-webui`
+- Infrastructure: `repos/dem2-infra` or `$WS/repos/dem2-infra`
+- Catalog: `repos/medical-catalog` or `$WS/repos/medical-catalog`
 
 **Best practices:**
-- ✅ Trust that SessionStart hook sets you at `$CLAUDE_PROJECT_DIR`
+- ✅ Trust that SessionStart hook sets you at workspace root
 - ✅ Always use subshell pattern: `(cd target && command)`
-- ✅ Use relative paths from `$CLAUDE_PROJECT_DIR`
-- ✅ Check `pwd` if uncertain (should equal `$CLAUDE_PROJECT_DIR`)
+- ✅ Use relative paths from workspace root or `$WS` variable
+- ✅ Check `pwd` or `echo $WS` if uncertain
 - ✅ Include directory context in command descriptions
 - ✅ Maintain awareness of filesystem hierarchy throughout session
 - ❌ Never assume you're in the right directory without explicit cd
@@ -178,13 +183,17 @@ This workspace uses **git submodules**, which means multiple independent git rep
 - **ALWAYS use subshell pattern** `(cd target && git ...)` for git operations
 - Running git commands in the wrong directory can corrupt repository state
 - This is especially critical with submodules where each repo has independent git history
-- SessionStart hook ensures commands start from `$CLAUDE_PROJECT_DIR`, use relative paths
+- SessionStart hook ensures commands start from workspace root (accessible via `$WS`)
 
 **Required pattern:**
 ```bash
 # CORRECT - Always use subshell pattern for git commands
 (cd repos/dem2 && git status)
 (cd repos/dem2 && git commit -m "message")
+
+# CORRECT - Use $WS variable for clarity
+(cd $WS/repos/dem2 && git status)
+(cd $WS/repos/dem2 && git commit -m "message")
 
 # WRONG - Never assume you're in the right place
 git status  # Dangerous! Which repo am I in?
