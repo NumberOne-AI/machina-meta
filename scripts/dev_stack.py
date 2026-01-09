@@ -146,6 +146,128 @@ def analyze_logs(logs: str) -> str:
     return "\n".join(msg)
 
 
+def get_qdrant_url(workspace_root: Path) -> str | None:
+    """Get Qdrant URL from medical-catalog configuration.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        Qdrant REST API URL or None if unable to retrieve
+    """
+    catalog_path = workspace_root / "repos" / "medical-catalog"
+    try:
+        result = run_command(
+            ["just", "get-qdrant-url"],
+            check=False,
+            cwd=catalog_path,
+        )
+        if result.returncode != 0:
+            return None
+        config = json.loads(result.stdout)
+        return config.get("rest_api")
+    except Exception:
+        return None
+
+
+def get_qdrant_volume_name(workspace_root: Path) -> str | None:
+    """Get the Qdrant storage volume name from docker-compose configuration.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        Volume name or None if unable to determine
+    """
+    try:
+        # Get docker compose config and look for qdrant_storage volume
+        result = run_command(
+            ["docker", "compose", "config", "--format", "json"],
+            check=False,
+            cwd=workspace_root,
+        )
+        if result.returncode != 0:
+            return None
+
+        config = json.loads(result.stdout)
+        volumes = config.get("volumes", {})
+
+        # Look for qdrant_storage volume and get its full name
+        for volume_name, volume_config in volumes.items():
+            if "qdrant" in volume_name.lower() and "storage" in volume_name.lower():
+                # Docker Compose uses the volume name as defined, potentially with project prefix
+                # Get the actual volume name from the config
+                return volume_config.get("name", volume_name)
+
+        return None
+    except Exception:
+        return None
+
+
+def check_qdrant_volume_exists(workspace_root: Path) -> bool:
+    """Check if the Qdrant storage volume already exists.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        True if volume exists, False if it needs to be created
+    """
+    volume_name = get_qdrant_volume_name(workspace_root)
+    if not volume_name:
+        return False
+
+    try:
+        result = run_command(
+            ["docker", "volume", "inspect", volume_name],
+            check=False,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def restore_qdrant_snapshots(workspace_root: Path) -> bool:
+    """Restore Qdrant snapshots if catalog is empty.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        True if restore was successful or not needed
+    """
+    catalog_path = workspace_root / "repos" / "medical-catalog"
+    snapshots_path = catalog_path / "snapshots"
+
+    # Check if snapshots directory exists
+    if not snapshots_path.exists():
+        print("⚠️  No snapshots directory found, skipping restore")
+        return True
+
+    # Check if there are any snapshot files
+    snapshot_files = list(snapshots_path.glob("*.snapshot"))
+    if not snapshot_files:
+        print("⚠️  No snapshot files found, skipping restore")
+        return True
+
+    print(f"Found {len(snapshot_files)} snapshot files, restoring...")
+
+    # Run snapshot-restore-all via justfile
+    result = run_command(
+        ["just", "snapshot-restore-all"],
+        check=False,
+        cwd=catalog_path,
+        capture_output=False,  # Show output to user
+    )
+
+    if result.returncode != 0:
+        print("❌ Failed to restore snapshots")
+        return False
+
+    print("✅ Snapshots restored successfully")
+    return True
+
+
 def wait_for_health_checks(workspace_root: Path, max_wait: int = 60) -> bool:
     """Wait for all service health checks to complete.
 
@@ -188,6 +310,15 @@ def dev_up(workspace_root: Path) -> int:
     print("Starting full stack in production mode...")
     print()
 
+    # Check if Qdrant volume exists before starting services
+    volume_existed = check_qdrant_volume_exists(workspace_root)
+    needs_snapshot_restore = not volume_existed
+
+    if needs_snapshot_restore:
+        print("📦 Qdrant volume does not exist - snapshots will be restored")
+    else:
+        print("✅ Qdrant volume exists - using existing data")
+
     # Start all services with prod profile (quiet by default)
     result = run_command(
         ["docker", "compose", "--profile", "prod", "up", "-d", "--build"],
@@ -208,6 +339,31 @@ def dev_up(workspace_root: Path) -> int:
     # Wait 15 seconds for services to initialize
     print("Waiting for services to initialize...")
     time.sleep(15)
+
+    # Restore snapshots if this is a fresh Qdrant volume
+    if needs_snapshot_restore:
+        # Get Qdrant URL from configuration
+        qdrant_url = get_qdrant_url(workspace_root)
+        if not qdrant_url:
+            print("⚠️  Could not get Qdrant URL from configuration, skipping snapshot restore")
+        else:
+            # Wait for Qdrant to be ready
+            print("Waiting for Qdrant to be ready...")
+            qdrant_ready = False
+            for _ in range(30):  # Wait up to 30 seconds
+                if check_http_endpoint(qdrant_url):
+                    qdrant_ready = True
+                    break
+                time.sleep(1)
+
+            if not qdrant_ready:
+                print("⚠️  Qdrant did not become ready, skipping snapshot restore")
+            else:
+                print("📦 Restoring Qdrant snapshots...")
+                if not restore_qdrant_snapshots(workspace_root):
+                    print("❌ Failed to restore snapshots, continuing anyway...")
+                else:
+                    print("✅ Snapshots restored successfully")
 
     # Wait for health checks with timeout (90s to allow for start_period + retries)
     if not wait_for_health_checks(workspace_root, max_wait=90):

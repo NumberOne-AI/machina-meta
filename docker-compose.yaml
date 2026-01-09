@@ -96,7 +96,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./repos/dem2/.env
+      - .env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -137,13 +137,14 @@ services:
     ports:
       - "8001:8000"
     env_file:
-      - ./repos/dem2/.env
+      - .env
     environment:
       - ENV_FOR_DYNACONF=production
       - DYNACONF_QDRANT__HOST=qdrant
-      - DYNACONF_QDRANT__PORT=6333
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     volumes:
       - ./repos/medical-catalog/logs:/app/logs
+      - ./n1-machina1-825bbed2774d.json:/app/gcp-credentials.json:ro
     depends_on:
       qdrant:
         condition: service_healthy
