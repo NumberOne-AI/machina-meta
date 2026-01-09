@@ -648,6 +648,320 @@ The container mounts machina-meta at `/workspace/` for unified DevOps operations
 - Registry: Google Artifact Registry
 - Manifests: Kustomize
 
+## API Testing with curl_api
+
+The `curl_api` justfile rule in `repos/dem2` provides a convenient JSON-based interface for testing backend APIs without writing code.
+
+### Overview
+
+**Location**: `repos/dem2/justfile` (rule: `curl_api`)
+**Backend Script**: `repos/dem2/scripts/curl_api.sh`
+**Purpose**: Call backend API functions using JSON dispatch for development and testing
+
+### How It Works
+
+The `curl_api` rule uses a JSON dispatch system that:
+1. Accepts a JSON payload with a `function` field and arguments
+2. Routes the call to a registered bash function in `curl_api.sh`
+3. Handles authentication automatically (JWT tokens + patient context)
+4. Executes the API call and returns the result
+
+### Basic Usage
+
+```bash
+# From repos/dem2 directory
+(cd repos/dem2 && just curl_api '{"function": "function_name", "arg1": "value1", ...}')
+```
+
+**Authentication**:
+- Automatically handles JWT token generation via `user_manager.py`
+- Sets patient context header (`X-Patient-Context-ID`)
+- Default user: `dbeal@numberone.ai`
+- Default patient: Stuart McClure, DOB: 1969-03-03
+
+### Available Function Categories
+
+#### Document Management
+
+**List documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Upload a file**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "datasets/documents/test.pdf"}')
+```
+
+**Process a specific document**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "uuid-here"}')
+```
+
+**Process all uploaded documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "process_all_documents"}')
+```
+
+**Delete all documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "delete_all_documents"}')
+```
+
+#### Task Management
+
+**List all document processing tasks**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')
+```
+
+**Get specific task details**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "get_task", "task_id": "uuid-here"}')
+```
+
+#### Patient Management
+
+**List all patients**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_patients"}')
+```
+
+#### Agent Session Management
+
+**Create a new agent session**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "create_session", "name": "My Session"}')
+```
+
+**Set/update session name**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "set_session_name", "session_id": "uuid-here", "name": "New Name"}')
+```
+
+**List all sessions**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_sessions"}')
+```
+
+#### Agent Query
+
+**Query the medical agent**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my cholesterol?"}')
+```
+
+**Query with specific session**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my cholesterol?", "session_id": "uuid-here"}')
+```
+
+#### Agent Diagnostics
+
+**Check agent dependencies**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "check_agent_dependencies"}')
+```
+
+**Validate agent configuration**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "validate_agent_config"}')
+```
+
+#### Medical Catalog (Biomarker Enrichment)
+
+**Enrich biomarkers**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich", "names": ["ApoA-1", "Factor II"]}')
+```
+
+**Check enrichment status**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich_status", "task_id": "uuid-here"}')
+```
+
+**Search for biomarkers**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search", "names": ["cholesterol"], "limit": 5}')
+```
+
+**Search by alias groups**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search_by_alias", "alias_groups": [["LDL"], ["HDL", "HDL-C"]]}')
+```
+
+**Search derivative biomarkers** (ratios, calculated values):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search_derivatives", "names": ["ApoB/ApoA-1"]}')
+```
+
+**Enrich derivatives** (ratios, sums, percentages):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich_derivatives", "names": ["ApoB/ApoA-1", "TC/HDL-C"]}')
+```
+
+**List all derivatives** (with pagination):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_list_derivatives", "limit": 100, "offset": 0}')
+```
+
+#### Debug
+
+**Debug JSON argument structure**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "debug_args", "names": ["test1", "test2"]}')
+```
+
+### Common Workflows
+
+#### List Available Test Documents
+
+Before uploading documents for testing, list available test documents in the repository:
+
+```bash
+# List all test documents with full paths
+just list-test-docs
+
+# Output example:
+# [
+#   "pdf_tests/medical_records/.../Boston Heart July 2021.pdf",
+#   "pdf_tests/medical_records/.../Dutch cortisol 9-01-25.pdf",
+#   ...
+# ]
+```
+
+**Use this to**:
+- Find available test documents before testing document processing
+- Get correct paths for upload functions
+- Identify specific documents for debugging (e.g., Dutch cortisol document for "Estrone (E1)" testing)
+
+#### Upload and Process a Document
+
+```bash
+# First, list available test documents
+just list-test-docs
+
+# Upload document using path from list-test-docs
+(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "pdf_tests/medical_records/Stuart Mcclure Medical Records (PRIVATE)/Dutch cortisol 9-01-25.pdf"}')
+
+# Process the uploaded document (use the file_id from upload response)
+(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "file-id-from-upload"}')
+```
+
+#### Query Agent About Health Markers
+
+```bash
+# Query agent
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my latest cholesterol level?"}')
+```
+
+#### Check Task Processing Status
+
+```bash
+# List all tasks to find IDs
+(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')
+
+# Get specific task details
+(cd repos/dem2 && just curl_api '{"function": "get_task", "task_id": "abc-123-def"}')
+```
+
+#### Enrich and Validate Biomarkers
+
+```bash
+# Enrich biomarkers in catalog
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich", "names": ["Total Cholesterol", "LDL", "HDL"]}')
+
+# Search to verify they exist
+(cd repos/dem2 && just curl_api '{"function": "catalog_search", "names": ["Total Cholesterol"], "limit": 5}')
+```
+
+### How It Differs from Direct curl_api.sh Usage
+
+**Using just curl_api** (recommended):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Direct script usage** (lower-level):
+```bash
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && dispatch "{\"function\": \"list_documents\"}"')
+```
+
+**Benefits of just curl_api**:
+- ✅ Cleaner syntax (no need to source or call dispatch)
+- ✅ Proper error handling via justfile
+- ✅ Consistent working directory handling
+- ✅ Part of documented justfile interface
+
+### Environment Variables
+
+**Default settings** (defined in `scripts/curl_api.sh`):
+```bash
+PATIENT_FIRST_NAME=Stuart
+PATIENT_LAST_NAME=McClure
+PATIENT_DATE_OF_BIRTH=1969-03-03
+AUTH_EMAIL=dbeal@numberone.ai
+BACKEND_URL=http://localhost:8000/api/v1
+FRONTEND_URL=http://localhost:3000
+```
+
+**Override patient context**:
+```bash
+PATIENT_FIRST_NAME=John PATIENT_LAST_NAME=Doe PATIENT_DATE_OF_BIRTH=1990-01-01 \
+  (cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Enable verbose curl output** (for debugging):
+```bash
+CURL_VERBOSE=1 (cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+### Error Handling
+
+If a function doesn't exist:
+```bash
+$ (cd repos/dem2 && just curl_api '{"function": "nonexistent"}')
+# ERROR: Unknown function: nonexistent
+# Available functions: list_documents, upload_file, process_document, ...
+```
+
+If required arguments are missing:
+```bash
+$ (cd repos/dem2 && just curl_api '{"function": "upload_file"}')
+# ERROR: Missing 'path' field in JSON
+# Usage: {"function": "upload_file", "path": "path/to/file.pdf"}
+```
+
+### When to Use curl_api
+
+**Use curl_api for**:
+- ✅ Quick API testing during development
+- ✅ One-off administrative tasks (upload, delete, etc.)
+- ✅ Debugging API endpoints and responses
+- ✅ Validating authentication and patient context
+- ✅ Scripting batch operations
+
+**Don't use curl_api for**:
+- ❌ Production operations (use proper API clients)
+- ❌ Performance testing (use dedicated load testing tools)
+- ❌ Automated testing (use pytest with proper fixtures)
+
+### Related Commands
+
+**Low-level curl_api.sh functions** (not dispatched, but useful):
+```bash
+# Get patient ID and set context
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && _get_patient_id_internal && echo $X_PATIENT_CONTEXT_ID')
+
+# Call backend API with auth
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && _get_patient_id_internal && auth_backend "/graph-memory/medical/observations/grouped"')
+```
+
+**See also**:
+- `repos/dem2/scripts/curl_api.sh` - Complete function implementations
+- `repos/dem2/justfile` (line 271-347) - curl_api rule documentation
+- `.claude/skills/machina-ui/SKILL.md` - UI debugging with curl_api examples
+
 ## Environment Configuration
 
 - **Secrets**: `.env` files (never commit)
@@ -914,6 +1228,18 @@ See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for complete workflow, standard entity 
 | Run | `just run` | `pnpm dev` |
 | Check | `just check` | `pnpm check` |
 | Test | `just test` | `pnpm test` |
+
+### API Testing (dem2)
+
+| Command | Purpose |
+|---------|---------|
+| `(cd repos/dem2 && just curl_api '{"function": "list_documents"}')` | List uploaded documents |
+| `(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "file.pdf"}')` | Upload file |
+| `(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "..."}')` | Process document |
+| `(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "..."}')` | Query medical agent |
+| `(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')` | List processing tasks |
+
+See **API Testing with curl_api** section for complete function reference.
 
 ## Troubleshooting
 

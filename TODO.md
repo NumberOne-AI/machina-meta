@@ -112,13 +112,13 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - **Frontend colors**: Use existing `CATEGORY_COLORS` mapping based on interval category
     - **Rationale**: Backend computation ensures consistency, frontend focuses on presentation
   - **Backend Implementation** (repos/dem2):
-    - [ ] Phase 1: Add matched_interval field to API response
+    - [x] Phase 1: Add matched_interval field to API response (2026-01-09)
       - Update `ObservationValueResponse` model to include `matched_interval_label: str | None`
       - Update `ObservationValueResponse` model to include `matched_interval_category: IntervalCategory | None`
       - Locate where `ObservationValueResponse` is constructed (graph-memory observation router)
       - Add computation logic using `reference_range.classify_value(value_numeric)` if reference range exists
       - Handle edge cases: null reference range, null value_numeric, no matching interval
-    - [ ] Phase 2: Ensure reference range is available at value creation time
+    - [x] Phase 2: Ensure reference range is available at value creation time (2026-01-09)
       - Verify reference ranges are linked to observation values via `[:MEASURED_WITH_RANGE]` relationship
       - Confirm Cypher queries retrieve reference range for each value (from fixes in commits d20c3042, adc46db6)
       - Test with existing data to ensure matched interval computation works
@@ -131,23 +131,23 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - Document new `matched_interval_label` and `matched_interval_category` fields in OpenAPI spec
       - Add examples showing interval matching results
   - **Frontend Implementation** (repos/dem2-webui):
-    - [ ] Phase 1: Update TypeScript types
+    - [x] Phase 1: Update TypeScript types (2026-01-09 - commit d45008b)
       - Add `matched_interval_label?: string | null` to `ObservationValue` interface (fhir-storage.ts)
       - Add `matched_interval_category?: IntervalCategory | null` to `ObservationValue` interface
-    - [ ] Phase 2: Create status indicator component
+    - [x] Phase 2: Create status indicator component (2026-01-09 - commit f95668d)
       - Create `IntervalStatusBadge` component to show matched interval
       - Display: `<Badge color={getIntervalColor(category)}>Normal Range</Badge>` (or "High", "Low", etc.)
       - Handle null cases: no reference range, no matched interval (show neutral badge)
-      - Use existing `CATEGORY_COLORS` mapping for consistency
-    - [ ] Phase 3: Integrate into ChipValue component
+      - Use Flexoki color mapping for consistency (green/yellow/red)
+    - [x] Phase 3: Integrate into ChipValue component (2026-01-09 - commit f1f9be8)
       - Add optional `showIntervalStatus` prop to `ChipValue` component
       - Display `IntervalStatusBadge` next to the value chip
       - Maintain existing `document_value_color` behavior as fallback
-      - Ensure backward compatibility for values without reference ranges
-    - [ ] Phase 4: Integrate into ObservationMetricCard
-      - Show interval status in metric card header or value section
-      - Add visual indicator (colored dot or badge) showing range status
-      - Ensure it works alongside existing `ReferenceRangeDisplay` component
+      - Ensure backward compatibility for values without reference ranges (default: false)
+    - [x] Phase 4: Integrate into ObservationMetricCard (2026-01-09)
+      - Enable interval status display in metric card footer (latest and previous values)
+      - Pass showIntervalStatus={true} to ChipValue components
+      - Works alongside existing `ReferenceRangeDisplay` component
     - [ ] Phase 5: Enhance ObservationHistoryChart (optional)
       - Highlight data points with color based on matched interval
       - Show reference range zones as colored bands behind chart

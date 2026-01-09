@@ -67,11 +67,16 @@ digraph DocumentProcessing {
         fillcolor=lightpink;
         style=filled;
 
-        engine_main [label="Engine.process_raw_medical_data()", fillcolor=pink];
-        biomarker_processor [label="BiomarkerProcessor", fillcolor=lightpink];
-        catalog_search [label="Search Medical Catalog\nBatch lookup", fillcolor=lightpink];
-        dedup_engine [label="Deduplication\nGroup by (catalog_id, unit)", fillcolor=lightpink];
-        converter [label="ObservationConverter", fillcolor=lightpink];
+        engine_service [label="MedicalDataEngineService\n.process_raw_medical_data()\n\nQueue task for patient", fillcolor=pink];
+        engine_task_queue [label="Patient Task Queue\n(asyncio.Queue)\n\nOne queue per patient_id", fillcolor=pink];
+        task_worker [label="TaskWorker\n.run()\n\nOne worker per patient_id\nIdle timeout: 300s", fillcolor=pink];
+        engine_main [label="MedicalDataEngine\n.process()\n\nOrchestrates all processors", fillcolor=pink];
+        biomarker_processor [label="BiomarkerProcessor\n.process()\n\nFilters low-confidence\nInvokes BiomarkerConverter", fillcolor=lightpink];
+        converter [label="BiomarkerConverter\n.handle_observation_types()\n\nCreates ObservationTypeNodes", fillcolor=lightpink];
+        catalog_search [label="BiomarkerConverter\n._search_biomarkers_in_catalog()\n\nBatch vector search", fillcolor=lightpink];
+        dedup_engine [label="deduplicate_biomarker_values()\n\nGroup by (catalog_id, unit)", fillcolor=lightpink];
+        patient_tracking [label="BiomarkerConverter\n.handle_patient_tracking()\n\nCreate TRACKS relationships", fillcolor=lightpink];
+        value_storage [label="BiomarkerConverter\n.handle_observation_values()\n\nCreate ObservationValueNodes", fillcolor=lightpink];
     }
 
     // Medical Catalog Service
@@ -135,24 +140,35 @@ digraph DocumentProcessing {
     extract_biomarkers -> normalize;
     normalize -> deduplicate;
     deduplicate -> pipeline_result;
-    pipeline_result -> engine_main [label="DocumentResourcesNew"];
+    pipeline_result -> engine_service [label="EngineInput with\nDocumentResourcesNew"];
 
-    engine_main -> create_doc_ref;
+    // Engine service flow
+    engine_service -> engine_task_queue [label="Queue ProcessingTask"];
+    engine_task_queue -> task_worker [label="Dequeue task"];
+    task_worker -> engine_main [label="Call engine.process()"];
+
+    // Engine processing flow
+    engine_main -> create_doc_ref [label="Create document reference"];
     create_doc_ref -> neo4j_db [label="Cypher CREATE"];
 
-    engine_main -> biomarker_processor;
-    biomarker_processor -> catalog_search;
+    engine_main -> biomarker_processor [label="Process biomarkers"];
+    biomarker_processor -> converter [label="BiomarkerConverter"];
+    converter -> catalog_search [label="Search catalog"];
     catalog_search -> catalog_api [label="HTTP POST"];
     catalog_api -> qdrant [label="Vector similarity"];
     qdrant -> catalog_api [label="Matches", style=dashed, dir=back];
     catalog_api -> catalog_search [label="BiomarkerEntryResults", style=dashed, dir=back];
 
-    catalog_search -> dedup_engine;
-    dedup_engine -> converter;
-    converter -> create_obs_types;
-    create_obs_types -> neo4j_db [label="Cypher CREATE"];
+    catalog_search -> dedup_engine [label="Deduplicate values"];
+    dedup_engine -> converter [label="Deduplicated biomarkers"];
+    converter -> create_obs_types [label="ObservationTypeFromCatalogInput"];
+    create_obs_types -> neo4j_db [label="Cypher MERGE"];
 
-    create_obs_types -> create_obs_values;
+    create_obs_types -> patient_tracking [label="ObservationTypeNodes"];
+    patient_tracking -> neo4j_db [label="Create TRACKS relationships"];
+
+    patient_tracking -> value_storage [label="Process observation values"];
+    value_storage -> create_obs_values;
     create_obs_values -> neo4j_db [label="Cypher CREATE"];
 
     create_obs_values -> create_relationships;

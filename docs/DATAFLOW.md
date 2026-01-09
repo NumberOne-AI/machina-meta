@@ -2,9 +2,9 @@
 
 This document provides comprehensive data flow diagrams for the MachinaMed (dem2) platform, covering all services, containers, frontend/backend communication, and agent processing.
 
-**Document Version**: 1.1
-**Last Updated**: 2026-01-02
-**Status**: All information verified from source code
+**Document Version**: 1.2
+**Last Updated**: 2026-01-09
+**Status**: All information verified from source code (complete document processing flow traced and documented)
 
 ---
 
@@ -354,25 +354,60 @@ CREATE (value:ObservationValue {
 - Per-user concurrent documents: 5[^24]
 - Page rendering concurrency: 3[^28]
 
-### Key Implementation Files
+### Complete Document Processing Code Path
 
-| Component | Location |
-|-----------|----------|
-| File Upload API | `services/file-storage/src/machina/file_storage/router.py` |
-| File Service | `services/file-storage/src/machina/file_storage/file_service.py` |
-| Document Processing API | `services/docproc/src/machina/docproc/router.py` |
-| Processing Service | `services/docproc/src/machina/docproc/service.py` |
-| Extraction Pipeline | `services/docproc/src/machina/docproc/extractor/pipeline.py` |
-| Generic Agent | `services/docproc/extractor/agents/generic/agent.py` |
-| Normalizer Agent | `services/docproc/extractor/agents/normalizer/agent.py` |
-| Medical Data Engine | `services/medical-data-engine/src/machina/medical_data_engine/engine/engine.py` |
-| Biomarker Processor | `services/medical-data-engine/engine/processors/biomarker/` |
-| Observation Converter | `services/medical-data-engine/engine/processors/biomarker/observation_converter.py` |
-| Deduplication | `services/medical-data-engine/engine/processors/biomarker/deduplication.py` |
-| Medical Catalog Client | `services/medical-catalog/` |
-| Document Repository | `services/medical-data-storage/repository/document_reference_repository.py` |
-| Observation Memory | `services/graph-memory/src/machina/graph_memory/medical/observation/` |
-| Graph Nodes | `services/graph-memory/src/machina/graph_memory/medical/graph/` |
+**Verified from source code** - Full path from API endpoint to Neo4j storage:
+
+#### 1. Document Upload (File Storage)
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/file-storage/src/machina/file_storage/router.py` | `POST /files/upload` | - | Upload endpoint |
+| `services/file-storage/src/machina/file_storage/file_service.py` | `FileService.save()` | - | Save to GCS or local filesystem |
+
+#### 2. Document Processing Queue (Docproc)
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/docproc/src/machina/docproc/router.py` | `POST /process_document` | 51 | Process document endpoint |
+| `services/docproc/src/machina/docproc/service.py` | `DocumentProcessorService.queue_document()` | 410 | Queue document for processing |
+| `services/docproc/src/machina/docproc/service.py` | `DocumentProcessorService.process_task()` | 177 | Background worker processes task |
+| `services/docproc/src/machina/docproc/extractor/pipeline.py` | `run_pipeline_isolated()` | - | Extract biomarkers from document |
+
+#### 3. Medical Data Engine (Task Queue & Worker)
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/medical-data-engine/src/machina/medical_data_engine/service.py` | `MedicalDataEngineService.process_raw_medical_data()` | 56 | Queue task for patient |
+| `services/medical-data-engine/src/machina/medical_data_engine/worker.py` | `TaskWorker.run()` | 24 | Worker processes patient queue |
+| `services/medical-data-engine/src/machina/medical_data_engine/worker.py` | `TaskWorker._process_task()` | 132 | Calls engine.process() |
+| `services/medical-data-engine/src/machina/medical_data_engine/engine/engine.py` | `MedicalDataEngine.process()` | 266 | Main processing orchestration |
+
+#### 4. Biomarker Processing (BiomarkerConverter)
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/medical-data-engine/engine/engine.py` | `self.biomarker_processor.process()` | 385 | Call biomarker processor |
+| `services/medical-data-engine/engine/processors/biomarker/biomarker_processor.py` | `BiomarkerProcessor.process()` | 28 | Filter by confidence |
+| `services/medical-data-engine/engine/processors/biomarker/observation_converter.py` | `BiomarkerConverter.handle_observation_types()` | 53 | Create/get ObservationTypeNodes |
+| `services/medical-data-engine/engine/processors/biomarker/deduplication.py` | `deduplicate_biomarker_values()` | - | Deduplicate by (catalog_id, unit) |
+| `services/medical-data-engine/engine/processors/biomarker/observation_converter.py` | `BiomarkerConverter.handle_patient_tracking()` | 185 | Create TRACKS relationships |
+| `services/medical-data-engine/engine/processors/biomarker/observation_converter.py` | `BiomarkerConverter.handle_observation_values()` | - | Create ObservationValueNodes |
+
+#### 5. Graph Storage (Neo4j)
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/graph-memory/src/machina/graph_memory/medical/graph/observation/observation.py` | `create_or_get_observation_types()` | - | MERGE ObservationTypeNodes |
+| `services/graph-memory/src/machina/graph_memory/medical/graph/observation/observation.py` | `set_patient_tracking()` | - | Create TRACKS relationships |
+| `services/graph-memory/src/machina/graph_memory/medical/graph/observation/observation.py` | `create_observation_value_nodes()` | - | CREATE ObservationValueNodes |
+
+#### 6. Medical Catalog Integration
+
+| File | Function/Class | Line | Description |
+|------|---------------|------|-------------|
+| `services/medical-catalog/` | `POST /biomarkers/search_batch` | - | Batch biomarker search |
+| `services/medical-catalog/` | Qdrant vector search | - | Semantic matching |
 
 ---
 
