@@ -153,18 +153,80 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - Show reference range zones as colored bands behind chart
       - Add tooltip showing interval label on hover
   - **Testing Requirements**:
-    - [ ] Backend unit tests for interval matching logic
-    - [ ] Backend integration tests for API response with matched intervals
-    - [ ] Frontend component tests for IntervalStatusBadge
-    - [ ] Frontend component tests for updated ChipValue
-    - [ ] End-to-end test: Upload document → verify matched interval computation → verify UI display
-    - [ ] Test with existing Boston Heart documents (known reference ranges)
+    - [ ] **Backend unit tests** (pytest) - interval matching logic
+      - Test `RangeInterval.contains()` with inclusive/exclusive boundaries
+      - Test `ObservationReferenceRange.classify_value()` with multiple intervals
+      - Test boundary conditions: exactly at low/high, one unit over/under
+      - Test null handling: null value, null reference range, no matching interval
+      - Test overlapping intervals (if supported)
+      - Location: `repos/dem2/packages/medical-types/tests/test_observation_reference_range.py` (new)
+    - [ ] **Backend integration tests** (pytest) - API response with matched intervals
+      - Test GET /observations/grouped returns `matched_interval_label` and `matched_interval_category`
+      - Test with document-extracted reference ranges
+      - Test with standard reference ranges
+      - Test with missing reference ranges (fields should be null)
+      - Use testcontainers for Neo4j/PostgreSQL fixtures
+      - Location: `repos/dem2/services/graph-memory/tests/test_observation_interval_matching.py` (new)
+    - [ ] **Frontend component tests** (Vitest/React Testing Library) - if component tests exist
+      - Test IntervalStatusBadge with different categories (Normal, High, Low, Critical)
+      - Test color mapping from CATEGORY_COLORS
+      - Test null handling (no reference range, no matched interval)
+      - Location: `repos/dem2-webui/src/components/fhir-storage/__tests__/interval-status-badge.test.tsx` (new)
+    - [ ] **Frontend E2E tests** (Playwright) - full user workflow
+      - Framework: Playwright (already configured at `repos/dem2-webui/playwright.config.ts`)
+      - Extend existing `health-markers.spec.ts` test spec
+      - Test flow:
+        1. Login with test user (use existing LoginPage fixture)
+        2. Navigate to patient with Boston Heart documents
+        3. Navigate to /markers page (use existing HealthMarkersPage)
+        4. Verify observation values display with interval status badges
+        5. Verify badge colors: green for Normal, red for High/Low, yellow for Borderline
+        6. Verify tooltip/hover shows interval label
+        7. Test with multiple biomarkers (in-range and out-of-range)
+      - Use existing test data: Boston Heart July 2021, May 2024, Sep 2024, June 2025
+      - Page object methods to add:
+        - `HealthMarkersPage.getIntervalStatusBadge(biomarkerName)`
+        - `HealthMarkersPage.verifyIntervalStatus(biomarkerName, expectedStatus)`
+        - `HealthMarkersPage.verifyBadgeColor(biomarkerName, expectedColor)`
+      - Location: `repos/dem2-webui/tests/test_specs/health-markers.spec.ts` (extend existing)
+      - Run: `cd repos/dem2-webui && pnpm test` or `pnpm test:headed` (with UI)
+    - [ ] **Backend-Frontend integration test** (Playwright)
+      - Upload new Boston Heart document via UI
+      - Wait for processing completion
+      - Navigate to /markers page
+      - Verify matched intervals computed correctly for all biomarkers
+      - Compare against known ground truth from `repos/dem2/pdf_tests/validation/all_biomarkers_verified.json`
+      - Expected: 97% of biomarkers (351/362) have reference ranges and matched intervals
+      - Location: `repos/dem2-webui/tests/test_specs/reference-range-interpretation.spec.ts` (new)
+    - [ ] **Performance test** - ensure no degradation
+      - Measure API response time for GET /observations/grouped before/after
+      - Ensure < 5% increase in response time
+      - Test with 100+ observations per patient
+      - Location: Backend integration test or separate performance test
+  - **Testing Infrastructure** (already in place):
+    - **Backend**: pytest with testcontainers (PostgreSQL, Neo4j, Redis)
+      - Config: `repos/dem2/pyproject.toml` (pytest.ini_options)
+      - Fixtures: `repos/dem2/services/medical-data-storage/tests/conftest.py`
+      - Run: `cd repos/dem2 && just test` or `uv run pytest`
+      - Async support with pytest-asyncio
+      - Session-scoped database fixtures for performance
+    - **Frontend**: Playwright E2E testing framework
+      - Config: `repos/dem2-webui/playwright.config.ts`
+      - Page Objects: `repos/dem2-webui/tests/pages/` (11 page objects including HealthMarkersPage)
+      - Test Specs: `repos/dem2-webui/tests/test_specs/` (9 existing specs)
+      - Fixtures: `repos/dem2-webui/tests/fixtures.ts` (testUser1, testUser2, testUser3)
+      - Test Data: `repos/dem2-webui/tests/test_data/` (Boston Heart documents, biomarker data)
+      - Run: `cd repos/dem2-webui && pnpm test` (headless) or `pnpm test:headed` (with UI)
+      - HTML reports: `repos/dem2-webui/tests/playwright-report/`
+      - Supports multiple environments: local, dev, staging
+    - **Workspace**: `just repo-test` runs tests across all repositories
   - **Rollout Strategy**:
     - Phase 1: Backend implementation and API updates (non-breaking, adds new fields)
     - Phase 2: Frontend implementation (progressive enhancement, works with or without backend data)
     - Phase 3: Enable by default in ObservationMetricCard
     - Phase 4: Monitor for edge cases and user feedback
     - Phase 5: Document in repos/dem2/docs/REFERENCE_RANGE_EXTRACTION.md
+    - Phase 6: CI/CD integration - add tests to GitHub Actions workflows
   - **Key Files**:
     - Backend:
       - `repos/dem2/packages/medical-types/src/machina/medical_types/observation.py` - RangeInterval, ObservationReferenceRange classes
