@@ -92,6 +92,107 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
+- [PROPOSED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
+  - Impact: HIGH | Added: 2026-01-08
+  - **Problem Statement**:
+    - Reference ranges are extracted and displayed, but the UI doesn't visually indicate whether a specific observation value falls within the reference range
+    - Users must manually compare the value against the displayed ranges (e.g., "Is 95 within 70-100?")
+    - The `ChipValue` component currently uses `document_value_color` from extraction, which is only available for document-sourced values
+    - The infrastructure for interval matching exists but is disabled (commented as "reference_range analysis is disabled")
+  - **Current Architecture**:
+    - Backend `RangeInterval` class has `contains(value: float) -> bool` method (repos/dem2/packages/medical-types)
+    - Backend `ObservationReferenceRange` has `classify_value(value: float) -> str | None` method
+    - Frontend has `isValueInInterval()` and `getMatchingIntervals()` helpers (observation-range-helpers.ts)
+    - API returns full `reference_range` with intervals but frontend only uses `interval_category` field
+    - `CATEGORY_COLORS` mapping exists: Normal→green, High/Low→red, Borderline→yellow, Critical→dark-red
+  - **Architecture Decision - Hybrid Approach**:
+    - **Backend computes**: Add `matched_interval_label: str | None` to `ObservationValueResponse`
+    - **Backend uses**: `ObservationReferenceRange.classify_value()` to find matching interval label
+    - **Frontend displays**: Status badge showing matched interval (e.g., "Normal", "High", "Low")
+    - **Frontend colors**: Use existing `CATEGORY_COLORS` mapping based on interval category
+    - **Rationale**: Backend computation ensures consistency, frontend focuses on presentation
+  - **Backend Implementation** (repos/dem2):
+    - [ ] Phase 1: Add matched_interval field to API response
+      - Update `ObservationValueResponse` model to include `matched_interval_label: str | None`
+      - Update `ObservationValueResponse` model to include `matched_interval_category: IntervalCategory | None`
+      - Locate where `ObservationValueResponse` is constructed (graph-memory observation router)
+      - Add computation logic using `reference_range.classify_value(value_numeric)` if reference range exists
+      - Handle edge cases: null reference range, null value_numeric, no matching interval
+    - [ ] Phase 2: Ensure reference range is available at value creation time
+      - Verify reference ranges are linked to observation values via `[:MEASURED_WITH_RANGE]` relationship
+      - Confirm Cypher queries retrieve reference range for each value (from fixes in commits d20c3042, adc46db6)
+      - Test with existing data to ensure matched interval computation works
+    - [ ] Phase 3: Add unit tests for interval matching
+      - Test `RangeInterval.contains()` with inclusive/exclusive bounds
+      - Test `ObservationReferenceRange.classify_value()` with multiple intervals
+      - Test edge cases: boundary values, no matching interval, overlapping intervals
+      - Test null handling: null value, null reference range
+    - [ ] Phase 4: Update API documentation
+      - Document new `matched_interval_label` and `matched_interval_category` fields in OpenAPI spec
+      - Add examples showing interval matching results
+  - **Frontend Implementation** (repos/dem2-webui):
+    - [ ] Phase 1: Update TypeScript types
+      - Add `matched_interval_label?: string | null` to `ObservationValue` interface (fhir-storage.ts)
+      - Add `matched_interval_category?: IntervalCategory | null` to `ObservationValue` interface
+    - [ ] Phase 2: Create status indicator component
+      - Create `IntervalStatusBadge` component to show matched interval
+      - Display: `<Badge color={getIntervalColor(category)}>Normal Range</Badge>` (or "High", "Low", etc.)
+      - Handle null cases: no reference range, no matched interval (show neutral badge)
+      - Use existing `CATEGORY_COLORS` mapping for consistency
+    - [ ] Phase 3: Integrate into ChipValue component
+      - Add optional `showIntervalStatus` prop to `ChipValue` component
+      - Display `IntervalStatusBadge` next to the value chip
+      - Maintain existing `document_value_color` behavior as fallback
+      - Ensure backward compatibility for values without reference ranges
+    - [ ] Phase 4: Integrate into ObservationMetricCard
+      - Show interval status in metric card header or value section
+      - Add visual indicator (colored dot or badge) showing range status
+      - Ensure it works alongside existing `ReferenceRangeDisplay` component
+    - [ ] Phase 5: Enhance ObservationHistoryChart (optional)
+      - Highlight data points with color based on matched interval
+      - Show reference range zones as colored bands behind chart
+      - Add tooltip showing interval label on hover
+  - **Testing Requirements**:
+    - [ ] Backend unit tests for interval matching logic
+    - [ ] Backend integration tests for API response with matched intervals
+    - [ ] Frontend component tests for IntervalStatusBadge
+    - [ ] Frontend component tests for updated ChipValue
+    - [ ] End-to-end test: Upload document → verify matched interval computation → verify UI display
+    - [ ] Test with existing Boston Heart documents (known reference ranges)
+  - **Rollout Strategy**:
+    - Phase 1: Backend implementation and API updates (non-breaking, adds new fields)
+    - Phase 2: Frontend implementation (progressive enhancement, works with or without backend data)
+    - Phase 3: Enable by default in ObservationMetricCard
+    - Phase 4: Monitor for edge cases and user feedback
+    - Phase 5: Document in repos/dem2/docs/REFERENCE_RANGE_EXTRACTION.md
+  - **Key Files**:
+    - Backend:
+      - `repos/dem2/packages/medical-types/src/machina/medical_types/observation.py` - RangeInterval, ObservationReferenceRange classes
+      - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/observation/router.py` - API endpoint
+      - `repos/dem2/services/graph-memory/src/machina/graph_memory/medical/graph/observation/models.py` - ObservationValueResponse
+    - Frontend:
+      - `repos/dem2-webui/src/types/fhir-storage.ts` - TypeScript interfaces
+      - `repos/dem2-webui/src/lib/observation-range-helpers.ts` - Color mapping and helpers
+      - `repos/dem2-webui/src/components/fhir-storage/cells/chip-value.tsx` - Value display
+      - `repos/dem2-webui/src/components/fhir-storage/observation-metric-card.tsx` - Metric card
+  - **Future Enhancements** (separate tasks):
+    - Add confidence score for interval matching (when value is near boundary)
+    - Support multiple matching intervals (if ranges overlap)
+    - Add trend analysis: "moved from Normal to High"
+    - Implement alert rules: notify when value exits normal range
+    - Add interval history: track which intervals value has been in over time
+  - **Dependencies**:
+    - Requires reference range extraction to be working (✅ Complete - commits be409571, d20c3042, adc46db6)
+    - Requires category field to be populated (✅ Complete - commit adc46db6)
+    - Requires schema alignment between graph-memory and medical-data-storage (✅ Complete - commit d20c3042)
+  - **Success Criteria**:
+    - ✅ Backend returns `matched_interval_label` for all observations with reference ranges
+    - ✅ Frontend displays color-coded status badge (green/yellow/red) based on interval category
+    - ✅ 100% of Boston Heart document observations show correct interval match
+    - ✅ UI clearly communicates when value is in-range vs out-of-range
+    - ✅ System gracefully handles null reference ranges and null values
+    - ✅ No performance degradation from interval matching computation
+
 <!-- Add tasks that span multiple repositories (e.g., coordinated releases, cross-repo refactoring) -->
 
 ---
