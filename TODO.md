@@ -261,7 +261,50 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Infrastructure & CI/CD
 
-<!-- Add workspace-level infrastructure tasks (e.g., unified testing, deployment coordination) -->
+- [PROPOSED] **Add minikube cluster support to dev_stack.py** - Alternative to Docker Compose using Kubernetes locally
+  - Impact: MEDIUM | Added: 2026-01-09
+  - **Goal**: Add `minikube-up`, `minikube-down`, `minikube-status`, `minikube-destroy` commands as alternative to Docker Compose
+  - **Approach**: Reuse existing Kustomize manifests from `repos/dem2-infra/k8s/base/` with new minikube overlay
+  - **Key decisions**:
+    - Build images locally in minikube's Docker daemon using `eval $(minikube docker-env)`
+    - Add as alternative commands alongside existing `up`, `down`, `status`
+    - Use local Kubernetes Secrets instead of External Secrets Operator
+  - **Files to create**:
+    - `repos/dem2-infra/k8s/overlays/minikube/kustomization.yaml` - Main overlay config
+    - `repos/dem2-infra/k8s/overlays/minikube/namespace.yaml` - tusdi-minikube namespace
+    - `repos/dem2-infra/k8s/overlays/minikube/local-secrets.yaml` - Replace External Secrets with local K8s Secrets
+    - `repos/dem2-infra/k8s/overlays/minikube/storage-class.yaml` - Minikube-compatible storage class (standard)
+    - `repos/dem2-infra/k8s/overlays/minikube/env-vars-patch.yaml` - Local environment URLs
+    - `repos/dem2-infra/k8s/overlays/minikube/image-pull-policy-patch.yaml` - Set imagePullPolicy: Never
+  - **Files to modify**:
+    - `scripts/dev_stack.py` - Add ~300 lines for minikube management functions
+    - `justfile` - Add minikube-up, minikube-down, minikube-status, minikube-destroy, minikube-forward commands
+  - **Implementation steps**:
+    - [ ] Create minikube Kustomize overlay directory structure
+    - [ ] Create kustomization.yaml referencing base with patches
+    - [ ] Create local-secrets.yaml with dev passwords + env var refs for API keys
+    - [ ] Create storage-class.yaml using minikube's standard provisioner
+    - [ ] Create env-vars-patch.yaml for localhost URLs
+    - [ ] Create image-pull-policy-patch.yaml
+    - [ ] Add prerequisite check functions to dev_stack.py (minikube, kubectl)
+    - [ ] Add cluster management functions (create, start, stop, delete, status)
+    - [ ] Add image building functions (get docker-env, build in minikube)
+    - [ ] Add Kubernetes deployment functions (apply, delete, wait for pods)
+    - [ ] Add main command handlers (minikube_up, minikube_down, etc.)
+    - [ ] Update argparse in main() with new commands
+    - [ ] Add justfile commands
+    - [ ] Test end-to-end workflow
+  - **Minikube cluster config**:
+    - Profile: `machina-dev`
+    - Resources: 4 CPUs, 8GB RAM, 40GB disk
+    - Driver: docker
+    - Addons: ingress, storage-provisioner
+  - **Access pattern**: Port-forwarding to localhost (8000, 3000, 5432, 7474, 6379, 6333)
+  - **Required env vars for full functionality**:
+    - `OPENAI_API_KEY`, `GEMINI_API_KEY`, `SERPER_API_KEY`
+    - `VISION_AGENT_API_KEY`, `GOOGLE_SEARCH_API_KEY`
+    - `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`
+  - **Detailed plan**: `/home/dbeal/.claude/plans/snappy-bouncing-taco.md`
 
 ---
 
