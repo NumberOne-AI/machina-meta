@@ -310,6 +310,86 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Documentation & Tooling
 
+- [PROPOSED] **Convert CLAUDE.md to skill-based architecture** - Reduce context size by 68% through on-demand skill loading
+  - Impact: HIGH | Added: 2026-01-12
+  - **Problem Statement**:
+    - CLAUDE.md is currently ~1,272 lines (~22,250 tokens) loaded into every conversation
+    - Much of this content is reference documentation only needed for specific workflows
+    - Large context reduces response speed and limits room for code/conversation
+    - Example: 313 lines of curl_api documentation rarely needed but always loaded
+  - **Proposed Solution**:
+    - Keep ~405 lines (32%) of critical safety rules in CLAUDE.md
+    - Extract ~867 lines (68%) into 16 specialized skills loaded on-demand
+    - Token savings: ~15,173 tokens (68% reduction) per conversation
+  - **Skills to Create**:
+    - `machina-api-testing` (313 lines) - Complete curl_api reference for API testing workflows
+    - `machina-setup` (72 lines) - Service setup guides for initial development
+    - `machina-docs` (106 lines) - Documentation maintenance procedures for AGENTS.md, DATAFLOW.md, etc.
+    - `machina-dev-patterns` (49 lines) - Common development patterns and workflows
+    - `machina-todo` (68 lines) - TODO.md task tracking guidelines
+    - `machina-reference` (40 lines) - Quick reference tables for commands
+    - `machina-troubleshoot` (28 lines) - Troubleshooting guide
+    - `machina-structure` (26 lines) - Repository structure details
+    - `machina-submodules` (28 lines) - Git submodules workflow
+    - `machina-preview` (16 lines) - Preview environments
+    - `machina-services` (31 lines) - Development services table
+    - `machina-gcloud` (36 lines) - gcloud-admin DevOps container
+    - `machina-quickstart` (18 lines) - Quick start procedures
+    - `machina-nix` (13 lines) - Nix development environment
+    - `machina-env` (7 lines) - Environment configuration
+    - `machina-problems` (20 lines) - PROBLEMS.md guidance
+  - **Core CLAUDE.md (keep always-loaded)**:
+    - Architecture Analysis Protocol (55 lines) - Critical for preventing misunderstandings
+    - Bash Command Execution Safety (86 lines) - Working directory safety protocol
+    - Machina-Git Skill Requirement (25 lines) - Git safety enforcement
+    - Git Rules (60 lines) - Submodule safety rules
+    - Workspace Overview (13 lines) - High-level context
+    - Working with Workspace (66 lines) - When to use what
+    - Architecture diagram (45 lines) - System context
+    - Common Patterns (25 lines) - Tech stack overview
+    - Git Workflow (6 lines) - Branch strategy
+    - Workspace Principles (6 lines) - Core principles
+    - Documentation navigation (18 lines) - Where to find things
+  - **Implementation Steps**:
+    - [ ] Create skill directory structure: `.claude/skills/machina-*/`
+    - [ ] Extract content from CLAUDE.md to skill files (SKILL.md)
+    - [ ] Create skill.json metadata for each skill with invocation triggers
+    - [ ] Update CLAUDE.md to reference skills and remove extracted content
+    - [ ] Add "Skills Available" section to CLAUDE.md
+    - [ ] Test skill invocation by asking questions that should trigger each skill
+    - [ ] Measure actual token savings in real conversations
+    - [ ] Update machina-git skill if it references removed CLAUDE.md sections
+    - [ ] Document skill maintenance in CLAUDE.md
+  - **Skill Metadata Design**:
+    - Each skill.json includes:
+      - name: Machine-readable skill identifier
+      - description: Human-readable summary shown to user
+      - triggers: Keywords/questions that should invoke this skill
+      - dependencies: Other skills that should be loaded together
+    - Example triggers:
+      - machina-api-testing: "curl_api", "test API", "upload document", "query agent"
+      - machina-setup: "setup", "install", "initialize", "bootstrap"
+      - machina-docs: "update AGENTS.md", "regenerate DATAFLOW", "documentation"
+  - **Testing Plan**:
+    - [ ] Test conversation without any skills loaded (basic questions)
+    - [ ] Test skill auto-invocation by asking "How do I test the API?"
+    - [ ] Test skill dependency loading (one skill triggering another)
+    - [ ] Test skill content accuracy (compare to original CLAUDE.md)
+    - [ ] Measure token usage before/after in real workflows
+    - [ ] Test that critical safety rules still work (bash cd patterns, git safety)
+  - **Success Criteria**:
+    - ✅ CLAUDE.md reduced to ~405 lines (~7,088 tokens)
+    - ✅ All 16 skills created with proper metadata
+    - ✅ Skills invoke correctly based on conversation context
+    - ✅ Measured 60%+ token savings in typical workflows
+    - ✅ No loss of functionality or information access
+    - ✅ Faster response times due to reduced context
+  - **Rollback Plan**:
+    - If skills don't invoke correctly or cause confusion, revert to full CLAUDE.md
+    - Git preserves original CLAUDE.md structure for easy rollback
+    - Skills can be merged back incrementally if needed
+  - **Related Problems**: See PROBLEMS.md - "Skillification context management challenges"
+
 - [DONE] **Create workspace-level TODO.md and PROBLEMS.md framework** - Establish task/issue tracking at workspace level
   - Impact: MEDIUM | Added: 2025-12-29 | Completed: 2025-12-29
   - Created PROBLEMS.md with framework instructions and skeleton structure
