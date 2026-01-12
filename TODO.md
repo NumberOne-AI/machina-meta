@@ -92,6 +92,26 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
+- [PROPOSED] **Merge dem2 branch with origin/dev** - Sync local branch with upstream development branch including conflict resolution
+  - Impact: HIGH | Added: 2026-01-12
+  - **Goal**: Merge latest changes from origin/dev into local dem2 branch to stay synchronized with team development
+  - **Current Status**: Local branch diverged from origin/dev
+  - **Key Steps**:
+    - [ ] Check current branch status and divergence from origin/dev
+    - [ ] Fetch latest origin/dev changes
+    - [ ] Identify conflicts before merging
+    - [ ] Perform merge: `git merge origin/dev`
+    - [ ] Resolve any merge conflicts
+    - [ ] Test that everything still works after merge (run tests, check services)
+    - [ ] Commit merge resolution
+    - [ ] Verify branch is clean and up-to-date with origin/dev
+  - **Considerations**:
+    - May have conflicts in services/medical-data-storage, services/docproc, or graph schema files
+    - Database migration conflicts possible (PostgreSQL, Neo4j)
+    - Test thoroughly after merge before pushing
+    - Document any breaking changes from upstream
+  - **Location**: `repos/dem2` directory
+
 - [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
   - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
   - **Problem Statement**:
