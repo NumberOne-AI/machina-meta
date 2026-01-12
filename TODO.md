@@ -435,8 +435,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - Files created: PROBLEMS.md, TODO.md
   - Files modified: CLAUDE.md (added framework documentation sections)
 
-- [REVIEW] **Create comprehensive API routes documentation** - Document all routes across all services
-  - Impact: HIGH | Added: 2025-12-30
+- [DONE] **Create comprehensive API routes documentation** - Document all routes across all services
+  - Impact: HIGH | Added: 2025-12-30 | Completed: 2026-01-12
   - Created route scanning system with Python scripts
   - Scanned FastAPI routes from dem2 (126 routes) and medical-catalog (21 routes) using OpenAPI JSON
   - Scanned Next.js routes from dem2-webui (2 API routes + 23 pages)
@@ -456,7 +456,6 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Component extraction groups routes by REST URL path prefixes instead of file paths
     - Hierarchical JSON structure with 48% size reduction through optimization
   - Commits: ed93bb3, cdcc7b3, b7265ee, 140f1c4, d5fd8db
-  - Status: Fixed component extraction to use REST URL path prefixes instead of file paths. Routes now properly grouped (e.g., /api/v1/auth contains 13 auth-related routes). Awaiting user review and approval.
 
 - [DONE] **Create comprehensive Google ADK agent architecture documentation** - Document MachinaMed's multi-agent system
   - Impact: HIGH | Added: 2025-12-31 | Completed: 2025-12-31
@@ -489,8 +488,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Error handling (three-tier with fallback responses)
   - Commit: ffcdcce - "docs: create comprehensive Google ADK agent architecture documentation"
 
-- [REVIEW] **Create comprehensive data flow documentation** - Document complete system data flows with diagrams
-  - Impact: HIGH | Added: 2025-12-31 | Updated: 2026-01-02
+- [DONE] **Create comprehensive data flow documentation** - Document complete system data flows with diagrams
+  - Impact: HIGH | Added: 2025-12-31 | Completed: 2026-01-12
   - Created master DATAFLOW.md with comprehensive INPUT/OUTPUT/PROCESSING documentation
   - Included 18+ Mermaid diagrams covering all architecture layers:
     - System architecture with all components and services
@@ -545,7 +544,6 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - 837242d - "fix: remove quotes from Mermaid node labels"
     - 9c715e1 - "docs: add comprehensive document processing flow to DATAFLOW.md"
     - deb2f4b - "docs: add Graphviz diagram for document processing pipeline"
-  - Status: All requested documentation completed, including detailed document processing flow with biomarker extraction, reconciliation, and graph storage patterns. Awaiting user review and approval.
 
 ---
 
