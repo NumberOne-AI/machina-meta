@@ -92,8 +92,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
-- [PROPOSED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
-  - Impact: HIGH | Added: 2026-01-08
+- [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
+  - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
   - **Problem Statement**:
     - Reference ranges are extracted and displayed, but the UI doesn't visually indicate whether a specific observation value falls within the reference range
     - Users must manually compare the value against the displayed ranges (e.g., "Is 95 within 70-100?")
@@ -257,8 +257,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - ✅ System gracefully handles null reference ranges and null values
     - ✅ No performance degradation from interval matching computation
 
-- [PROPOSED] **Fix reference range extraction to populate numeric bounds** - Unblock interval matching feature
-  - Impact: HIGH | Added: 2026-01-12
+- [STARTED] **Fix reference range extraction to populate numeric bounds** - Unblock interval matching feature
+  - Impact: HIGH | Added: 2026-01-12 | Started: 2026-01-12
   - **Problem**: Reference ranges extracted as text only (e.g., "3.5-5.3"), numeric bounds remain null
   - **Impact**: Interval matching code cannot work without numeric bounds to compare against
   - **Status**: Interval matching feature is 100% complete and tested, blocked by this issue
