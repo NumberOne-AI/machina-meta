@@ -143,6 +143,9 @@ checkout-repo repo branch:
 dev-up:
     ./scripts/dev_stack.py up
 
+dev-restart:
+    docker compose --profile prod up -d --build
+
 # Stop all development services
 dev-down:
     ./scripts/dev_stack.py down
@@ -231,3 +234,23 @@ check-token *args="":
 # Find all source code
 find-src:
     find -type f | grep -Ev '(\.git|\.venv|\.mypy_cache|\.ruff_cache|\.pytest_cache|\.pyc)\b'
+
+# List test documents in pdf_tests/medical_records as JSON array of paths
+list-test-docs:
+    ./scripts/docproc-util.py list
+
+# Upload all test documents
+upload-all-test-docs:
+    ./scripts/docproc-util.py upload-all
+
+# Process all uploaded test documents
+process-all-test-docs:
+    ./scripts/docproc-util.py process-all
+
+# Wait for all document processing tasks to complete
+wait-for-processing:
+    ./scripts/docproc-util.py wait
+
+# Upload and process all test documents (full pipeline)
+upload-all-test-documents:
+    ./scripts/docproc-util.py full

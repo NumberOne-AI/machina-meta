@@ -26,11 +26,19 @@ mkShell {
     # Activate uv virtual environment.
     #
     # . .venv/bin/activate
+
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+    export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE="ubuntu-24.04"
+
   '';
 
   buildInputs = [ bashInteractive fd gnumake ];
 
   packages = with pkgs; [
+    # playwright-driver.browsers
+    pnpm
+    playwright-mcp
     argocd
     universal-ctags
     claude-code
