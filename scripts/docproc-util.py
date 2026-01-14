@@ -25,6 +25,11 @@ PATIENT_LAST_NAME = os.getenv("PATIENT_LAST_NAME", "McClure")
 PATIENT_DATE_OF_BIRTH = os.getenv("PATIENT_DATE_OF_BIRTH", "1969-03-03")
 AUTH_EMAIL = os.getenv("AUTH_EMAIL", "dbeal@numberone.ai")
 
+# Subdirectories to include when listing test documents
+INCLUDED_SUBDIRS = [
+    "Stuart Mcclure Medical Records (PRIVATE)",
+]
+
 
 def get_workspace_root() -> Path:
     """Get the workspace root directory."""
@@ -42,6 +47,8 @@ def get_test_docs_dir() -> Path:
 def list_test_docs() -> list[str]:
     """List all test documents in pdf_tests/medical_records.
 
+    Only includes documents from subdirectories listed in INCLUDED_SUBDIRS.
+
     Returns:
         List of relative paths (relative to repos/dem2)
     """
@@ -51,8 +58,13 @@ def list_test_docs() -> list[str]:
         print(f"ERROR: Test documents directory not found: {test_docs_dir}", file=sys.stderr)
         return []
 
-    # Find all PDF files
-    pdf_files = sorted(test_docs_dir.rglob("*.pdf")) + sorted(test_docs_dir.rglob("*.PDF"))
+    # Find all PDF files from included subdirectories only
+    pdf_files: list[Path] = []
+    for subdir in INCLUDED_SUBDIRS:
+        subdir_path = test_docs_dir / subdir
+        if subdir_path.exists():
+            pdf_files.extend(sorted(subdir_path.rglob("*.pdf")))
+            pdf_files.extend(sorted(subdir_path.rglob("*.PDF")))
 
     # Convert to relative paths (relative to repos/dem2)
     dem2_root = get_workspace_root() / "repos" / "dem2"
