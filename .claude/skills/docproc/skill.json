@@ -1,0 +1,5 @@
+{
+  "name": "docproc",
+  "description": "Document processing validation workflow. Use for validating biomarker extraction from medical documents, comparing extracted data against ground truth, testing catalog enrichment, and debugging extraction accuracy. Includes commands for uploading documents, running extraction validation, syncing test data, and analyzing results.",
+  "category": "project"
+}
