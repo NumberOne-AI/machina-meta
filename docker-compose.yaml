@@ -17,6 +17,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    profiles: ["dev"]
 
   neo4j:
     image: neo4j:5.26
@@ -44,6 +45,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    profiles: ["dev"]
 
   redis:
     image: redis:7-alpine
@@ -58,6 +60,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    profiles: ["dev"]
 
   qdrant:
     image: qdrant/qdrant:v1.15.4
@@ -76,6 +79,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    profiles: ["dev"]
 
   redisinsight:
     image: redis/redisinsight:latest
@@ -85,8 +89,9 @@ services:
       - redisinsight_data:/data
     depends_on:
       - redis
+    profiles: ["dev"]
 
-  # Application services (production mode)
+  # Application services
   backend:
     build:
       context: ./repos/dem2
@@ -126,7 +131,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-    profiles: ["prod"]
+    profiles: ["dev"]
 
   medical-catalog:
     build:
@@ -154,7 +159,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
-    profiles: ["prod"]
+    profiles: ["dev"]
 
   frontend:
     build:
@@ -175,7 +180,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    profiles: ["prod"]
+    profiles: ["dev"]
 
 volumes:
   postgres_data:

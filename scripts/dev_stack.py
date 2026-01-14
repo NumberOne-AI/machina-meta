@@ -319,9 +319,9 @@ def dev_up(workspace_root: Path) -> int:
     else:
         print("✅ Qdrant volume exists - using existing data")
 
-    # Start all services with prod profile (quiet by default)
+    # Start all services with dev profile (quiet by default)
     result = run_command(
-        ["docker", "compose", "--profile", "prod", "up", "-d", "--build"],
+        ["docker", "compose", "--profile", "dev", "up", "-d", "--build"],
         check=False,
         cwd=workspace_root,
     )
@@ -414,9 +414,9 @@ def dev_down(workspace_root: Path) -> int:
     """
     print("Stopping all services...")
 
-    # Stop all services with prod profile
+    # Stop all services with dev profile
     result = run_command(
-        ["docker", "compose", "--profile", "prod", "down"],
+        ["docker", "compose", "--profile", "dev", "down"],
         check=False,
         cwd=workspace_root,
     )

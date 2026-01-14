@@ -139,12 +139,13 @@ checkout-repo repo branch:
     echo ""
     echo "Current branch in {{repo}}: $(git -C repos/{{repo}} branch --show-current)"
 
-# Start full stack in production mode (databases + frontend + backend containers)
+# Start full stack (databases + frontend + backend containers)
 dev-up:
     ./scripts/dev_stack.py up
 
+# Rebuild and restart all services
 dev-restart:
-    docker compose --profile prod up -d --build
+    docker compose --profile dev up -d --build
 
 # Stop all development services
 dev-down:
@@ -153,6 +154,34 @@ dev-down:
 # Show status of all local dev servers and services
 dev-status format="markdown":
     ./scripts/dev_stack.py status --format {{format}}
+
+# Run Docker sanity check tests (non-destructive verification)
+dev-check:
+    #!/usr/bin/env bash
+    set -e
+    echo "=== Docker Sanity Check ==="
+    echo ""
+    echo "1. Service Status:"
+    ./scripts/dev_stack.py status --format markdown
+    echo ""
+    echo "2. Container Status:"
+    docker compose ps --format "table {{`{{.Name}}`}}\t{{`{{.Status}}`}}"
+    echo ""
+    echo "3. Health Checks:"
+    docker inspect --format='{{`{{.Name}}`}}: {{`{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}`}}' $(docker ps -q --filter "name=machina-meta") 2>/dev/null || echo "No machina-meta containers running"
+    echo ""
+    echo "4. Resource Usage:"
+    docker stats --no-stream --format "table {{`{{.Name}}`}}\t{{`{{.CPUPerc}}`}}\t{{`{{.MemUsage}}`}}" | head -12
+    echo ""
+    echo "5. Volume Status:"
+    docker volume ls --format "table {{`{{.Name}}`}}\t{{`{{.Driver}}`}}" | grep machina || echo "No machina volumes found"
+    echo ""
+    echo "6. Endpoint Health:"
+    curl -sf http://localhost:8000/docs > /dev/null && echo "Backend /docs: OK" || echo "Backend /docs: FAILED"
+    curl -sf http://localhost:8001/health > /dev/null && echo "Catalog /health: OK" || echo "Catalog /health: FAILED"
+    curl -sf http://localhost:6333/healthz > /dev/null && echo "Qdrant /healthz: OK" || echo "Qdrant /healthz: FAILED"
+    echo ""
+    echo "=== All checks complete ==="
 
 # Run a Cypher query against Neo4j
 neo4j-query query *args="":

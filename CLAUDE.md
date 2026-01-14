@@ -408,6 +408,7 @@ just repo-pull      # Pull latest in each repo
 just dev-status   # Check what's running
 just dev-up       # Start full stack (containers)
 just dev-down     # Stop all services
+just dev-restart  # Rebuild and restart services
 ```
 
 ## Development Setup by Service
@@ -1215,6 +1216,7 @@ See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for complete workflow, standard entity 
 | `just dev-status` | Check all services |
 | `just dev-up` | Start full stack |
 | `just dev-down` | Stop all services |
+| `just dev-restart` | Rebuild and restart |
 | `just repo-check` | Lint/type check all |
 | `just repo-test` | Test all repos |
 | `just repo-log <n>` | Show commits |
