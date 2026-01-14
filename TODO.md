@@ -92,9 +92,9 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
-- [REVIEW] **Rebase feature/docproc-extraction-pipeline onto origin/dev** - Rebase branch onto upstream with squash-by-feature-area strategy
+- [DONE] **Rebase feature/docproc-extraction-pipeline onto origin/dev** - Rebase branch onto upstream with squash-by-feature-area strategy
   - Impact: HIGH | Added: 2026-01-13 | Completed: 2026-01-14
-  - **Status**: ✅ REBASE COMPLETE - All phases done, awaiting user approval
+  - **Status**: ✅ REBASE COMPLETE AND VERIFIED
   - **Plan**: [docs/plans/REBASE_DOCPROC_TO_DEV.md](docs/plans/REBASE_DOCPROC_TO_DEV.md)
   - **Conflict Log**: [CONFLICT_RESOLUTION_LOG_docproc-extraction-pipeline_origin-dev_20260114.md](CONFLICT_RESOLUTION_LOG_docproc-extraction-pipeline_origin-dev_20260114.md)
   - **Goal**: Rebase both repos/dem2 (244 commits) and repos/dem2-webui (13 commits) from feature/docproc-extraction-pipeline onto origin/dev, creating new branch dbeal-docproc-dev. Heavy conflicts expected due to custom parser deletions vs upstream additions. Using squash-by-feature-area strategy to reduce conflict resolution complexity.
@@ -102,9 +102,12 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - ✅ 264 commits rebased successfully (250 dem2 + 14 dem2-webui)
     - ✅ 14 conflicts resolved (12 dem2 + 2 dem2-webui)
     - ✅ 22 type errors fixed post-rebase
+    - ✅ 6 lint errors fixed (S107, B904, E402, S110, F841)
+    - ✅ 2 test collection errors fixed (deleted orphaned tests)
     - ✅ Both repos on dbeal-docproc-dev branch
+    - ✅ dem2: All checks passing (ruff check, mypy)
     - ✅ dem2-webui: All checks passing (pnpm check)
-    - ✅ dem2: Type checks passing (mypy), only pre-existing lint/test issues
+    - ✅ Documentation: Created README.env.md for environment variables
   - **Key Steps**:
     - [x] Phase 1: Pre-rebase preparation (backup tags, conflict log template) - Completed 2026-01-14
     - [CANCELLED] Phase 1.5: Squash dem2 commits by feature area (~244 → ~10-15 commits) - Strategy changed: used direct rebase --onto instead of squash-then-cherry-pick (2026-01-14)
@@ -114,6 +117,11 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [x] Phase 3: Resolve dem2-webui conflicts (2 conflicts, prefer QA team's test data) - Completed 2026-01-14
     - [x] Phase 4: Run tests and verification (22 type errors fixed, all checks run) - Completed 2026-01-14
     - [x] Phase 5: Finalize conflict resolution log - Completed 2026-01-14
+    - [x] Phase 6: Fix backend lint errors and dev utilities - Completed 2026-01-14
+    - [x] Phase 7: Verify frontend checks - Completed 2026-01-14
+  - **Related Commits**:
+    - repos/dem2: fd1438d8 "refactor(dev): improve environment variable handling and remove orphaned tests"
+    - machina-meta: 9f4953f5 "docs: add environment variables reference documentation"
 
 - [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
   - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
