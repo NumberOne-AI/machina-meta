@@ -1,0 +1,72 @@
+// Neo4j Schema for Biomarker Reference Range and Interval Matching
+// Render: dot -Tsvg NEO4J_REFERENCE_RANGE_SCHEMA.dot -o NEO4J_REFERENCE_RANGE_SCHEMA.svg
+digraph BiomarkerSchema {
+    rankdir=TB;
+
+    // Font settings and background
+    graph [fontsize=14, fontname="Arial", bgcolor="#f5f5f5", style=filled];
+    node [shape=box, style=filled, fontsize=12, fontname="Arial"];
+    edge [fontsize=10, fontname="Arial"];
+
+    // --- SCHEMA SECTION ---
+    subgraph cluster_schema {
+        label="Neo4j Schema Structure";
+        fillcolor="#e8f4e8";
+        style=filled;
+        fontsize=14;
+
+        ObservationType [label="ObservationTypeNode\n────────────────\nuuid\nname\ndisplay_name\ncatalog_id\nloinc_code\nunit", fillcolor=lightgreen];
+        ObservationValue [label="ObservationValueNode\n────────────────\nuuid\npatient_id\nvalue_numeric\nvalue_text\nobserved_at\nunit\nsource_type", fillcolor=lightyellow];
+        ReferenceRange [label="ReferenceRangeNode\n────────────────\nuuid\nname\nrange_type\nsource_type\nsource_id\nintervals_json\npatient_id (optional)", fillcolor=lightblue];
+        RangeInterval [label="RangeIntervalNode\n────────────────\nuuid\ncategory\ncolor\nlow / high\nlow_inclusive / high_inclusive\ntext\nis_synthetic", fillcolor=lightcyan];
+
+        // Relationships
+        ObservationType -> ObservationValue [label="INSTANCE_OF\n(value → type)", style=bold, dir=back];
+        ObservationType -> ReferenceRange [label="HAS_RANGE\n(type owns range)", style=bold];
+        ReferenceRange -> RangeInterval [label="HAS_INTERVAL\n(range owns ALL\nintervals)", style=bold, color=darkgreen];
+        ObservationValue -> RangeInterval [label="MATCHES_INTERVAL\n(value links to\nMATCHED interval)", style=bold, color=blue];
+    }
+
+    // --- EXAMPLE SECTION ---
+    subgraph cluster_example {
+        label="Example: Total Cholesterol with values 163 (in-range) and 220 (out-of-range)";
+        fillcolor="#f4f4e8";
+        style=filled;
+        fontsize=14;
+
+        // Nodes
+        CholesterolType [label="ObservationTypeNode\n\"Total Cholesterol\"\nunit: mg/dL", fillcolor=lightgreen];
+        CholesterolRange [label="ReferenceRangeNode\nrange_type: document\nintervals_json: [...]", fillcolor=lightblue];
+
+        // Values
+        Value163 [label="ObservationValueNode\nvalue: 163 mg/dL\nIN-RANGE", fillcolor="#90EE90"];  // Light green
+        Value220 [label="ObservationValueNode\nvalue: 220 mg/dL\nOUT-OF-RANGE", fillcolor="#FFB6C1"];  // Light pink/red
+
+        // Intervals
+        Interval1 [label="RangeIntervalNode\ntext: \"<200\"\ncategory: Normal\ncolor: green\nis_synthetic: false", fillcolor="#32CD32", fontcolor=white];  // Lime green
+        Interval2 [label="RangeIntervalNode\ntext: \">=200\"\ncategory: High\ncolor: red\nis_synthetic: true", fillcolor="#DC143C", fontcolor=white];  // Crimson
+
+        // Type relationships
+        CholesterolType -> Value163 [label="INSTANCE_OF", dir=back];
+        CholesterolType -> Value220 [label="INSTANCE_OF", dir=back];
+        CholesterolType -> CholesterolRange [label="HAS_RANGE"];
+
+        // Range owns intervals
+        CholesterolRange -> Interval1 [label="HAS_INTERVAL", color=darkgreen];
+        CholesterolRange -> Interval2 [label="HAS_INTERVAL", color=darkgreen];
+
+        // Values match to intervals (THE KEY RELATIONSHIPS)
+        Value163 -> Interval1 [label="MATCHES_INTERVAL\n(163 < 200)", style=bold, color=blue, penwidth=2];
+        Value220 -> Interval2 [label="MATCHES_INTERVAL\n(220 >= 200)", style=bold, color=blue, penwidth=2];
+    }
+
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        fillcolor=white;
+        style=filled;
+        fontsize=12;
+
+        legend [label="Relationships:\n\n• INSTANCE_OF: Value is instance of observation type\n• HAS_RANGE: Type owns its reference range\n• HAS_INTERVAL: Range owns ALL intervals (original + synthetic)\n• MATCHES_INTERVAL: Value links to ONE matched interval\n\nInterval Categories & Colors:\n\n• green: Normal, Optimal, Ideal (in-range)\n• yellow: Borderline, Elevated\n• red: High, Low, Abnormal (out-of-range)\n• white/null: No reference range available\n\nSynthetic Intervals:\n\n• is_synthetic=true: Auto-generated for complete coverage\n• Covers values outside original document ranges\n• Ensures every value matches exactly one interval", shape=note, fillcolor=white, fontsize=10];
+    }
+}
