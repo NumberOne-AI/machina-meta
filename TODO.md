@@ -92,25 +92,19 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
-- [PROPOSED] **Merge dem2 branch with origin/dev** - Sync local branch with upstream development branch including conflict resolution
-  - Impact: HIGH | Added: 2026-01-12
-  - **Goal**: Merge latest changes from origin/dev into local dem2 branch to stay synchronized with team development
-  - **Current Status**: Local branch diverged from origin/dev
+- [STARTED] **Rebase feature/docproc-extraction-pipeline onto origin/dev** - Rebase branch onto upstream with squash-by-feature-area strategy
+  - Impact: HIGH | Added: 2026-01-13
+  - **Plan**: [docs/plans/REBASE_DOCPROC_TO_DEV.md](docs/plans/REBASE_DOCPROC_TO_DEV.md)
+  - **Goal**: Rebase both repos/dem2 (244 commits) and repos/dem2-webui (13 commits) from feature/docproc-extraction-pipeline onto origin/dev, creating new branch dbeal-docproc-dev. Heavy conflicts expected due to custom parser deletions vs upstream additions. Using squash-by-feature-area strategy to reduce conflict resolution complexity.
   - **Key Steps**:
-    - [ ] Check current branch status and divergence from origin/dev
-    - [ ] Fetch latest origin/dev changes
-    - [ ] Identify conflicts before merging
-    - [ ] Perform merge: `git merge origin/dev`
-    - [ ] Resolve any merge conflicts
-    - [ ] Test that everything still works after merge (run tests, check services)
-    - [ ] Commit merge resolution
-    - [ ] Verify branch is clean and up-to-date with origin/dev
-  - **Considerations**:
-    - May have conflicts in services/medical-data-storage, services/docproc, or graph schema files
-    - Database migration conflicts possible (PostgreSQL, Neo4j)
-    - Test thoroughly after merge before pushing
-    - Document any breaking changes from upstream
-  - **Location**: `repos/dem2` directory
+    - [ ] Phase 1: Pre-rebase preparation (backup tags, conflict log template)
+    - [ ] Phase 1.5: Squash dem2 commits by feature area (~244 → ~10-15 commits)
+    - [ ] Phase 2: Cherry-pick squashed commits onto dbeal-docproc-dev (dem2)
+    - [ ] Phase 2: Resolve dem2 conflicts (prefer ours for deleted custom parsers)
+    - [ ] Phase 3: Rebase dem2-webui onto dbeal-docproc-dev
+    - [ ] Phase 3: Resolve dem2-webui conflicts
+    - [ ] Phase 4: Run tests and verification
+    - [ ] Phase 5: Finalize conflict resolution log
 
 - [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
   - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
