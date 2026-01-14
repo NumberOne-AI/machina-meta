@@ -92,19 +92,28 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [ ] Write comprehensive tests for edge cases
     - [ ] Document usage in CLAUDE.md and README.md
 
-- [STARTED] **Rebase feature/docproc-extraction-pipeline onto origin/dev** - Rebase branch onto upstream with squash-by-feature-area strategy
-  - Impact: HIGH | Added: 2026-01-13
+- [REVIEW] **Rebase feature/docproc-extraction-pipeline onto origin/dev** - Rebase branch onto upstream with squash-by-feature-area strategy
+  - Impact: HIGH | Added: 2026-01-13 | Completed: 2026-01-14
+  - **Status**: ✅ REBASE COMPLETE - All phases done, awaiting user approval
   - **Plan**: [docs/plans/REBASE_DOCPROC_TO_DEV.md](docs/plans/REBASE_DOCPROC_TO_DEV.md)
+  - **Conflict Log**: [CONFLICT_RESOLUTION_LOG_docproc-extraction-pipeline_origin-dev_20260114.md](CONFLICT_RESOLUTION_LOG_docproc-extraction-pipeline_origin-dev_20260114.md)
   - **Goal**: Rebase both repos/dem2 (244 commits) and repos/dem2-webui (13 commits) from feature/docproc-extraction-pipeline onto origin/dev, creating new branch dbeal-docproc-dev. Heavy conflicts expected due to custom parser deletions vs upstream additions. Using squash-by-feature-area strategy to reduce conflict resolution complexity.
+  - **Results Summary**:
+    - ✅ 264 commits rebased successfully (250 dem2 + 14 dem2-webui)
+    - ✅ 14 conflicts resolved (12 dem2 + 2 dem2-webui)
+    - ✅ 22 type errors fixed post-rebase
+    - ✅ Both repos on dbeal-docproc-dev branch
+    - ✅ dem2-webui: All checks passing (pnpm check)
+    - ✅ dem2: Type checks passing (mypy), only pre-existing lint/test issues
   - **Key Steps**:
-    - [ ] Phase 1: Pre-rebase preparation (backup tags, conflict log template)
-    - [ ] Phase 1.5: Squash dem2 commits by feature area (~244 → ~10-15 commits)
-    - [ ] Phase 2: Cherry-pick squashed commits onto dbeal-docproc-dev (dem2)
-    - [ ] Phase 2: Resolve dem2 conflicts (prefer ours for deleted custom parsers)
-    - [ ] Phase 3: Rebase dem2-webui onto dbeal-docproc-dev
-    - [ ] Phase 3: Resolve dem2-webui conflicts
-    - [ ] Phase 4: Run tests and verification
-    - [ ] Phase 5: Finalize conflict resolution log
+    - [x] Phase 1: Pre-rebase preparation (backup tags, conflict log template) - Completed 2026-01-14
+    - [CANCELLED] Phase 1.5: Squash dem2 commits by feature area (~244 → ~10-15 commits) - Strategy changed: used direct rebase --onto instead of squash-then-cherry-pick (2026-01-14)
+    - [x] Phase 2: Rebase dem2 onto dbeal-docproc-dev using --onto strategy - Completed 2026-01-14
+    - [x] Phase 2: Resolve dem2 conflicts (12 conflicts, prefer David's for deleted custom parsers) - Completed 2026-01-14
+    - [x] Phase 3: Rebase dem2-webui onto dbeal-docproc-dev - Completed 2026-01-14
+    - [x] Phase 3: Resolve dem2-webui conflicts (2 conflicts, prefer QA team's test data) - Completed 2026-01-14
+    - [x] Phase 4: Run tests and verification (22 type errors fixed, all checks run) - Completed 2026-01-14
+    - [x] Phase 5: Finalize conflict resolution log - Completed 2026-01-14
 
 - [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
   - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
