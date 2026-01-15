@@ -52,7 +52,64 @@ Each problem includes:
 
 ## Workspace - Infrastructure
 
-<!-- Add infrastructure problems affecting the entire workspace (CI/CD, deployments, etc.) -->
+- [OPEN] **502 Bad Gateway on preview-92 bulk file upload** - QA intermittently sees 502 errors on file uploads
+  - Severity: MEDIUM | Added: 2026-01-15
+  - Related TODOs: None yet
+  - **Environment**: preview-92.n1-machina.dev
+  - **Endpoint**: `POST /api/v1/file-storage/files/upload/bulk`
+  - **Symptoms**:
+    - QA reports 502 Bad Gateway when uploading multiple files via browser
+    - Upload uses `XMLHttpRequest` with `multipart/form-data`
+    - Chrome 143 on Windows, 12 PDF files (~20MB total)
+  - **Attempted Fix: Traefik Buffering Middleware** (REVERTED):
+    - **Commit**: `487ff43` (dem2-infra PR #93) - Added `upload-buffering-middleware.yaml`
+    - **Revert**: `37b2d43` (dem2-infra PR #94) - Reverted due to i/o timeout errors
+    - **Config tried**:
+      ```yaml
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: upload-buffering
+        namespace: gateway
+      spec:
+        buffering:
+          maxRequestBodyBytes: 524288000  # 500MB
+          maxResponseBodyBytes: 104857600  # 100MB
+          retryExpression: "IsNetworkError() && Attempts() < 2"
+      ```
+    - **Result: Made things WORSE** - Traefik logged errors:
+      ```
+      ERR vulcand/oxy/buffer: error when reading request body, err: i/o timeout
+        middlewareName=gateway-upload-buffering@kubernetescrd
+        routerName=tusdi-dev-tusdi-ingress-dev-n1-machina-dev-api@kubernetes
+      ```
+    - **Root cause of failure**: Buffering middleware reads entire request body into memory before forwarding; this triggers Traefik's default read timeout for large uploads
+  - **Investigation Findings** (2026-01-15):
+    - **Pod Status**: tusdi-api running 27h, 1 restart (27h ago) - stable
+    - **Traefik Logs**: No recent "no endpoints found" errors; old errors from Jan 14
+    - **Endpoints**: Kubernetes endpoints healthy, traffic routing correctly
+    - **Curl Testing**: Could NOT reproduce with QA's exact headers
+      - 9 files (15.3 MB): HTTP 200 in 2.67s
+      - 11 files (19.3 MB): HTTP 200 in 3.5s
+      - HTTP/2 tested: HTTP 200
+    - **401 Test**: Expired token correctly returns 401 (reaches backend, not 502)
+  - **Architecture Context**:
+    - Traffic flow: Browser → GKE L4 Load Balancer → Traefik Ingress → tusdi-api
+    - Frontend uses `XMLHttpRequest` in `dem2-webui/src/lib/upload-file.ts`
+    - Traefik v3.5.3 with default timeout configuration
+  - **Potential Causes Still Under Investigation**:
+    1. **Transient network issue**: Load balancer or Traefik momentary hiccup
+    2. **QA-specific environment**: Browser extensions, corporate proxy, VPN
+    3. **Timing-sensitive race condition**: Specific file sizes or upload timing
+    4. **HTTP/2 multiplexing edge case**: Browser HTTP/2 vs curl HTTP/1.1 behavior
+    5. **Traefik static timeout config**: May need to modify Traefik deployment ConfigMap
+  - **Status**: Cannot reproduce via curl; buffering middleware approach failed and was reverted; marked OPEN pending more QA reports with timestamps
+  - **Next Steps**:
+    - [ ] Request exact timestamp from QA when 502 occurs
+    - [ ] Cross-reference with Traefik logs at that timestamp
+    - [ ] Check GKE load balancer logs for connection resets
+    - [ ] Test with browser automation (Playwright) to match exact browser behavior
+    - [ ] Investigate Traefik static timeout configuration (ConfigMap changes)
 
 ---
 
