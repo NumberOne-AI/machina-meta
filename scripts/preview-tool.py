@@ -149,6 +149,21 @@ class PRInfo:
     closed_at: Optional[str] = None
 
 
+@dataclass
+class WorkflowRunInfo:
+    """Information about a GitHub Actions workflow run."""
+    id: int
+    name: str
+    status: str  # completed, in_progress, queued
+    conclusion: Optional[str]  # success, failure, cancelled, skipped, etc.
+    head_branch: str
+    head_sha: str
+    display_title: str
+    url: str
+    created_at: str
+    updated_at: str
+
+
 # ============================================================
 # Command Utilities
 # ============================================================
@@ -359,6 +374,44 @@ def close_pr(repo: str, pr_number: int, comment: str) -> bool:
     ])
 
     return result.returncode == 0
+
+
+def get_workflow_runs(repo: str, ref: str, limit: int = 5) -> List[WorkflowRunInfo]:
+    """Get recent GitHub Actions workflow runs for a specific ref (branch or tag)."""
+    if not check_command_available("gh"):
+        return []
+
+    # Get workflow runs for this ref
+    result = run_command([
+        "gh", "run", "list",
+        "--repo", f"{GITHUB_ORG}/{repo}",
+        "--branch", ref,
+        "--limit", str(limit),
+        "--json", "databaseId,name,status,conclusion,headBranch,headSha,displayTitle,url,createdAt,updatedAt"
+    ])
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+
+    try:
+        runs_data = json.loads(result.stdout)
+        runs = []
+        for run in runs_data:
+            runs.append(WorkflowRunInfo(
+                id=run["databaseId"],
+                name=run["name"],
+                status=run["status"],
+                conclusion=run.get("conclusion"),
+                head_branch=run["headBranch"],
+                head_sha=run["headSha"][:8] if run.get("headSha") else "",
+                display_title=run["displayTitle"],
+                url=run["url"],
+                created_at=run["createdAt"],
+                updated_at=run["updatedAt"]
+            ))
+        return runs
+    except (json.JSONDecodeError, KeyError):
+        return []
 
 
 # ============================================================
@@ -732,6 +785,9 @@ class PreviewEnvironment:
         # Collect ArgoCD deployment info
         data["argocd"] = self._collect_argocd_info()
 
+        # Collect GitHub Actions workflow status
+        data["workflows"] = self._collect_workflow_info()
+
         # Collect summary
         dem2_tag = check_git_tag(DEM2_REPO, f"preview-{self.preview_id}")
         webui_tag = check_git_tag(WEBUI_REPO, f"preview-{self.preview_id}")
@@ -848,6 +904,71 @@ class PreviewEnvironment:
 
         return info
 
+    def _collect_workflow_info(self) -> dict:
+        """Collect GitHub Actions workflow run information for preview tag."""
+        info = {
+            "available": check_command_available("gh"),
+            "dem2": None,
+            "dem2-webui": None,
+            "dem2-infra": None
+        }
+
+        if not info["available"]:
+            return info
+
+        tag = f"preview-{self.preview_id}"
+
+        # Get latest workflow run for dem2 (uses preview tag)
+        dem2_runs = get_workflow_runs("dem2", tag, limit=1)
+        if dem2_runs:
+            run = dem2_runs[0]
+            info["dem2"] = {
+                "id": run.id,
+                "name": run.name,
+                "status": run.status,
+                "conclusion": run.conclusion,
+                "head_sha": run.head_sha,
+                "display_title": run.display_title,
+                "url": run.url,
+                "created_at": run.created_at,
+                "updated_at": run.updated_at
+            }
+
+        # Get latest workflow run for dem2-webui (uses preview tag)
+        webui_runs = get_workflow_runs("dem2-webui", tag, limit=1)
+        if webui_runs:
+            run = webui_runs[0]
+            info["dem2-webui"] = {
+                "id": run.id,
+                "name": run.name,
+                "status": run.status,
+                "conclusion": run.conclusion,
+                "head_sha": run.head_sha,
+                "display_title": run.display_title,
+                "url": run.url,
+                "created_at": run.created_at,
+                "updated_at": run.updated_at
+            }
+
+        # Get latest workflow run for dem2-infra (uses preview branch)
+        branch = f"preview/{self.preview_id}"
+        infra_runs = get_workflow_runs("dem2-infra", branch, limit=1)
+        if infra_runs:
+            run = infra_runs[0]
+            info["dem2-infra"] = {
+                "id": run.id,
+                "name": run.name,
+                "status": run.status,
+                "conclusion": run.conclusion,
+                "head_sha": run.head_sha,
+                "display_title": run.display_title,
+                "url": run.url,
+                "created_at": run.created_at,
+                "updated_at": run.updated_at
+            }
+
+        return info
+
     def show_info(self, output_format: str = "terminal") -> None:
         """Display detailed information about the preview environment.
 
@@ -945,6 +1066,20 @@ class PreviewEnvironment:
         else:
             print(f"| **ArgoCD** | Status | ⚪ ArgoCD CLI not available |")
 
+        # GitHub Actions Workflows
+        workflows = data.get("workflows", {})
+        if workflows.get("available", False):
+            for repo in ["dem2", "dem2-webui", "dem2-infra"]:
+                run = workflows.get(repo)
+                if run:
+                    status_emoji = self._get_workflow_status_emoji(run['status'], run['conclusion'], with_color=False)
+                    status_text = run['conclusion'] or run['status']
+                    print(f"| **Workflows** | {repo} | {status_emoji} {status_text} - {run['display_title'][:35]} |")
+                else:
+                    print(f"| **Workflows** | {repo} | ⚪ No recent workflow runs |")
+        else:
+            print(f"| **Workflows** | Status | ⚪ gh CLI not available |")
+
         # Summary
         summary = data["summary"]
         if not summary["is_clean"]:
@@ -982,6 +1117,9 @@ class PreviewEnvironment:
 
         # Show ArgoCD deployment
         self._show_argocd_info_terminal(data['argocd'])
+
+        # Show GitHub Actions workflows
+        self._show_workflow_info_terminal(data.get('workflows', {}))
 
         # Show summary
         self._show_summary_terminal(data['summary'], data['preview_id'])
@@ -1064,6 +1202,57 @@ class PreviewEnvironment:
             print_kv("Status", f"{Symbol.CIRCLE} Cannot retrieve (app may not exist)")
         else:
             print_kv("Status", f"{Symbol.CIRCLE} ArgoCD CLI not available")
+
+    def _get_workflow_status_emoji(self, status: str, conclusion: Optional[str], with_color: bool = True) -> str:
+        """Get emoji for workflow run status.
+
+        Args:
+            status: Workflow run status (completed, in_progress, queued)
+            conclusion: Workflow conclusion (success, failure, cancelled, etc.)
+            with_color: Whether to include ANSI color codes (False for markdown)
+        """
+        if status == "completed":
+            if conclusion == "success":
+                emoji = Symbol.CHECK
+                return f"{Color.GREEN}{emoji}{Color.NC}" if with_color else emoji
+            elif conclusion == "failure":
+                emoji = Symbol.CROSS
+                return f"{Color.RED}{emoji}{Color.NC}" if with_color else emoji
+            elif conclusion == "cancelled":
+                emoji = "⊘"
+                return f"{Color.GRAY}{emoji}{Color.NC}" if with_color else emoji
+            else:
+                emoji = Symbol.WARN
+                return f"{Color.YELLOW}{emoji}{Color.NC}" if with_color else emoji
+        elif status == "in_progress":
+            emoji = "🔄"
+            return f"{Color.YELLOW}{emoji}{Color.NC}" if with_color else emoji
+        elif status == "queued":
+            emoji = "⏳"
+            return f"{Color.GRAY}{emoji}{Color.NC}" if with_color else emoji
+        else:
+            emoji = Symbol.CIRCLE
+            return f"{Color.GRAY}{emoji}{Color.NC}" if with_color else emoji
+
+    def _show_workflow_info_terminal(self, workflows: dict) -> None:
+        """Show GitHub Actions workflow information in terminal format."""
+        print_header("GitHub Actions Workflows")
+
+        if not workflows.get("available", False):
+            print_kv("Status", f"{Symbol.CIRCLE} gh CLI not available")
+            return
+
+        for repo in ["dem2", "dem2-webui", "dem2-infra"]:
+            run = workflows.get(repo)
+            if run:
+                status_emoji = self._get_workflow_status_emoji(run['status'], run['conclusion'])
+                status_text = run['conclusion'] or run['status']
+                title = run['display_title']
+                if len(title) > 35:
+                    title = title[:32] + "..."
+                print_kv(repo, f"{status_emoji} {status_text} - {title}")
+            else:
+                print_kv(repo, f"{Symbol.CIRCLE} No recent workflow runs")
 
     def _show_summary_terminal(self, summary: dict, preview_id: str) -> None:
         """Show summary of preview environment in terminal format."""
