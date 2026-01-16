@@ -111,6 +111,51 @@ Each problem includes:
     - [ ] Test with browser automation (Playwright) to match exact browser behavior
     - [ ] Investigate Traefik static timeout configuration (ConfigMap changes)
 
+- [OPEN] **Document processing task silently dropped during bulk upload** - 1 of 12 files failed to process with no error logged
+  - Severity: HIGH | Added: 2026-01-16
+  - Related TODOs: None yet
+  - **Environment**: preview-92 (tusdi-preview-92 namespace)
+  - **Affected File**: `Boston Heart - May 2024.pdf` (file_id: `42b5036a-29bd-43e7-abf9-21e44b1ef712`)
+  - **Symptoms**:
+    - 12 files uploaded via bulk upload at 09:50:36 UTC
+    - 11 files processed successfully and saved to Neo4j with `processing_status: completed`
+    - 1 file (Boston Heart - May 2024) has no corresponding `DocumentReferenceNode` in Neo4j
+    - **No logs containing the file ID** - task was never started or silently failed to enqueue
+    - File exists in PostgreSQL `filerecord` table but `document_reference_id` is NULL
+  - **Investigation Findings** (2026-01-16):
+    - **Database Connection Contention**: Multiple `session_held_too_long` warnings during bulk upload
+      - Sessions held for 22s to 200+ seconds
+      - Stack trace shows contention in `task_processor.py` → `docproc/service.py` → `file_storage/repository.py`
+    - **Auth Errors**: "Unexpected error during token validation" and "Future exception was never retrieved" around 09:54:40
+    - **Task Queue**: In-memory task queue - no persistence across pod restarts
+    - **Pod Restart**: Pod was replaced at 20:17 (10+ hours after upload) - NOT the cause
+    - **Successful Files**: All other Boston Heart files (July 2021, June 2025, Sep 2024) processed correctly
+  - **Root Cause Analysis**:
+    - When 12 files uploaded simultaneously, the task queue tried to process all concurrently
+    - Database connection pool was exhausted, causing some operations to timeout or fail silently
+    - This specific file's task either:
+      1. Failed to enqueue due to connection timeout
+      2. Was enqueued but the enqueue confirmation was lost
+      3. Started processing but failed before any log entry was written
+    - No error handling or retry mechanism caught this silent failure
+  - **Code Locations**:
+    - Task processor: `repos/dem2/shared/src/machina/shared/tasks/task_processor.py:67`
+    - Document processing: `repos/dem2/services/docproc/src/machina/docproc/service.py:465`
+    - File storage: `repos/dem2/services/file-storage/src/machina/file_storage/repository.py:33`
+  - **Potential Fixes**:
+    1. **Rate limiting**: Limit concurrent document processing tasks to prevent pool exhaustion
+    2. **Persistent task queue**: Use Redis or PostgreSQL for task state instead of in-memory
+    3. **Better error handling**: Log file ID at task enqueue time, not just at processing start
+    4. **Health check**: Periodic reconciliation between `filerecord` and Neo4j to detect orphaned files
+    5. **Retry mechanism**: Automatic retry for tasks that fail to start
+  - **Workaround**: Manually re-trigger processing for the affected file via UI or API
+  - **Next Steps**:
+    - [ ] Re-process Boston Heart - May 2024.pdf manually
+    - [ ] Investigate adding rate limiting to bulk upload processing
+    - [ ] Consider persistent task queue (Redis-backed)
+    - [ ] Add logging at task enqueue time with file ID
+    - [ ] Create reconciliation script to detect orphaned files
+
 ---
 
 ## Workspace - Documentation & Tooling
