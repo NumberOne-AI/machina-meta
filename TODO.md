@@ -71,7 +71,17 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - TriageAgent (request routing)
     - UrlHandlerAgent (external content processing)
   - Files modified: 14 agent config.yml files in `repos/dem2/services/medical-agent/`
-  - Verification: Deploy to preview environment and test agent responses
+  - **Thinking Leakage Fix** (2026-01-16):
+    - Issue: Gemini 3.0 has thinking enabled by default, causing internal reasoning to leak into responses
+    - Solution: Extract `thinking_config` from YAML configs, pass via `planner` parameter with `include_thoughts: false`
+    - Files modified: `configurator.py`, `factory.py`, 4 agent builder files
+    - Commits: 8c1c65e9 (add thinking_config to YAMLs), 1c323056 (fix planner passing)
+  - **Testing Results** (2026-01-16):
+    - ✅ Local: Simple query "what do I have?" - No thinking leakage
+    - ✅ Local: Blood pressure query - Comprehensive biomarker analysis (Arginine, Taurine, Lead, Arsenic)
+    - ✅ Local: Complex cholesterol analysis - Full lipid profile with LDL/HDL trends, lifestyle recommendations
+    - ✅ Local: `thoughtsTokenCount` confirms thinking used internally but not exposed
+    - ✅ Preview-92: Deployed and manual smoke test completed successfully
 
 - [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules
   - Impact: HIGH | Added: 2026-01-07
