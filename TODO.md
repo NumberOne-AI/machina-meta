@@ -58,6 +58,21 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Multi-Repo Features
 
+- [REVIEW] **Upgrade all ADK agents to Gemini 3.0 preview models** - Improve medical reasoning quality
+  - Impact: HIGH | Added: 2026-01-16 | Completed: 2026-01-16
+  - **Plan**: [docs/plans/gemini-3-model-upgrade.md](docs/plans/gemini-3-model-upgrade.md)
+  - **Changes**: [docs/MODEL_CHANGES.md](docs/MODEL_CHANGES.md)
+  - Upgraded 14 agents from Gemini 2.5 to Gemini 3.0 preview:
+    - 8 agents: `gemini-2.5-pro` → `gemini-3-pro-preview`
+    - 6 agents: `gemini-2.5-flash` → `gemini-3-flash-preview`
+  - Key agents upgraded:
+    - HealthConsultantAgent (primary medical reasoning)
+    - DataExtractorAgent (medical entity extraction)
+    - TriageAgent (request routing)
+    - UrlHandlerAgent (external content processing)
+  - Files modified: 14 agent config.yml files in `repos/dem2/services/medical-agent/`
+  - Verification: Deploy to preview environment and test agent responses
+
 - [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules
   - Impact: HIGH | Added: 2026-01-07
   - Create `just repo-rebase` command for rebasing feature branches onto merge-base (e.g., origin/dev)
