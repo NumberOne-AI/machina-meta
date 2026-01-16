@@ -58,6 +58,25 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Multi-Repo Features
 
+- [PROPOSED] **Merge dbeal-docproc-dev to dev** - Merge document processing improvements to main development branch
+  - Impact: HIGH | Added: 2026-01-16
+  - **Repositories**: repos/dem2, repos/dem2-webui
+  - **Source branch**: dbeal-docproc-dev
+  - **Target branch**: dev
+  - **Context**: dbeal-docproc-dev contains:
+    - Document processing multiprocessing fix (DocumentProcessManager)
+    - Gemini 3.0 model upgrades for all ADK agents
+    - Thinking leakage fix for Gemini 3.0
+    - Reference range interval matching feature
+    - Various bug fixes and improvements
+  - **Steps**:
+    - [ ] Review commits on dbeal-docproc-dev since diverging from dev
+    - [ ] Create PR for repos/dem2: dbeal-docproc-dev → dev
+    - [ ] Create PR for repos/dem2-webui: dbeal-docproc-dev → dev
+    - [ ] Run CI checks on both PRs
+    - [ ] Get approval and merge
+    - [ ] Verify staging deployment
+
 - [REVIEW] **Upgrade all ADK agents to Gemini 3.0 preview models** - Improve medical reasoning quality
   - Impact: HIGH | Added: 2026-01-16 | Completed: 2026-01-16
   - **Plan**: [docs/plans/gemini-3-model-upgrade.md](docs/plans/gemini-3-model-upgrade.md)
@@ -597,6 +616,28 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - 837242d - "fix: remove quotes from Mermaid node labels"
     - 9c715e1 - "docs: add comprehensive document processing flow to DATAFLOW.md"
     - deb2f4b - "docs: add Graphviz diagram for document processing pipeline"
+
+- [DONE] **Create Claude Healthcare Strategic Assessment** - Competitive analysis and positioning strategy for Tusdi AI
+  - Impact: HIGH | Added: 2026-01-13 | Completed: 2026-01-14
+  - **Plan**: [docs/plans/CLAUDE_HEALTHCARE_ASSESSMENT.md](docs/plans/CLAUDE_HEALTHCARE_ASSESSMENT.md)
+  - **Objective**: Analyze Claude for Healthcare launch (January 11, 2026) and define Tusdi AI's competitive positioning
+  - **Research completed**:
+    - Competitive landscape analysis (HealthEx, Function Health, Apple/Android Health)
+    - BAA eligibility and HIPAA compliance pathways
+    - Document processing differentiation vs. Claude offerings
+  - **Strategic positioning**: "Net Health" - Quicken for health data
+    - Universal data access (any document, any lab, any source)
+    - No new tests required (vs. Function Health)
+    - No account linking friction (vs. HealthEx)
+    - Longitudinal profile with persistent memory (vs. chat-only interfaces)
+  - **Key differentiators**:
+    - PDF processing moat: Multi-agent extraction + medical catalog + graph storage
+    - Universal data unification: Works with existing user data
+    - Deep memory: DEM (Deus Ex-Machina) multi-agent system
+  - **Deliverables**:
+    - [docs/Claude_HealthCare_Assessment_20260113_Brief.md](docs/Claude_HealthCare_Assessment_20260113_Brief.md) - Executive summary
+    - [docs/Claude_HealthCare_Assessment_20260113_Full.md](docs/Claude_HealthCare_Assessment_20260113_Full.md) - Detailed analysis with roadmap
+  - **Commit**: aefe30c - "docs: add Claude Healthcare competitive assessment reports"
 
 ---
 
