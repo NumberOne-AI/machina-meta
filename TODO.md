@@ -166,8 +166,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - repos/dem2: fd1438d8 "refactor(dev): improve environment variable handling and remove orphaned tests"
     - machina-meta: 9f4953f5 "docs: add environment variables reference documentation"
 
-- [STARTED] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
-  - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08
+- [DONE] **Implement reference range interpretation for observation values** - Compute and display in-range/out-of-range status with color indicators
+  - Impact: HIGH | Added: 2026-01-08 | Started: 2026-01-08 | Completed: 2026-01-19
   - **Problem Statement**:
     - Reference ranges are extracted and displayed, but the UI doesn't visually indicate whether a specific observation value falls within the reference range
     - Users must manually compare the value against the displayed ranges (e.g., "Is 95 within 70-100?")
@@ -222,6 +222,12 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - Enable interval status display in metric card footer (latest and previous values)
       - Pass showIntervalStatus={true} to ChipValue components
       - Works alongside existing `ReferenceRangeDisplay` component
+    - [x] Phase 4.5: Integrate into table view and enhance badge (2026-01-19)
+      - Enable interval status badges in fhir-storage-table-view.tsx (latest and previous values)
+      - Update IntervalStatusBadge to use solid colors matching value chip (#16a34a green, etc.)
+      - Add tooltip to badge showing category (e.g., "Status: Normal")
+      - Display status in NameCell reference range line (e.g., "Range: 3.5-5.3 · Status: Normal")
+      - Pass latestValue to NameCell for status display
     - [ ] Phase 5: Enhance ObservationHistoryChart (optional)
       - Highlight data points with color based on matched interval
       - Show reference range zones as colored bands behind chart
@@ -329,8 +335,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - ✅ System gracefully handles null reference ranges and null values
     - ✅ No performance degradation from interval matching computation
 
-- [REVIEW] **Fix reference range extraction to populate numeric bounds** - Unblock interval matching feature
-  - Impact: HIGH | Added: 2026-01-12 | Started: 2026-01-12 | Completed: 2026-01-12
+- [DONE] **Fix reference range extraction to populate numeric bounds** - Unblock interval matching feature
+  - Impact: HIGH | Added: 2026-01-12 | Started: 2026-01-12 | Completed: 2026-01-19
   - **Problem**: Reference ranges extracted as text only (e.g., "3.5-5.3"), numeric bounds remain null
   - **Root Cause**: `observation_converter.py` was hardcoding `low=None, high=None` instead of parsing range text
   - **Solution**: Refactored to use existing `parse_range_text()` function, deleted duplicate code, updated return types
