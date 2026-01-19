@@ -76,8 +76,8 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [x] Push to origin/dev (branch protection bypassed with admin permissions)
     - [x] Verify dev deployment (ArgoCD synced, pods running, CI/CD passed)
 
-- [REVIEW] **Upgrade all ADK agents to Gemini 3.0 preview models** - Improve medical reasoning quality
-  - Impact: HIGH | Added: 2026-01-16 | Completed: 2026-01-16
+- [DONE] **Upgrade all ADK agents to Gemini 3.0 preview models** - Improve medical reasoning quality
+  - Impact: HIGH | Added: 2026-01-16 | Completed: 2026-01-19
   - **Plan**: [docs/plans/gemini-3-model-upgrade.md](docs/plans/gemini-3-model-upgrade.md)
   - **Changes**: [docs/MODEL_CHANGES.md](docs/MODEL_CHANGES.md)
   - Upgraded 14 agents from Gemini 2.5 to Gemini 3.0 preview:
