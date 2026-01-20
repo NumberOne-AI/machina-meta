@@ -17,6 +17,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,48 @@ from typing import Any
 import requests
 import yaml
 from tabulate import tabulate
+
+
+def load_env_variable(var_name: str, env_file: str = ".env") -> str | None:
+    """Load environment variable from env file or environment.
+
+    Priority:
+    1. Environment variable (if set)
+    2. .env file in current directory
+    3. .env file in workspace root
+
+    Args:
+        var_name: Environment variable name
+        env_file: Name of .env file (default: .env)
+
+    Returns:
+        Variable value or None if not found
+    """
+    # Check environment variable first (highest priority)
+    value = os.getenv(var_name)
+    if value:
+        return value
+
+    # Try .env in current working directory and workspace root
+    env_paths = [
+        Path.cwd() / env_file,
+        Path(__file__).parent.parent / env_file,  # Workspace root
+    ]
+
+    for env_path in env_paths:
+        if env_path.exists():
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        line = line.strip()
+                        # Match: VAR_NAME=value
+                        match = re.match(rf"^{re.escape(var_name)}=(.*)$", line)
+                        if match:
+                            return match.group(1).strip().strip('"').strip("'")
+            except OSError:
+                continue
+
+    return None
 
 
 def find_workspace_root() -> Path:
@@ -45,7 +88,18 @@ def parse_neo4j_auth(auth_string: str) -> tuple[str, str]:
 
 
 def load_neo4j_config() -> dict[str, Any]:
-    """Load Neo4j connection details from docker-compose.yaml."""
+    """Load Neo4j connection details from .env or docker-compose.yaml.
+
+    Priority for each setting:
+    1. Environment variable / .env file (DYNACONF_NEO4J_DB__*)
+    2. docker-compose.yaml
+    3. Default values
+
+    Supported .env variables:
+    - DYNACONF_NEO4J_DB__HTTP_PORT: HTTP API port (default: 7474)
+    - DYNACONF_NEO4J_DB__USER: Username (default: neo4j)
+    - DYNACONF_NEO4J_DB__PASSWORD: Password (default: from docker-compose or 'neo4j')
+    """
     workspace_root = find_workspace_root()
     compose_file = workspace_root / "docker-compose.yaml"
 
@@ -55,7 +109,7 @@ def load_neo4j_config() -> dict[str, Any]:
     neo4j_service = compose_data.get("services", {}).get("neo4j", {})
     environment = neo4j_service.get("environment", [])
 
-    # Parse environment variables
+    # Parse environment variables from docker-compose
     env_dict = {}
     for item in environment:
         if isinstance(item, str) and "=" in item:
@@ -64,19 +118,35 @@ def load_neo4j_config() -> dict[str, Any]:
         elif isinstance(item, dict):
             env_dict.update(item)
 
-    # Extract auth credentials
-    neo4j_auth = env_dict.get("NEO4J_AUTH", "neo4j/neo4j")
-    username, password = parse_neo4j_auth(neo4j_auth)
+    # Extract auth credentials - allow override via .env
+    user_override = load_env_variable("DYNACONF_NEO4J_DB__USER")
+    password_override = load_env_variable("DYNACONF_NEO4J_DB__PASSWORD")
 
-    # Extract ports
-    ports = neo4j_service.get("ports", [])
-    http_port = 7474  # default
-    for port_mapping in ports:
-        if isinstance(port_mapping, str):
-            if "7474" in port_mapping:
-                host_port = port_mapping.split(":")[0]
-                http_port = int(host_port)
-                break
+    if user_override and password_override:
+        username = user_override
+        password = password_override
+    else:
+        neo4j_auth = env_dict.get("NEO4J_AUTH", "neo4j/neo4j")
+        username, password = parse_neo4j_auth(neo4j_auth)
+        # Allow partial override
+        if user_override:
+            username = user_override
+        if password_override:
+            password = password_override
+
+    # Extract HTTP port - allow override via DYNACONF_NEO4J_DB__HTTP_PORT
+    port_override = load_env_variable("DYNACONF_NEO4J_DB__HTTP_PORT")
+    if port_override:
+        http_port = int(port_override)
+    else:
+        ports = neo4j_service.get("ports", [])
+        http_port = 7474  # default
+        for port_mapping in ports:
+            if isinstance(port_mapping, str):
+                if "7474" in port_mapping:
+                    host_port = port_mapping.split(":")[0]
+                    http_port = int(host_port)
+                    break
 
     return {
         "host": "localhost",
