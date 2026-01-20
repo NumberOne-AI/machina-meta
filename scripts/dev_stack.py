@@ -15,9 +15,20 @@ import subprocess
 import sys
 import time
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 
 from tabulate import tabulate
+
+
+@dataclass
+class CheckResult:
+    """Result of a single sanity check."""
+
+    name: str
+    passed: bool
+    message: str
+    details: str = ""
 
 
 def run_command(
@@ -296,6 +307,444 @@ def wait_for_health_checks(workspace_root: Path, max_wait: int = 60) -> bool:
         time.sleep(3)
 
     return False
+
+
+# =============================================================================
+# Sanity Check Functions
+# =============================================================================
+
+
+def check_service_status_test(workspace_root: Path) -> CheckResult:
+    """Check 1: Service status via dev_stack.py status logic.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with service status summary
+    """
+    services = get_service_status(workspace_root)
+    running = sum(1 for s in services if s["running"])
+    total = len(services)
+    optional_count = sum(1 for s in services if s.get("optional", False))
+    required_running = sum(
+        1 for s in services if s["running"] and not s.get("optional", False)
+    )
+    required_total = total - optional_count
+
+    all_required_running = required_running == required_total
+    passed = all_required_running
+
+    # Build details showing each service
+    details_lines = []
+    for svc in services:
+        status_icon = "✅" if svc["running"] else "❌"
+        optional_tag = " (optional)" if svc.get("optional", False) else ""
+        details_lines.append(f"  {status_icon} {svc['service']}{optional_tag}")
+
+    return CheckResult(
+        name="Service Status",
+        passed=passed,
+        message=f"{running}/{total} services running ({required_running}/{required_total} required)",
+        details="\n".join(details_lines),
+    )
+
+
+def check_container_status(workspace_root: Path) -> CheckResult:
+    """Check 2: Container status via docker compose ps.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with container status summary
+    """
+    result = run_command(
+        ["docker", "compose", "ps", "--format", "json"],
+        check=False,
+        cwd=workspace_root,
+    )
+
+    if result.returncode != 0:
+        return CheckResult(
+            name="Container Status",
+            passed=False,
+            message="Failed to query containers",
+            details=result.stderr or "docker compose ps failed",
+        )
+
+    # Parse JSON output (one JSON object per line)
+    containers = []
+    for line in result.stdout.strip().split("\n"):
+        if line:
+            try:
+                containers.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+
+    if not containers:
+        return CheckResult(
+            name="Container Status",
+            passed=False,
+            message="No containers found",
+            details="No machina-meta containers are running",
+        )
+
+    running = sum(1 for c in containers if c.get("State") == "running")
+    total = len(containers)
+    passed = running == total
+
+    details_lines = []
+    for c in containers:
+        name = c.get("Name", "unknown")
+        state = c.get("State", "unknown")
+        status = c.get("Status", "")
+        icon = "✅" if state == "running" else "❌"
+        details_lines.append(f"  {icon} {name}: {status}")
+
+    return CheckResult(
+        name="Container Status",
+        passed=passed,
+        message=f"{running}/{total} containers running",
+        details="\n".join(details_lines),
+    )
+
+
+def check_health_checks(workspace_root: Path) -> CheckResult:
+    """Check 3: Docker health check status for all containers.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with health check summary
+    """
+    # Get container IDs for machina-meta containers
+    result = run_command(
+        ["docker", "ps", "-q", "--filter", "name=machina-meta"],
+        check=False,
+    )
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return CheckResult(
+            name="Health Checks",
+            passed=False,
+            message="No containers found",
+            details="No machina-meta containers are running",
+        )
+
+    container_ids = result.stdout.strip().split("\n")
+
+    # Inspect each container for health status
+    health_results = []
+    for cid in container_ids:
+        inspect_result = run_command(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{.Name}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}",
+                cid,
+            ],
+            check=False,
+        )
+        if inspect_result.returncode == 0:
+            output = inspect_result.stdout.strip()
+            if "|" in output:
+                name, status = output.split("|", 1)
+                name = name.lstrip("/")
+                health_results.append((name, status))
+
+    healthy = sum(1 for _, status in health_results if status in ("healthy", "no-healthcheck"))
+    total = len(health_results)
+    passed = healthy == total
+
+    details_lines = []
+    for name, status in health_results:
+        if status == "healthy":
+            icon = "✅"
+        elif status == "no-healthcheck":
+            icon = "⚪"
+        else:
+            icon = "❌"
+        details_lines.append(f"  {icon} {name}: {status}")
+
+    return CheckResult(
+        name="Health Checks",
+        passed=passed,
+        message=f"{healthy}/{total} healthy",
+        details="\n".join(details_lines),
+    )
+
+
+def check_resource_usage(workspace_root: Path) -> CheckResult:
+    """Check 4: Resource usage via docker stats.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with resource usage summary
+    """
+    result = run_command(
+        [
+            "docker",
+            "stats",
+            "--no-stream",
+            "--format",
+            "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}",
+        ],
+        check=False,
+    )
+
+    if result.returncode != 0:
+        return CheckResult(
+            name="Resource Usage",
+            passed=False,
+            message="Failed to query stats",
+            details=result.stderr or "docker stats failed",
+        )
+
+    # Parse stats output and filter for machina containers
+    stats = []
+    for line in result.stdout.strip().split("\n"):
+        if "machina" in line.lower():
+            parts = line.split("|")
+            if len(parts) == 3:
+                stats.append(
+                    {"name": parts[0], "cpu": parts[1], "memory": parts[2]}
+                )
+
+    if not stats:
+        return CheckResult(
+            name="Resource Usage",
+            passed=True,
+            message="No machina containers found",
+            details="No containers to report",
+        )
+
+    # Calculate totals (just informational, always passes if we got stats)
+    details_lines = []
+    for s in stats:
+        details_lines.append(f"  {s['name']}: CPU {s['cpu']}, Mem {s['memory']}")
+
+    return CheckResult(
+        name="Resource Usage",
+        passed=True,
+        message=f"{len(stats)} containers monitored",
+        details="\n".join(details_lines),
+    )
+
+
+def check_volume_status(workspace_root: Path) -> CheckResult:
+    """Check 5: Docker volume status.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with volume status summary
+    """
+    result = run_command(
+        ["docker", "volume", "ls", "--format", "{{.Name}}"],
+        check=False,
+    )
+
+    if result.returncode != 0:
+        return CheckResult(
+            name="Volume Status",
+            passed=False,
+            message="Failed to query volumes",
+            details=result.stderr or "docker volume ls failed",
+        )
+
+    # Filter for machina volumes
+    volumes = [v for v in result.stdout.strip().split("\n") if "machina" in v.lower()]
+
+    if not volumes:
+        return CheckResult(
+            name="Volume Status",
+            passed=False,
+            message="No machina volumes found",
+            details="Expected volumes for postgres, neo4j, redis, qdrant",
+        )
+
+    # Check for expected volumes
+    expected_patterns = ["postgres", "neo4j", "redis", "qdrant"]
+    found_patterns = []
+    for pattern in expected_patterns:
+        if any(pattern in v.lower() for v in volumes):
+            found_patterns.append(pattern)
+
+    passed = len(found_patterns) >= 3  # Allow some flexibility
+
+    details_lines = [f"  • {v}" for v in volumes[:10]]  # Show first 10
+    if len(volumes) > 10:
+        details_lines.append(f"  ... and {len(volumes) - 10} more")
+
+    return CheckResult(
+        name="Volume Status",
+        passed=passed,
+        message=f"{len(volumes)} volumes found",
+        details="\n".join(details_lines),
+    )
+
+
+def check_endpoint_health(workspace_root: Path) -> CheckResult:
+    """Check 6: HTTP endpoint health checks.
+
+    Args:
+        workspace_root: Path to workspace root directory
+
+    Returns:
+        CheckResult with endpoint health summary
+    """
+    endpoints = [
+        ("Backend API", "http://localhost:8000/api/v1/health"),
+        ("Medical Catalog", "http://localhost:8001/health"),
+        ("Qdrant", "http://localhost:6333/healthz"),
+        ("Frontend", "http://localhost:3000"),
+    ]
+
+    results = []
+    for name, url in endpoints:
+        try:
+            req = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(req, timeout=3) as response:
+                healthy = 200 <= response.status < 400
+                results.append((name, healthy, f"HTTP {response.status}"))
+        except urllib.error.URLError as e:
+            results.append((name, False, str(e.reason)[:30]))
+        except Exception as e:
+            results.append((name, False, str(e)[:30]))
+
+    healthy = sum(1 for _, h, _ in results if h)
+    total = len(results)
+    passed = healthy == total
+
+    details_lines = []
+    for name, is_healthy, msg in results:
+        icon = "✅" if is_healthy else "❌"
+        details_lines.append(f"  {icon} {name}: {msg}")
+
+    return CheckResult(
+        name="Endpoint Health",
+        passed=passed,
+        message=f"{healthy}/{total} endpoints healthy",
+        details="\n".join(details_lines),
+    )
+
+
+def format_check_results_markdown(results: list[CheckResult]) -> str:
+    """Format check results as a markdown table.
+
+    Args:
+        results: List of CheckResult objects
+
+    Returns:
+        Markdown table string
+    """
+    headers = ["#", "Check", "Status", "Result"]
+    rows = []
+
+    for i, result in enumerate(results, 1):
+        status_icon = "✅ PASS" if result.passed else "❌ FAIL"
+        rows.append([i, result.name, status_icon, result.message])
+
+    table = tabulate(rows, headers=headers, tablefmt="pipe")
+
+    # Calculate summary
+    passed = sum(1 for r in results if r.passed)
+    total = len(results)
+    summary_icon = "✅" if passed == total else "❌"
+
+    output = [
+        "# Docker Sanity Check Results",
+        "",
+        table,
+        "",
+        f"**Summary:** {summary_icon} {passed}/{total} checks passed",
+    ]
+
+    return "\n".join(output)
+
+
+def format_check_results_json(results: list[CheckResult]) -> str:
+    """Format check results as JSON.
+
+    Args:
+        results: List of CheckResult objects
+
+    Returns:
+        JSON string
+    """
+    data = {
+        "checks": [
+            {
+                "name": r.name,
+                "passed": r.passed,
+                "message": r.message,
+                "details": r.details,
+            }
+            for r in results
+        ],
+        "summary": {
+            "passed": sum(1 for r in results if r.passed),
+            "total": len(results),
+            "all_passed": all(r.passed for r in results),
+        },
+    }
+    return json.dumps(data, indent=2)
+
+
+def dev_check(workspace_root: Path, output_format: str = "markdown", verbose: bool = False) -> int:
+    """Run comprehensive sanity checks on the development stack.
+
+    Performs 6 non-destructive verification tests:
+    1. Service Status - Check if services are running
+    2. Container Status - Docker compose container state
+    3. Health Checks - Docker healthcheck status
+    4. Resource Usage - CPU/memory consumption
+    5. Volume Status - Data persistence volumes
+    6. Endpoint Health - HTTP endpoint accessibility
+
+    Args:
+        workspace_root: Path to workspace root directory
+        output_format: Output format (markdown or json)
+        verbose: Show detailed output for each check
+
+    Returns:
+        Exit code (0 = all checks passed, 1 = some checks failed)
+    """
+    results: list[CheckResult] = []
+
+    # Run all checks
+    results.append(check_service_status_test(workspace_root))
+    results.append(check_container_status(workspace_root))
+    results.append(check_health_checks(workspace_root))
+    results.append(check_resource_usage(workspace_root))
+    results.append(check_volume_status(workspace_root))
+    results.append(check_endpoint_health(workspace_root))
+
+    # Format output
+    if output_format == "json":
+        print(format_check_results_json(results))
+    else:
+        print(format_check_results_markdown(results))
+
+        # Show details if verbose
+        if verbose:
+            print("\n## Details\n")
+            for result in results:
+                status = "✅" if result.passed else "❌"
+                print(f"### {status} {result.name}")
+                print(f"{result.message}\n")
+                if result.details:
+                    print(f"```\n{result.details}\n```\n")
+
+    # Return exit code
+    all_passed = all(r.passed for r in results)
+    return 0 if all_passed else 1
 
 
 def dev_up(workspace_root: Path) -> int:
@@ -677,20 +1126,35 @@ Examples:
 
   # Check service status (JSON output)
   %(prog)s status --format json
+
+  # Run sanity checks (markdown table)
+  %(prog)s check
+
+  # Run sanity checks with verbose details
+  %(prog)s check --verbose
+
+  # Run sanity checks (JSON output)
+  %(prog)s check --format json
         """,
     )
 
     parser.add_argument(
         "command",
-        choices=["up", "down", "status"],
-        help="Command to execute: up (full stack), down (stop all), status (check services)",
+        choices=["up", "down", "status", "check"],
+        help="Command to execute: up (full stack), down (stop all), status (check services), check (sanity tests)",
     )
 
     parser.add_argument(
         "--format",
         choices=["markdown", "json"],
         default="markdown",
-        help="Output format for status command (default: markdown)",
+        help="Output format for status/check commands (default: markdown)",
+    )
+
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Show detailed output for check command",
     )
 
     args = parser.parse_args()
@@ -705,6 +1169,8 @@ Examples:
         return dev_down(workspace_root)
     elif args.command == "status":
         return dev_status(workspace_root, args.format)
+    elif args.command == "check":
+        return dev_check(workspace_root, args.format, args.verbose)
     else:
         parser.error(f"Unknown command: {args.command}")
         return 1
