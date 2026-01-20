@@ -721,6 +721,11 @@ The `curl_api` rule uses a JSON dispatch system that:
 (cd repos/dem2 && just curl_api '{"function": "get_task", "task_id": "uuid-here"}')
 ```
 
+**List failed tasks only**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_failed_tasks"}')
+```
+
 #### Patient Management
 
 **List all patients**:
