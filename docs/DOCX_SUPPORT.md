@@ -98,16 +98,21 @@ Created `scripts/gemini_docx_poc.py` supporting two extraction modes:
 
 ### Holistic Comparative Analysis (All 5 Test Documents)
 
-Ran both extraction modes on all 5 Stuart McClure DOCX test documents:
+Ran both extraction modes on all 5 Stuart McClure DOCX test documents using `gemini-3-pro-preview`:
 
-| Document                             | Text Mode | Image Mode | Winner | Notes                                      |
-|:-------------------------------------|----------:|-----------:|:------:|:-------------------------------------------|
-| 1. Master context and prompt.docx    |         7 |          7 |   Tie  | Context/prompts only                       |
-| 2. Lifestyle and Medical History.docx|        50 |         53 |  Image | Medical history, 6 pages                   |
-| 3. Full Genetics Profile.docx        |         0 |        411 |  Image | Embedded content (21 chars text, 17 pages) |
-| 4. Supplementation Considerations.docx|       39 |         39 |   Tie  | Supplement lists, 36 pages                 |
-| RPT - Full Genetics Profile.docx     |        73 |         63 |  Text  | Detailed genetics report, 10 pages         |
-| **TOTAL**                            |   **169** |    **573** | **Image** | **3.4x more data via image mode**       |
+| Document                             | Text Items | Image Items | Winner | Text Time | Image Time | Time Ratio |
+|:-------------------------------------|----------:|-----------:|:------:|----------:|-----------:|-----------:|
+| 1. Master context and prompt.docx    |         7 |          7 |   Tie  |    17.2s  |     41.7s  |      2.4x  |
+| 2. Lifestyle and Medical History.docx|        51 |         57 |  Image |    58.7s  |     73.7s  |      1.3x  |
+| 3. Full Genetics Profile.docx        |         1 |        373 |  Image |    30.5s  |    402.3s  |     13.2x  |
+| 4. Supplementation Considerations.docx|       34 |         39 |  Image |    48.4s  |     80.7s  |      1.7x  |
+| RPT - Full Genetics Profile.docx     |        66 |         64 |  Text  |    62.7s  |     67.9s  |      1.1x  |
+| **TOTAL**                            |   **159** |    **540** | **Image** | **217.4s** | **666.3s** | **3.1x** |
+
+**Key Metrics:**
+- Image mode extracts **3.4x more data** (540 vs 159 items)
+- Image mode takes **3.1x longer** (666s vs 217s total)
+- Trade-off: ~1 additional item extracted per 1.3 seconds of additional processing
 
 ### Per-Document Extraction Breakdown
 
@@ -120,79 +125,96 @@ Ran both extraction modes on all 5 Stuart McClure DOCX test documents:
 
 Both modes extracted the same 7 supplement/therapy recommendations.
 
-#### 2. Lifestyle and Medical History.docx (Image wins: 53 vs 50)
+#### 2. Lifestyle and Medical History.docx (Image wins: 57 vs 51)
 
 | Category         | Text Mode | Image Mode | Difference |
 |:-----------------|----------:|-----------:|-----------:|
-| Biomarkers       |        10 |          8 |         -2 |
+| Biomarkers       |         8 |         10 |         +2 |
 | Genetic Variants |         5 |          5 |          0 |
-| Diagnoses        |        23 |         26 |         +3 |
+| Diagnoses        |        26 |         28 |         +2 |
 | Medications      |         4 |          4 |          0 |
-| Lab Panels       |         1 |          0 |         -1 |
-| Recommendations  |         7 |         10 |         +3 |
-| **Total**        |    **50** |     **53** |     **+3** |
+| Recommendations  |         7 |          9 |         +2 |
+| **Total**        |    **51** |     **57** |     **+6** |
 
-Image mode captured 3 additional diagnoses and 3 more recommendations.
+Image mode captured more biomarkers, diagnoses, and recommendations.
 
-#### 3. Full Genetics Profile.docx (Image wins dramatically: 411 vs 0)
+#### 3. Full Genetics Profile.docx (Image wins dramatically: 373 vs 1)
 
 | Category         | Text Mode | Image Mode | Difference |
 |:-----------------|----------:|-----------:|-----------:|
-| Genetic Variants |         0 |        411 |       +411 |
-| **Total**        |     **0** |    **411** |   **+411** |
+| Genetic Variants |         1 |        373 |       +372 |
+| **Total**        |     **1** |    **373** |   **+372** |
 
-**Critical finding**: This document has only 21 characters of extractable text (a link/placeholder) but renders to 17 pages with 411 genetic variants. Text mode fails completely; image mode is mandatory.
+**Critical finding**: This document has only 21 characters of extractable text (a link/placeholder) but renders to 17 pages with 373 genetic variants. Text mode fails completely; image mode is mandatory.
 
-#### 4. Supplementation Considerations.docx (Tie: 39 vs 39)
+#### 4. Supplementation Considerations.docx (Image wins: 39 vs 34)
 
 | Category         | Text Mode | Image Mode | Difference |
 |:-----------------|----------:|-----------:|-----------:|
 | Diagnoses        |         4 |          4 |          0 |
-| Medications      |        33 |         33 |          0 |
+| Medications      |        28 |         33 |         +5 |
 | Recommendations  |         2 |          2 |          0 |
-| **Total**        |    **39** |     **39** |      **0** |
+| **Total**        |    **34** |     **39** |     **+5** |
 
-Both modes performed identically on this structured supplement list (36 pages).
+Image mode extracted 5 additional medications from the 36-page supplement list.
 
-#### RPT - Full Genetics Profile.docx (Text wins: 73 vs 63)
+#### RPT - Full Genetics Profile.docx (Text wins: 66 vs 64)
 
 | Category         | Text Mode | Image Mode | Difference |
 |:-----------------|----------:|-----------:|-----------:|
 | Biomarkers       |         3 |          1 |         -2 |
 | Genetic Variants |        33 |         33 |          0 |
 | Diagnoses        |        12 |          6 |         -6 |
-| Medications      |        18 |          0 |        -18 |
+| Medications      |        13 |          3 |        -10 |
 | Lab Panels       |         1 |          1 |          0 |
 | Risk Scores      |         1 |          1 |          0 |
-| Recommendations  |         5 |         21 |        +16 |
-| **Total**        |    **73** |     **63** |    **-10** |
+| Recommendations  |         3 |         19 |        +16 |
+| **Total**        |    **66** |     **64** |     **-2** |
 
-Text mode extracted more medications (18 vs 0), but image mode captured more detailed recommendations (21 vs 5).
+Text mode extracted more medications (13 vs 3), but image mode captured more detailed recommendations (19 vs 3).
 
 ### Aggregate Category Analysis
 
 | Category         | Text Mode | Image Mode | Difference |     Winner |
 |:-----------------|----------:|-----------:|-----------:|-----------:|
-| Biomarkers       |        13 |          9 |         -4 |       Text |
-| Genetic Variants |        38 |        449 |       +411 | **Image**  |
-| Diagnoses        |        39 |         36 |         -3 |       Text |
-| Medications      |        55 |         37 |        -18 |       Text |
-| Lab Panels       |         2 |          1 |         -1 |       Text |
+| Biomarkers       |        11 |         11 |          0 |        Tie |
+| Genetic Variants |        39 |        411 |       +372 | **Image**  |
+| Diagnoses        |        42 |         38 |         -4 |       Text |
+| Medications      |        45 |         40 |         -5 |       Text |
+| Lab Panels       |         1 |          1 |          0 |        Tie |
 | Risk Scores      |         1 |          1 |          0 |        Tie |
-| Recommendations  |        21 |         40 |        +19 | **Image**  |
-| **TOTAL**        |   **169** |    **573** |   **+404** | **Image**  |
+| Recommendations  |        19 |         37 |        +18 | **Image**  |
+| **TOTAL**        |   **159** |    **540** |   **+381** | **Image**  |
+
+### Processing Time Analysis
+
+| Document                              | Pages | Text Time | Image Time | Conversion | LLM Time | Ratio |
+|:--------------------------------------|------:|----------:|-----------:|-----------:|---------:|------:|
+| 1. Master context and prompt.docx     |     2 |    17.2s  |     41.7s  |      0.9s  |   22.8s  |  2.4x |
+| 2. Lifestyle and Medical History.docx |     6 |    58.7s  |     73.7s  |      1.2s  |   72.5s  |  1.3x |
+| 3. Full Genetics Profile.docx         |    17 |    30.5s  |    402.3s  |     16.5s  |  385.8s  | 13.2x |
+| 4. Supplementation Considerations.docx|    36 |    48.4s  |     80.7s  |      4.7s  |   76.1s  |  1.7x |
+| RPT - Full Genetics Profile.docx      |    10 |    62.7s  |     67.9s  |      1.1s  |   66.8s  |  1.1x |
+| **TOTAL**                             |**71** |**217.4s** | **666.3s** |  **24.4s** |**624.0s**|**3.1x**|
+
+**Processing Time Observations:**
+- **Conversion overhead is minimal**: Only 24.4s total (3.7% of image mode time)
+- **LLM processing dominates**: 624s of 666s total image time (93.7%)
+- **Page count correlates with time**: 17-page genetics doc took 402s (6.7 minutes)
+- **Text mode is 3.1x faster** overall but extracts 3.4x less data
+- **Best efficiency**: RPT - Full Genetics (1.1x slower for similar extraction quality)
 
 ### Key Findings
 
 **When Image Mode is Essential:**
-- **Embedded/linked content**: Documents with minimal extractable text but rich visual content (e.g., 3. Full Genetics Profile.docx with 21 chars → 411 genetic variants)
+- **Embedded/linked content**: Documents with minimal extractable text but rich visual content (e.g., 3. Full Genetics Profile.docx with 21 chars → 373 genetic variants)
 - **Complex table layouts**: Visual rendering preserves table structure better
 - **Charts and diagrams**: Visual context required for interpretation
 
 **When Text Mode Excels:**
-- **Medication/supplement extraction**: Better categorization (55 vs 37 items)
-- **Diagnosis capture**: Slightly better (39 vs 36 items)
-- **Processing speed**: No image conversion overhead
+- **Medication/supplement extraction**: Better categorization
+- **Diagnosis capture**: Slightly better in some cases
+- **Processing speed**: 3.1x faster overall
 - **Simpler dependencies**: Only requires `python-docx`
 
 **Document Type Patterns:**
