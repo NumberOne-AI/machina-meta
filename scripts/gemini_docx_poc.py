@@ -41,6 +41,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from io import BytesIO
 from pathlib import Path
 
@@ -399,8 +400,9 @@ def process_docx_text_mode(docx_path: str, api_key: str, model: str = "gemini-3-
         model: Gemini model to use
 
     Returns:
-        Dict with extraction results and metadata
+        Dict with extraction results and metadata (includes processing_time_seconds)
     """
+    start_time = time.time()
     path = Path(docx_path)
 
     # Extract text from DOCX
@@ -416,11 +418,15 @@ def process_docx_text_mode(docx_path: str, api_key: str, model: str = "gemini-3-
     # Extract structured data using Gemini
     extracted_data = extract_with_gemini_text(document_text, api_key, model)
 
+    processing_time = time.time() - start_time
+    print(f"[TEXT MODE] Completed in {processing_time:.2f} seconds")
+
     return {
         "mode": "text",
         "source_file": path.name,
         "text_length": len(document_text),
         "model_used": model,
+        "processing_time_seconds": round(processing_time, 2),
         "extracted_data": extracted_data
     }
 
@@ -439,15 +445,18 @@ def process_docx_image_mode(docx_path: str, api_key: str, model: str = "gemini-3
         dpi: Image resolution (default 200, used by LibreOffice method)
 
     Returns:
-        Dict with extraction results and metadata
+        Dict with extraction results and metadata (includes processing_time_seconds)
     """
+    start_time = time.time()
     path = Path(docx_path)
 
     print(f"[IMAGE MODE] Converting: {path.name}")
 
     # Convert DOCX to images using best available method
+    conversion_start = time.time()
     images, conversion_method = convert_docx_to_images(str(path), dpi=dpi)
-    print(f"[IMAGE MODE] Converted using: {conversion_method}")
+    conversion_time = time.time() - conversion_start
+    print(f"[IMAGE MODE] Converted using: {conversion_method} ({conversion_time:.2f}s)")
     print(f"[IMAGE MODE] Generated {len(images)} page image(s)")
 
     # Calculate total image size
@@ -456,7 +465,12 @@ def process_docx_image_mode(docx_path: str, api_key: str, model: str = "gemini-3
     print(f"[IMAGE MODE] Sending to Gemini vision ({model})...")
 
     # Extract using vision
+    llm_start = time.time()
     extracted_data = extract_with_gemini_vision(images, api_key, model)
+    llm_time = time.time() - llm_start
+
+    processing_time = time.time() - start_time
+    print(f"[IMAGE MODE] Completed in {processing_time:.2f} seconds (conversion: {conversion_time:.2f}s, LLM: {llm_time:.2f}s)")
 
     return {
         "mode": "image",
@@ -466,6 +480,9 @@ def process_docx_image_mode(docx_path: str, api_key: str, model: str = "gemini-3
         "dpi": dpi,
         "conversion_method": conversion_method,
         "model_used": model,
+        "processing_time_seconds": round(processing_time, 2),
+        "conversion_time_seconds": round(conversion_time, 2),
+        "llm_time_seconds": round(llm_time, 2),
         "extracted_data": extracted_data
     }
 
@@ -489,12 +506,16 @@ def compare_results(text_result: dict, image_result: dict) -> dict:
         "model_used": text_result.get("model_used"),
         "text_mode": {
             "text_length": text_result.get("text_length"),
+            "processing_time_seconds": text_result.get("processing_time_seconds"),
         },
         "image_mode": {
             "page_count": image_result.get("page_count"),
             "total_pixels": image_result.get("total_pixels"),
             "dpi": image_result.get("dpi"),
             "conversion_method": image_result.get("conversion_method"),
+            "processing_time_seconds": image_result.get("processing_time_seconds"),
+            "conversion_time_seconds": image_result.get("conversion_time_seconds"),
+            "llm_time_seconds": image_result.get("llm_time_seconds"),
         },
         "extraction_counts": {},
         "differences": []
@@ -523,11 +544,17 @@ def compare_results(text_result: dict, image_result: dict) -> dict:
     total_text = sum(comparison["extraction_counts"][c]["text_mode"] for c in categories)
     total_image = sum(comparison["extraction_counts"][c]["image_mode"] for c in categories)
 
+    text_time = text_result.get("processing_time_seconds", 0)
+    image_time = image_result.get("processing_time_seconds", 0)
+
     comparison["summary"] = {
         "total_items_text": total_text,
         "total_items_image": total_image,
         "difference": total_image - total_text,
-        "winner": "image" if total_image > total_text else ("text" if total_text > total_image else "tie")
+        "winner": "image" if total_image > total_text else ("text" if total_text > total_image else "tie"),
+        "text_processing_time_seconds": text_time,
+        "image_processing_time_seconds": image_time,
+        "time_ratio": round(image_time / text_time, 2) if text_time > 0 else None,
     }
 
     return comparison
