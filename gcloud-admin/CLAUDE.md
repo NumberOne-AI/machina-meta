@@ -45,7 +45,8 @@ just auth-github-import    # Import GitHub token from host gh CLI (preferred)
 just auth-github-login     # Login to GitHub directly in container
 just auth-github-logout    # Logout from GitHub
 just auth-github-status    # Check GitHub authentication status
-just auth-argocd-login     # Login to ArgoCD (SSO)
+just auth-argocd-login     # Login to ArgoCD (SSO) - Linux only
+just auth-argocd-import    # Import ArgoCD creds from host (macOS workaround)
 just auth-argocd-logout    # Logout from ArgoCD
 just auth-argocd-status    # Check ArgoCD authentication status
 
@@ -156,10 +157,10 @@ Copy `.env.example` to `.env` and configure:
 
 **ArgoCD Authentication:**
 
-First-time setup with SSO:
+First-time setup with SSO (Linux):
 ```bash
 # Login to ArgoCD using SSO (prints URL for manual browser authentication)
-just argocd-login
+just auth-argocd-login
 
 # The command will print a URL like:
 # https://argo.n1-machina.dev/api/dex/auth?...
@@ -171,12 +172,31 @@ just argocd-login
 just argo-list
 
 # Logout (if needed)
-just argocd-logout
+just auth-argocd-logout
 ```
 
-The `argocd-login` command uses SSO with manual URL opening (no automatic browser launch).
+The `auth-argocd-login` command uses SSO with manual URL opening (no automatic browser launch).
 Uses host networking so the OAuth callback on localhost:8085 is accessible from your browser.
 Credentials persist across container restarts.
+
+**⚠️ macOS Users: Use auth-argocd-import instead**
+
+On macOS, Docker Desktop runs in a Linux VM, so `--network host` doesn't expose localhost:8085 to your host browser. The SSO callback will fail.
+
+**Workaround - authenticate on host, then import:**
+```bash
+# 1. Install argocd CLI on your Mac
+brew install argocd
+
+# 2. Authenticate on your host (this will open browser for SSO)
+argocd login argo.n1-machina.dev --sso --grpc-web
+
+# 3. Import credentials into the container volume
+just auth-argocd-import
+
+# 4. Verify it works
+just auth-argocd-status
+```
 
 **Managing credentials volumes:**
 ```bash

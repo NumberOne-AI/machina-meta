@@ -59,3 +59,11 @@ USER_GOOGLE_SSO_PASSWORD: Test user Google SSO password
 
 SSL_CERT_FILE: SSL certificate file path
 TZ: Timezone (recommended: UTC)
+
+## GCloud Admin / DevOps Container
+
+These variables configure the gcloud-admin DevOps container for GKE cluster operations.
+
+CLOUDSDK_CORE_PROJECT: Google Cloud project ID (default: n1-machina1)
+CLOUDSDK_COMPUTE_REGION: Default GCP compute region (default: us-central1)
+ARGOCD_SERVER: ArgoCD server URL for CLI authentication (required for ArgoCD commands)

@@ -80,7 +80,18 @@ auth-github-status:
 
 # Check ArgoCD authentication status
 auth-argocd-status:
-    @docker compose run --rm gcloud-admin argocd account get-user-info
+    #!/usr/bin/env bash
+    set +e
+    OUTPUT=$(docker compose run --rm gcloud-admin argocd account get-user-info 2>&1)
+    STATUS=$?
+    echo "$OUTPUT"
+    if [ $STATUS -ne 0 ]; then
+        echo ""
+        echo "To authenticate ArgoCD:"
+        echo "  Linux:  just auth-argocd-login"
+        echo "  macOS:  just auth-argocd-import  (auth on host first)"
+    fi
+    exit $STATUS
 
 # Complete authentication setup: GCloud + GKE + GitHub + ArgoCD
 auth-login:
@@ -268,12 +279,44 @@ auth-github-logout:
     docker compose run --rm gcloud-admin gh auth logout
 
 # Login to ArgoCD server (using SSO)
+# NOTE: Uses --network host which works on Linux but NOT on macOS.
+# On macOS, use: just auth-argocd-import (auth on host first, then import)
 auth-argocd-login:
     docker run --rm -it --network host \
         -v gcloud-admin_argocd-config:/root/.config/argocd \
         -e ARGOCD_SERVER=${ARGOCD_SERVER} \
         gcloud-admin:latest \
         bash -c 'argocd login "$ARGOCD_SERVER" --sso --grpc-web --sso-launch-browser=false'
+
+# Import ArgoCD credentials from host (macOS workaround)
+# On macOS, --network host doesn't work for SSO callbacks.
+# Workaround: authenticate on host, then import credentials to container.
+# Prerequisites: argocd CLI installed on host (brew install argocd)
+auth-argocd-import:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    HOST_ARGOCD_CONFIG="${HOME}/.config/argocd/config"
+
+    if [ ! -f "$HOST_ARGOCD_CONFIG" ]; then
+        echo "ArgoCD config not found at: $HOST_ARGOCD_CONFIG"
+        echo ""
+        echo "To authenticate on your host first:"
+        echo "  1. Install argocd CLI: brew install argocd"
+        echo "  2. Login: argocd login ${ARGOCD_SERVER:-<ARGOCD_SERVER>} --sso --grpc-web"
+        echo "  3. Then run: just auth-argocd-import"
+        exit 1
+    fi
+
+    echo "Found ArgoCD config at: $HOST_ARGOCD_CONFIG"
+    echo "Importing to container volume..."
+
+    # Copy config file to the Docker volume
+    docker run --rm \
+        -v "$HOST_ARGOCD_CONFIG:/tmp/argocd-config:ro" \
+        -v gcloud-admin_argocd-config:/root/.config/argocd \
+        alpine sh -c 'cp /tmp/argocd-config /root/.config/argocd/config && chmod 600 /root/.config/argocd/config'
+
+    echo "Done. Verify with: just auth-argocd-status"
 
 # Logout from ArgoCD server
 auth-argocd-logout:
