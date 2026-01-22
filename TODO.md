@@ -374,6 +374,76 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Infrastructure & CI/CD
 
+- [PROPOSED] **Research Argo Workflows and install on GKE** - Evaluate workflow orchestration capabilities
+  - Impact: MEDIUM | Added: 2026-01-21
+  - **Goal**: Understand Argo Workflows capabilities and install on GKE cluster for document processing
+  - **Research Areas**:
+    - [ ] Core concepts: Workflows, WorkflowTemplates, DAGs, Steps
+    - [ ] Artifact handling: S3/GCS artifact repository setup
+    - [ ] Event triggers: Argo Events for webhook/message triggers
+    - [ ] Resource management: Pod resource limits, parallelism control
+    - [ ] Monitoring: Argo UI, metrics, logging integration
+    - [ ] Security: RBAC, service accounts, secrets handling
+  - **Installation Tasks**:
+    - [ ] Add Argo Workflows Helm chart to dem2-infra
+    - [ ] Configure artifact repository (GCS bucket)
+    - [ ] Set up Argo UI ingress with auth
+    - [ ] Create namespace and RBAC for workflows
+    - [ ] Test basic workflow execution
+  - **Evaluation Criteria**:
+    - Integration with existing Kubernetes setup
+    - Learning curve for team
+    - Comparison with Celery (current task queue)
+    - Cost implications (controller resources)
+  - **Documentation**: Create docs/ARGO_WORKFLOWS.md with findings
+
+- [PROPOSED] **Use Argo Workflows for parallel document processing pipeline** - Orchestrate docproc stages as DAG workflow
+  - Impact: HIGH | Added: 2026-01-21
+  - **Depends On**: Research Argo Workflows and install on GKE (above)
+  - **Problem**: Current document processing runs sequentially, limiting throughput for batch uploads
+  - **Proposed Solution**: Use Argo Workflows to orchestrate extraction pipeline stages as parallel DAG
+  - **Benefits**:
+    - Parallel processing of multiple documents simultaneously
+    - Retry logic and fault tolerance at workflow level
+    - Visual monitoring of pipeline progress in Argo UI
+    - Resource-efficient: spin up workers on-demand via Kubernetes
+    - Decoupled stages: easier to debug, test, and scale independently
+  - **Pipeline Stages to Orchestrate**:
+    - Document upload/validation
+    - Page rendering (parallel per page)
+    - Gemini Vision extraction (parallel per page)
+    - Result aggregation
+    - Medical catalog enrichment
+    - Neo4j graph storage
+  - **Implementation Tasks**:
+    - [ ] Define WorkflowTemplate for docproc pipeline
+    - [ ] Create Argo Events integration for upload triggers
+    - [ ] Set up artifact passing between stages (GCS)
+    - [ ] Configure resource limits per stage
+    - [ ] Add workflow definitions to dem2-infra
+    - [ ] Integrate with existing task tracking
+    - [ ] Migrate from Celery or run hybrid
+  - **Related**: docs/DATAFLOW.md (document processing flow)
+
+- [PROPOSED] **Add GKE service port-forwarding via gcloud-admin** - Enable querying remote Neo4j/services from host
+  - Impact: MEDIUM | Added: 2026-01-21
+  - **Problem**: Current gcloud-admin kubectl port-forward only works inside the container, not accessible from host
+  - **Use Case**: Need to query Neo4j on preview/dev environments for debugging (e.g., duplicate biomarker investigation)
+  - **Current Workaround**: Run kubectl directly on host (requires local kubectl+gcloud setup)
+  - **Proposed Solution**:
+    - Add port mapping to docker-compose when running port-forward commands
+    - Example: `docker compose run --rm -p 17474:17474 gcloud-admin kubectl port-forward ...`
+    - Or create a dedicated justfile recipe that handles the double port-forward
+  - **Implementation Options**:
+    1. Add `just gcloud-admin::forward-neo4j <namespace>` recipe that handles port mapping
+    2. Add generic `just gcloud-admin::forward <namespace> <service> <local-port> <remote-port>` recipe
+    3. Document the manual docker-compose run command with port mapping
+  - **Required for**: Remote Neo4j querying, debugging production/preview data issues
+  - **Files to modify**:
+    - `gcloud-admin/justfile` - Add port-forward recipes
+    - `gcloud-admin/CLAUDE.md` - Document usage
+    - `CLAUDE.md` - Reference in debugging section
+
 - [PROPOSED] **Add minikube cluster support to dev_stack.py** - Alternative to Docker Compose using Kubernetes locally
   - Impact: MEDIUM | Added: 2026-01-09
   - **Goal**: Add `minikube-up`, `minikube-down`, `minikube-status`, `minikube-destroy` commands as alternative to Docker Compose
