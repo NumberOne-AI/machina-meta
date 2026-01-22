@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Last Updated:** 2026-01-06
-**Applies to:** DATAFLOW.md, AGENTS.md, and all architecture documentation
+**Applies to:** DATAFLOW.md, MULTI_AGENT_ARCHITECTURE.md, and all architecture documentation
 
 ---
 
@@ -365,7 +365,7 @@ yq -r '.services.frontend.ports[]' docker-compose.yaml > /dev/null && echo "✓ 
 jq -r '.dependencies.next' repos/dem2-webui/package.json > /dev/null && echo "✓ [2] Next.js"
 # ... all citations ...
 
-echo "=== Verifying AGENTS.md Citations ==="
+echo "=== Verifying MULTI_AGENT_ARCHITECTURE.md Citations ==="
 # ... agent citations ...
 
 echo ""
@@ -645,7 +645,7 @@ $ echo $?
 
 **Update process:** See `docs/DATAFLOW_README.md` Section 5
 
-### AGENTS.md
+### MULTI_AGENT_ARCHITECTURE.md
 
 **Current state:** 18 citations covering:
 - Agent type enumeration
@@ -764,4 +764,4 @@ grep 'def function_name' path/to/file.py
 - [DATAFLOW_README.md](DATAFLOW_README.md) - Process for regenerating DATAFLOW.md
 - [DIAGRAMS.md](DIAGRAMS.md) - Diagram styling standards
 - [DATAFLOW.md](DATAFLOW.md) - Example of citation system in use
-- [AGENTS.md](AGENTS.md) - Example of citation system in use
+- [MULTI_AGENT_ARCHITECTURE.md](MULTI_AGENT_ARCHITECTURE.md) - Example of citation system in use

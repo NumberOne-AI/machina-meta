@@ -712,7 +712,7 @@ dot -Tsvg DATAFLOW_container_network.dot -o DATAFLOW_container_network.svg
 ### Documentation References
 
 - [ROUTES.md](ROUTES.md) - Complete API endpoint documentation (172 routes)
-- [AGENTS.md](AGENTS.md) - Agent architecture documentation
+- [MULTI_AGENT_ARCHITECTURE.md](MULTI_AGENT_ARCHITECTURE.md) - Agent architecture documentation
 - [OPENAPI_MCP_AGENTS_ADK.md](OPENAPI_MCP_AGENTS_ADK.md) - OpenAPI, MCP, ADK concepts
 
 ---

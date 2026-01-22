@@ -540,7 +540,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - **Skills to Create**:
     - `machina-api-testing` (313 lines) - Complete curl_api reference for API testing workflows
     - `machina-setup` (72 lines) - Service setup guides for initial development
-    - `machina-docs` (106 lines) - Documentation maintenance procedures for AGENTS.md, DATAFLOW.md, etc.
+    - `machina-docs` (106 lines) - Documentation maintenance procedures for MULTI_AGENT_ARCHITECTURE.md, DATAFLOW.md, etc.
     - `machina-dev-patterns` (49 lines) - Common development patterns and workflows
     - `machina-todo` (68 lines) - TODO.md task tracking guidelines
     - `machina-reference` (40 lines) - Quick reference tables for commands
@@ -585,7 +585,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Example triggers:
       - machina-api-testing: "curl_api", "test API", "upload document", "query agent"
       - machina-setup: "setup", "install", "initialize", "bootstrap"
-      - machina-docs: "update AGENTS.md", "regenerate DATAFLOW", "documentation"
+      - machina-docs: "update MULTI_AGENT_ARCHITECTURE.md", "regenerate DATAFLOW", "documentation"
   - **Testing Plan**:
     - [ ] Test conversation without any skills loaded (basic questions)
     - [ ] Test skill auto-invocation by asking "How do I test the API?"
@@ -652,9 +652,9 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - agent_tools/safe_agent_tool.py (517 lines of error handling wrapper)
     - shared/medical_agent/state.py (MachinaMedState definition)
   - Files created:
-    - docs/AGENTS.md (comprehensive architecture documentation with verified code examples)
+    - docs/MULTI_AGENT_ARCHITECTURE.md (comprehensive architecture documentation with verified code examples)
   - Files modified:
-    - CLAUDE.md (added documentation maintenance section for keeping AGENTS.md up to date)
+    - CLAUDE.md (added documentation maintenance section for keeping MULTI_AGENT_ARCHITECTURE.md up to date)
   - Key sections:
     - Agent hierarchy (ParallelAgent root with TriageAgent + ParallelDataExtractor)
     - 11 agent types with purposes and models

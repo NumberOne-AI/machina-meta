@@ -173,7 +173,7 @@ pnpm generate  # Backend must be running
 
 ### Workspace Documentation
 - [docs/LLM.md](docs/LLM.md) - LLM integration and prompt engineering reference
-- [docs/AGENTS.md](docs/AGENTS.md) - Google ADK agent architecture
+- [docs/MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Google ADK agent architecture
 - [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
 
 ### Individual Repository Documentation

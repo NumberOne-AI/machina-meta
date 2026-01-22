@@ -463,7 +463,7 @@ Track major documentation updates:
 ## References
 
 - [DATAFLOW.md](DATAFLOW.md) - Main data flow documentation
-- [AGENTS.md](AGENTS.md) - Agent architecture documentation
+- [MULTI_AGENT_ARCHITECTURE.md](MULTI_AGENT_ARCHITECTURE.md) - Agent architecture documentation
 - [ROUTES.md](ROUTES.md) - API endpoint documentation
 - [Mermaid Documentation](https://mermaid.js.org/)
 - [Graphviz Documentation](https://graphviz.org/documentation/)

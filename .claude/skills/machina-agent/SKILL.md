@@ -370,7 +370,7 @@ grep "e-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" agent-trace.log
 
 ## Related Documentation
 
-- [docs/AGENTS.md](../../../docs/AGENTS.md) - Agent architecture documentation
+- [docs/MULTI_AGENT_ARCHITECTURE.md](../../../docs/MULTI_AGENT_ARCHITECTURE.md) - Agent architecture documentation
 - [PROBLEMS.md](../../../repos/dem2/PROBLEMS.md) - Known issues and investigations
 - [TODO.md](../../../repos/dem2/TODO.md) - Planned fixes
 - [gcloud-admin/CLAUDE.md](../../../gcloud-admin/CLAUDE.md) - GKE access setup

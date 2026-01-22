@@ -29,7 +29,7 @@
 MachinaMed's LLM integration architecture supports multiple providers with a focus on **prompt engineering excellence**. The system employs sophisticated prompt composition, dynamic context injection, and multi-agent coordination patterns to deliver reliable medical AI interactions.
 
 **Related Documentation**:
-- [AGENTS.md](docs/AGENTS.md) - Complete agent architecture and tool use patterns
+- [MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Complete agent architecture and tool use patterns
 - [DATAFLOW.md](docs/DATAFLOW.md) - System-wide data flow including LLM interactions
 
 ### Architectural Principles

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# GEMINI.md
 
-This file provides guidance to Claude Code when working with the **machina-meta** workspace.
+This file provides guidance to Gemini Code when working with the **machina-meta** workspace.
 
 ## ⚠️ CRITICAL: Architecture Analysis Protocol
 
@@ -64,13 +64,10 @@ Before extensive analysis:
 
 ### Startup: Establish Workspace Root
 
-**All bash commands automatically start from the workspace root via SessionStart hook.**
-
-The `.claude/hooks/session-startup.sh` script (configured in `.claude/settings.json`) captures the workspace root path at session startup and writes it to `$CLAUDE_ENV_FILE`. This file is sourced before every bash command.
+**All bash commands automatically start from the workspace root.**
 
 **This provides:**
 - Every bash command starts from a known location (workspace root)
-- `$WS` environment variable set to workspace root path for convenient reference
 - Forces explicit directory specification for all operations
 - Eliminates ambiguity about current working directory
 - Protection against path confusion
@@ -80,10 +77,6 @@ The `.claude/hooks/session-startup.sh` script (configured in `.claude/settings.j
 # Pattern: (cd target/dir && command)
 (cd repos/dem2 && pytest tests/)
 (cd repos/dem2-webui && pnpm dev)
-
-# Alternative: Use $WS variable for absolute paths
-(cd $WS/repos/dem2 && pytest tests/)
-(cd $WS/repos/dem2-webui && pnpm dev)
 ```
 
 ### Directory Awareness Protocol
@@ -97,7 +90,6 @@ Before executing any bash command:
 
 **Why this is critical:**
 - Commands execute relative to current working directory
-- SessionStart hook ensures all commands start from the workspace root
 - Wrong directory = wrong files affected, wrong outputs, potential corruption
 - Especially critical in machina-meta with 5 independent git repositories (submodules)
 - Path confusion leads to: wrong repo operations, file not found errors, unexpected behavior
@@ -108,68 +100,32 @@ Before executing any bash command:
 (cd repos/dem2 && pytest tests/)
 (cd repos/dem2-webui && pnpm dev)
 
-# CORRECT - Use $WS variable for clarity
-(cd $WS/repos/dem2 && pytest tests/)
-(cd $WS/repos/dem2-webui && pnpm dev)
-
 # CORRECT - Verify first if uncertain
 pwd  # Should show workspace root
-echo $WS  # Should show workspace root path
 (cd repos/dem2 && pwd && pytest tests/)
 
 # WRONG - Never assume current directory without explicit cd
 pytest tests/  # Where are tests/? Unclear!
-
-# WRONG - Never use hardcoded absolute paths
-(cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2 && pytest)  # Not portable
 ```
 
 **Repository path references:**
 Use these paths consistently throughout the session:
-- Workspace root: `$WS` or `.` (both refer to workspace root)
-- Backend: `repos/dem2` or `$WS/repos/dem2`
-- Frontend: `repos/dem2-webui` or `$WS/repos/dem2-webui`
-- Infrastructure: `repos/dem2-infra` or `$WS/repos/dem2-infra`
-- Catalog: `repos/medical-catalog` or `$WS/repos/medical-catalog`
+- Workspace root: `.`
+- Backend: `repos/dem2`
+- Frontend: `repos/dem2-webui`
+- Infrastructure: `repos/dem2-infra`
+- Catalog: `repos/medical-catalog`
 
 **Best practices:**
-- ✅ Trust that SessionStart hook sets you at workspace root
 - ✅ Always use subshell pattern: `(cd target && command)`
-- ✅ Use relative paths from workspace root or `$WS` variable
-- ✅ Check `pwd` or `echo $WS` if uncertain
+- ✅ Use relative paths from workspace root
+- ✅ Check `pwd` if uncertain
 - ✅ Include directory context in command descriptions
 - ✅ Maintain awareness of filesystem hierarchy throughout session
 - ❌ Never assume you're in the right directory without explicit cd
 - ❌ Never run commands without knowing where they execute
-- ❌ Never use hardcoded absolute paths
 
 **This applies to ALL bash commands: git, pytest, npm, docker, ls, cp, mv, rm, etc.**
-
-## ⚠️ CRITICAL: Machina-Git Skill Requirement
-
-**When the user requests ANY git operation (commit, push, pull, status, diff, add, checkout, branch, tag, log, show, etc.):**
-
-1. **IMMEDIATELY invoke the machina-git skill** using the Skill tool
-2. **DO NOT run git commands via Bash first**
-3. **DO NOT bypass the skill for "simple" operations** like `git status` or `git diff`
-4. **If you're about to type a bash git command, STOP** and invoke `/machina-git` instead
-
-**This is a hard requirement for workspace safety with submodules.**
-
-- The machina-git skill enforces working directory safety, prevents repo corruption
-- Running git commands directly via Bash bypasses critical safety checks
-- Each of the 5 repositories has independent git history - wrong directory = corrupted state
-- The skill provides secret scanning, commit readiness evaluation, and atomic commit guidance
-
-**Pattern:**
-```
-User: "commit these changes"
-Assistant: [Immediately invokes Skill tool with skill: "machina-git"]
-
-NOT:
-User: "commit these changes"
-Assistant: [Runs bash git commands directly] ❌ WRONG
-```
 
 ## ⚠️ CRITICAL: Git Rules
 
@@ -183,17 +139,12 @@ This workspace uses **git submodules**, which means multiple independent git rep
 - **ALWAYS use subshell pattern** `(cd target && git ...)` for git operations
 - Running git commands in the wrong directory can corrupt repository state
 - This is especially critical with submodules where each repo has independent git history
-- SessionStart hook ensures commands start from workspace root (accessible via `$WS`)
 
 **Required pattern:**
 ```bash
 # CORRECT - Always use subshell pattern for git commands
 (cd repos/dem2 && git status)
 (cd repos/dem2 && git commit -m "message")
-
-# CORRECT - Use $WS variable for clarity
-(cd $WS/repos/dem2 && git status)
-(cd $WS/repos/dem2 && git commit -m "message")
 
 # WRONG - Never assume you're in the right place
 git status  # Dangerous! Which repo am I in?
@@ -218,14 +169,13 @@ git status  # Dangerous! Which repo am I in?
 
 ### 3. Commit Message Policy
 
-**NEVER add Claude Code attribution or co-authorship credits to commit messages.**
+**NEVER add Gemini Code attribution or co-authorship credits to commit messages.**
 
-- **DO NOT** include `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
-- **DO NOT** include `Co-Authored-By: Claude <noreply@anthropic.com>` or similar lines
+- **DO NOT** include `🤖 Generated with [Gemini Code]`
 - Write clear, concise commit messages following conventional commit format (`feat:`, `fix:`, `chore:`, etc.)
 - Follow the existing repository's commit message style
 
-### Applies To
+**Applies To**
 
 These rules apply to:
 - machina-meta repository (workspace root)
@@ -270,7 +220,7 @@ machina-meta/
 ├── shell.nix                # Nix shell environment with dev tools
 ├── justfile                 # Unified operations
 ├── README.md                # User documentation
-└── CLAUDE.md                # AI assistant guidance (this file)
+└── GEMINI.md                # AI assistant guidance (this file)
 ```
 
 ### Nix Development Environment
@@ -321,7 +271,7 @@ just k9s             # Interactive cluster UI
   - `just gcloud-admin::helm list -A`
   - `just gcloud-admin::k9s`
   - `just gcloud-admin::setup-nonprod` (first-time setup)
-- See `gcloud-admin/CLAUDE.md` for complete documentation
+- See `gcloud-admin/GEMINI.md` for complete documentation
 - Credentials persist in Docker volume `gcp-config-volume`
 
 ## Quick Start
@@ -793,7 +743,7 @@ The `curl_api` rule uses a JSON dispatch system that:
 
 **Search by alias groups**:
 ```bash
-(cd repos/dem2 && just curl_api '{"function": "catalog_search_by_alias", "alias_groups": [["LDL"], ["HDL", "HDL-C"]]}')
+(cd repos/dem2 && just curl_api '{"function": "catalog_search_by_alias", "alias_groups": [["LDL"], ["HDL", "HDL-C"]]})'
 ```
 
 **Search derivative biomarkers** (ratios, calculated values):
@@ -1067,7 +1017,6 @@ Each task entry includes:
 **⚠️ CRITICAL: Task State Changes Require User Approval**:
 - **NEVER mark a task as [DONE] or a problem as [SOLVED] without explicit user approval**
 - When work is completed, change the task state to [REVIEW]
-- The [REVIEW] state indicates: "Work completed, awaiting user review and approval before marking DONE"
 - Wait for the user to explicitly approve ("mark it done", "looks good", "approved", etc.)
 - Only change from [REVIEW] to [DONE] after receiving explicit user approval
 - This applies to ALL repositories: machina-meta, dem2, dem2-webui, medical-catalog, dem2-infra
@@ -1081,15 +1030,15 @@ Each task entry includes:
 - [docs/MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Google ADK agent architecture
 - [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
 - [docs/DEVOPS.md](docs/DEVOPS.md) - DevOps, preview environments, CI/CD, and ArgoCD deployment
-- [docs/DEVOPS_SKILLS.md](docs/DEVOPS_SKILLS.md) - Claude Code skills for DevOps tools (Git, GitHub, Jira, ArgoCD, GKE, Kubernetes, Docker)
+- [docs/DEVOPS_SKILLS.md](docs/DEVOPS_SKILLS.md) - Gemini Code skills for DevOps tools (Git, GitHub, Jira, ArgoCD, GKE, Kubernetes, Docker)
 - [docs/CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
 - [docs/DIAGRAMS.md](docs/DIAGRAMS.md) - Diagram styling standards
 
 ### Service Documentation
 
-- [repos/dem2/CLAUDE.md](repos/dem2/CLAUDE.md) - Backend development, architecture, testing
-- [repos/dem2-webui/CLAUDE.md](repos/dem2-webui/CLAUDE.md) - Frontend patterns, components, API integration
-- [repos/medical-catalog/CLAUDE.md](repos/medical-catalog/CLAUDE.md) - Catalog service specifics
+- [repos/dem2/GEMINI.md](repos/dem2/GEMINI.md) - Backend development, architecture, testing
+- [repos/dem2-webui/GEMINI.md](repos/dem2-webui/GEMINI.md) - Frontend patterns, components, API integration
+- [repos/medical-catalog/GEMINI.md](repos/medical-catalog/GEMINI.md) - Catalog service specifics
 - [repos/dem2-infra/](repos/dem2-infra/) - Infrastructure deployment, ArgoCD
 
 ## ⚠️ IMPORTANT: Documentation Maintenance
@@ -1170,7 +1119,7 @@ See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instruct
 - Understanding prompt template system
 - Model selection or cost optimization questions
 
-**Update when**: Agent prompts change, new LLM providers added, model configurations modified, or prompt engineering patterns updated.
+Update when: Agent prompts change, new LLM providers added, model configurations modified, or prompt engineering patterns updated.
 
 See **[docs/LLM_README.md](docs/LLM_README.md)** for regeneration instructions.
 

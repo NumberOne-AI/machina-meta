@@ -29,7 +29,7 @@
 - Prompt versioning and testing
 
 **Related Documents**:
-- [AGENTS.md](docs/AGENTS.md) - Covers agent architecture and tool use patterns (referenced by LLM.md)
+- [MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Covers agent architecture and tool use patterns (referenced by LLM.md)
 - [DATAFLOW.md](docs/DATAFLOW.md) - System-wide data flow including LLM interactions
 - [CITATIONS.md](docs/CITATIONS.md) - Citation system used for verification
 
@@ -79,7 +79,7 @@
 
 **Step 2: Document Structure Design**
 - Focused on prompt engineering (not agent architecture)
-- Removed redundancy with AGENTS.md
+- Removed redundancy with MULTI_AGENT_ARCHITECTURE.md
 - Added cross-references to related documentation
 - Organized by functional areas (providers, prompts, templates, etc.)
 
@@ -213,7 +213,7 @@ cat docs/LLM.md | less
 
 # Verify structure:
 # - Clear organization
-# - No redundancy with AGENTS.md
+# - No redundancy with MULTI_AGENT_ARCHITECTURE.md
 # - Proper cross-references
 # - All citations present
 ```
@@ -352,8 +352,8 @@ echo "✅ All citations verified"
 - [ ] Pricing information is up-to-date
 
 **Cross-Reference Verification**:
-- [ ] References to AGENTS.md are accurate
-- [ ] No redundant information with AGENTS.md
+- [ ] References to MULTI_AGENT_ARCHITECTURE.md are accurate
+- [ ] No redundant information with MULTI_AGENT_ARCHITECTURE.md
 - [ ] All links work (internal and external)
 
 ---
@@ -450,7 +450,7 @@ LLM.md follows this organization:
   - Comprehensive exploration of entire workspace
   - 55 citations following CITATIONS.md guidelines
   - Focus on prompt engineering (not agent architecture)
-  - Clear separation from AGENTS.md
+  - Clear separation from MULTI_AGENT_ARCHITECTURE.md
   - Cross-references to related documentation
 
 ---
@@ -458,7 +458,7 @@ LLM.md follows this organization:
 ## See Also
 
 - [LLM.md](docs/LLM.md) - The actual LLM integration and prompt engineering documentation
-- [AGENTS.md](docs/AGENTS.md) - Agent architecture and tool use patterns
+- [MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Agent architecture and tool use patterns
 - [CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
 - [DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
 - [DATAFLOW_README.md](docs/DATAFLOW_README.md) - Similar regeneration guide for DATAFLOW.md
