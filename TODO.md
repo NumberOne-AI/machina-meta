@@ -376,6 +376,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 - [PROPOSED] **Research Argo Workflows and install on GKE** - Evaluate workflow orchestration capabilities
   - Impact: MEDIUM | Added: 2026-01-21
+  - **Documentation**: [docs/ARGO_WORKFLOWS.md](docs/ARGO_WORKFLOWS.md)
   - **Goal**: Understand Argo Workflows capabilities and install on GKE cluster for document processing
   - **Research Areas**:
     - [ ] Core concepts: Workflows, WorkflowTemplates, DAGs, Steps
@@ -399,6 +400,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 - [PROPOSED] **Use Argo Workflows for parallel document processing pipeline** - Orchestrate docproc stages as DAG workflow
   - Impact: HIGH | Added: 2026-01-21
+  - **Documentation**: [docs/ARGO_WORKFLOWS.md](docs/ARGO_WORKFLOWS.md)
   - **Depends On**: Research Argo Workflows and install on GKE (above)
   - **Problem**: Current document processing runs sequentially, limiting throughput for batch uploads
   - **Proposed Solution**: Use Argo Workflows to orchestrate extraction pipeline stages as parallel DAG
