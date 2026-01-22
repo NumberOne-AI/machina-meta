@@ -446,6 +446,37 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - `gcloud-admin/CLAUDE.md` - Document usage
     - `CLAUDE.md` - Reference in debugging section
 
+- [PROPOSED] **Research Neo4j indexes to optimize query_graph performance** - Investigate index strategies for medical agent queries
+  - Impact: HIGH | Added: 2026-01-21
+  - **Problem**: Analysis of tusdi-preview-92 LLM traces shows `query_graph` tool (Neo4j) is primary bottleneck
+    - 16.7% of requests exceed 60 seconds
+    - Max response time: 710.65s (11.8 minutes)
+    - Tool execution consumes 87-100% of time in slow queries
+    - See: `docs/ANALYSIS_OF_MEDICAL_AGENT_QUERIES_tusdi-preview-92_20260121.md`
+  - **Research Areas**:
+    - [ ] Neo4j index types: B-tree, full-text, range, point, token lookup
+    - [ ] Composite indexes for common query patterns
+    - [ ] Index usage analysis with `EXPLAIN` and `PROFILE` on slow queries
+    - [ ] Current index state: `SHOW INDEXES` on production Neo4j
+    - [ ] Query patterns from HealthConsultantAgent's Cypher generation
+    - [ ] Index memory implications and trade-offs
+  - **Investigation Steps**:
+    - [ ] Extract common Cypher query patterns from LLM traces
+    - [ ] Profile slow queries with `PROFILE` to identify full scans
+    - [ ] Identify missing indexes on frequently filtered properties
+    - [ ] Research Neo4j best practices for medical/graph data models
+    - [ ] Document index recommendations with expected impact
+  - **Key Questions**:
+    - Which node labels are most frequently queried? (Observation, Biomarker, Patient?)
+    - Which properties are used in WHERE clauses?
+    - Are there relationship traversals that could benefit from indexes?
+    - What's the current index coverage on the graph schema?
+  - **Related**:
+    - P0 Action: Add 30s timeout to query_graph tool (separate task)
+    - Analysis: `docs/MEDICAL_AGENT_QUERIES_tusdi-preview-92_20260121.md`
+    - Script: `scripts/analyze_llm_traces.py`
+  - **Output**: Create `docs/NEO4J_INDEX_RECOMMENDATIONS.md` with findings
+
 - [PROPOSED] **Add minikube cluster support to dev_stack.py** - Alternative to Docker Compose using Kubernetes locally
   - Impact: MEDIUM | Added: 2026-01-09
   - **Goal**: Add `minikube-up`, `minikube-down`, `minikube-status`, `minikube-destroy` commands as alternative to Docker Compose
