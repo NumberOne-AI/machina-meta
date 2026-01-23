@@ -14,6 +14,11 @@ MODES:
     image   - Convert DOCX to images and use Gemini vision (preserves layout)
     compare - Run both modes and compare results
 
+EXTRACTION-ONLY MODES (no LLM, saves intermediate files):
+    extract-text   - Extract text only, save to .txt file
+    extract-images - Convert to images only, save as PNG files
+    extract-all    - Extract both text and images, save all files
+
 Usage:
     ./scripts/gemini_docx_poc.py <path-to-docx-file>
     ./scripts/gemini_docx_poc.py <path-to-docx-file> --mode=image
@@ -151,15 +156,24 @@ def extract_text_from_docx(docx_path: str) -> str:
     return "\n".join(text_parts)
 
 
-def convert_docx_to_images_spire(docx_path: str) -> list[Image.Image] | None:
+def convert_docx_to_images_spire(docx_path: str, dpi: int = 300) -> list[Image.Image] | None:
     """Convert DOCX to images using Spire.Doc (pure Python, no system dependencies).
+
+    Note: Spire.Doc free version does not support custom DPI for SaveImageToStreams.
+    Images are generated at ~96 DPI. For higher resolution, use LibreOffice method.
 
     Args:
         docx_path: Path to DOCX file
+        dpi: Requested resolution (note: Spire.Doc ignores this, outputs ~96 DPI)
 
     Returns:
         List of PIL Image objects, one per page, or None if Spire.Doc unavailable
     """
+    # Skip Spire.Doc if high DPI is requested - it doesn't support custom resolution
+    if dpi > 150:
+        print(f"[WARN] Spire.Doc doesn't support {dpi} DPI, skipping to LibreOffice...")
+        return None
+
     try:
         from spire.doc import Document as SpireDocument, ImageType
         from io import BytesIO
@@ -170,7 +184,7 @@ def convert_docx_to_images_spire(docx_path: str) -> list[Image.Image] | None:
         doc = SpireDocument()
         doc.LoadFromFile(docx_path)
 
-        # Convert all pages to images
+        # Convert all pages to images (fixed ~96 DPI, Spire.Doc doesn't support custom DPI)
         image_streams = doc.SaveImageToStreams(ImageType.Bitmap)
 
         images = []
@@ -250,7 +264,7 @@ def convert_pdf_to_images(pdf_path: str, dpi: int = 200) -> list[Image.Image]:
     return images
 
 
-def convert_docx_to_images(docx_path: str, dpi: int = 200) -> tuple[list[Image.Image], str]:
+def convert_docx_to_images(docx_path: str, dpi: int = 300) -> tuple[list[Image.Image], str]:
     """Convert DOCX to images using best available method.
 
     Tries methods in order:
@@ -259,7 +273,7 @@ def convert_docx_to_images(docx_path: str, dpi: int = 200) -> tuple[list[Image.I
 
     Args:
         docx_path: Path to DOCX file
-        dpi: Resolution for rendering (used by LibreOffice method)
+        dpi: Resolution for rendering (default 300 - industry standard for OCR)
 
     Returns:
         Tuple of (list of PIL Images, method name used)
@@ -268,8 +282,8 @@ def convert_docx_to_images(docx_path: str, dpi: int = 200) -> tuple[list[Image.I
         RuntimeError: If no conversion method is available
     """
     # Method 1: Try Spire.Doc (pure Python)
-    print("[IMAGE MODE] Trying Spire.Doc conversion...")
-    images = convert_docx_to_images_spire(docx_path)
+    print(f"[IMAGE MODE] Trying Spire.Doc conversion at {dpi} DPI...")
+    images = convert_docx_to_images_spire(docx_path, dpi)
     if images:
         return images, "spire-doc"
 
@@ -344,10 +358,10 @@ def extract_with_gemini_vision(images: list[Image.Image], api_key: str, model: s
     """
     client = genai.Client(api_key=api_key)
 
-    # Build multimodal content: images + prompt
+    # Build multimodal content: images + prompt with high resolution for OCR
     parts = []
 
-    # Add each page as an image part
+    # Add each page as an image part with media_resolution_high for better text extraction
     for i, image in enumerate(images):
         image_bytes = BytesIO()
         image.save(image_bytes, format="PNG")
@@ -355,7 +369,8 @@ def extract_with_gemini_vision(images: list[Image.Image], api_key: str, model: s
 
         parts.append(types.Part.from_bytes(
             data=image_bytes.read(),
-            mime_type="image/png"
+            mime_type="image/png",
+            video_metadata=None,  # Not a video
         ))
 
     # Add the extraction prompt (note: text is a keyword-only argument)
@@ -367,6 +382,7 @@ def extract_with_gemini_vision(images: list[Image.Image], api_key: str, model: s
         config=types.GenerateContentConfig(
             temperature=0.1,
             response_mime_type="application/json",
+            media_resolution="high",  # Use high resolution for better OCR/text extraction
         )
     )
 
@@ -485,6 +501,172 @@ def process_docx_image_mode(docx_path: str, api_key: str, model: str = "gemini-3
         "llm_time_seconds": round(llm_time, 2),
         "extracted_data": extracted_data
     }
+
+
+def extract_text_only(docx_path: str, output_dir: Path | None = None) -> dict:
+    """Extract text from DOCX and save to file (no LLM processing).
+
+    Args:
+        docx_path: Path to DOCX file
+        output_dir: Optional output directory (default: same as input file)
+
+    Returns:
+        Dict with extraction metadata
+    """
+    path = Path(docx_path)
+    if output_dir is None:
+        output_dir = path.parent
+
+    print(f"[EXTRACT-TEXT] Processing: {path.name}")
+
+    document_text = extract_text_from_docx(str(path))
+
+    if not document_text.strip():
+        print(f"[EXTRACT-TEXT] WARNING: No text content found")
+        return {"source_file": path.name, "text_length": 0, "output_file": None}
+
+    # Save text file
+    output_path = output_dir / f"{path.stem}.txt"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(document_text)
+
+    print(f"[EXTRACT-TEXT] Saved: {output_path} ({len(document_text)} chars)")
+
+    return {
+        "source_file": path.name,
+        "text_length": len(document_text),
+        "output_file": str(output_path)
+    }
+
+
+def extract_images_only(docx_path: str, output_dir: Path | None = None, dpi: int = 300) -> dict:
+    """Convert DOCX to images and save as PNG files (no LLM processing).
+
+    Args:
+        docx_path: Path to DOCX file
+        output_dir: Optional output directory (default: creates subdir next to input)
+        dpi: Image resolution (used by LibreOffice method)
+
+    Returns:
+        Dict with extraction metadata
+    """
+    path = Path(docx_path)
+    if output_dir is None:
+        output_dir = path.parent / f"{path.stem}_images"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[EXTRACT-IMAGES] Processing: {path.name}")
+
+    images, conversion_method = convert_docx_to_images(str(path), dpi=dpi)
+
+    print(f"[EXTRACT-IMAGES] Converted using: {conversion_method}")
+    print(f"[EXTRACT-IMAGES] Generated {len(images)} page(s)")
+
+    saved_files = []
+    for i, img in enumerate(images):
+        img_path = output_dir / f"page_{i + 1:03d}.png"
+        img.save(img_path, "PNG")
+        saved_files.append(str(img_path))
+        print(f"[EXTRACT-IMAGES] Saved: {img_path}")
+
+    return {
+        "source_file": path.name,
+        "page_count": len(images),
+        "conversion_method": conversion_method,
+        "output_dir": str(output_dir),
+        "output_files": saved_files
+    }
+
+
+def extract_all(docx_path: str, output_dir: Path | None = None, dpi: int = 300) -> dict:
+    """Extract both text and images from DOCX (no LLM processing).
+
+    Args:
+        docx_path: Path to DOCX file
+        output_dir: Optional output directory (default: creates subdir next to input)
+        dpi: Image resolution
+
+    Returns:
+        Dict with extraction metadata for both text and images
+    """
+    path = Path(docx_path)
+    if output_dir is None:
+        output_dir = path.parent / f"{path.stem}_extracted"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print("=" * 60)
+    print(f"EXTRACTING: {path.name}")
+    print("=" * 60)
+
+    # Extract text
+    text_result = extract_text_only(str(path), output_dir)
+
+    # Extract images
+    images_dir = output_dir / "images"
+    images_result = extract_images_only(str(path), images_dir, dpi)
+
+    return {
+        "source_file": path.name,
+        "output_dir": str(output_dir),
+        "text": text_result,
+        "images": images_result
+    }
+
+
+def process_directory(
+    input_dir: str,
+    output_dir: str | None = None,
+    mode: str = "extract-all",
+    dpi: int = 300
+) -> list[dict]:
+    """Process all DOCX files in a directory.
+
+    Args:
+        input_dir: Directory containing DOCX files
+        output_dir: Output directory (default: input_dir/extracted)
+        mode: Extraction mode (extract-text, extract-images, extract-all)
+        dpi: Image resolution
+
+    Returns:
+        List of results for each file
+    """
+    input_path = Path(input_dir)
+    if not input_path.is_dir():
+        raise ValueError(f"Not a directory: {input_dir}")
+
+    docx_files = list(input_path.rglob("*.docx")) + list(input_path.rglob("*.doc"))
+    if not docx_files:
+        raise ValueError(f"No DOCX files found in: {input_dir}")
+
+    if output_dir is None:
+        output_path = input_path / "extracted"
+    else:
+        output_path = Path(output_dir)
+
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"Found {len(docx_files)} DOCX file(s)")
+    print(f"Output directory: {output_path}")
+    print("=" * 60)
+
+    results = []
+    for docx_file in sorted(docx_files):
+        # Create output subdir for each file
+        file_output_dir = output_path / docx_file.stem
+
+        if mode == "extract-text":
+            result = extract_text_only(str(docx_file), file_output_dir)
+        elif mode == "extract-images":
+            result = extract_images_only(str(docx_file), file_output_dir, dpi)
+        else:  # extract-all
+            result = extract_all(str(docx_file), file_output_dir, dpi)
+
+        results.append(result)
+        print()
+
+    return results
 
 
 def compare_results(text_result: dict, image_result: dict) -> dict:
@@ -616,10 +798,15 @@ def main():
         description="Extract biomedical/genetic data from DOCX files using Gemini",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Modes:
+LLM Modes (require GOOGLE_API_KEY):
   text    - Extract text from DOCX and send as plain text (fast, no formatting)
   image   - Convert DOCX to images and use Gemini vision (preserves layout)
   compare - Run both modes and compare results
+
+Extraction-Only Modes (no LLM, saves intermediate files):
+  extract-text   - Extract text only, save to .txt file
+  extract-images - Convert to images only, save as PNG files
+  extract-all    - Extract both text and images, save all files
 
 Image mode conversion (tries in order):
   1. Spire.Doc (pure Python, no system deps) - included in script dependencies
@@ -628,27 +815,76 @@ Image mode conversion (tries in order):
      - Linux: apt install libreoffice poppler-utils
 
 Examples:
+  # LLM extraction
   ./scripts/gemini_docx_poc.py document.docx
   ./scripts/gemini_docx_poc.py document.docx --mode=image
   ./scripts/gemini_docx_poc.py document.docx --mode=compare
-  ./scripts/gemini_docx_poc.py document.docx --model=gemini-2.5-pro-preview-05-06
+
+  # Extraction only (no LLM)
+  ./scripts/gemini_docx_poc.py document.docx --mode=extract-images
+  ./scripts/gemini_docx_poc.py documents/ --mode=extract-all --output-dir=output/
         """
     )
 
-    parser.add_argument("docx_path", help="Path to DOCX file")
-    parser.add_argument("--mode", "-m", choices=["text", "image", "compare"], default="text",
+    parser.add_argument("docx_path", help="Path to DOCX file or directory")
+    parser.add_argument("--mode", "-m",
+                        choices=["text", "image", "compare", "extract-text", "extract-images", "extract-all"],
+                        default="text",
                         help="Extraction mode (default: text)")
     parser.add_argument("--model", default="gemini-3-pro-preview",
                         help="Gemini model to use (default: gemini-3-pro-preview)")
-    parser.add_argument("--dpi", type=int, default=200,
-                        help="Image resolution for image mode (default: 200)")
+    parser.add_argument("--dpi", type=int, default=300,
+                        help="Image resolution for image mode (default: 300 - industry standard for OCR)")
+    parser.add_argument("--output-dir", "-o", default=None,
+                        help="Output directory for extraction modes (default: next to input)")
 
     args = parser.parse_args()
 
-    # Get API key from environment or .env file
+    input_path = Path(args.docx_path)
+    output_dir = Path(args.output_dir) if args.output_dir else None
+
+    # Handle extraction-only modes (no LLM required)
+    if args.mode.startswith("extract-"):
+        try:
+            if input_path.is_dir():
+                # Process directory
+                results = process_directory(
+                    str(input_path),
+                    str(output_dir) if output_dir else None,
+                    args.mode,
+                    args.dpi
+                )
+                print("=" * 60)
+                print(f"COMPLETED: {len(results)} file(s) processed")
+                print("=" * 60)
+                print(json.dumps(results, indent=2))
+            else:
+                # Process single file
+                if args.mode == "extract-text":
+                    result = extract_text_only(str(input_path), output_dir)
+                elif args.mode == "extract-images":
+                    result = extract_images_only(str(input_path), output_dir, args.dpi)
+                else:  # extract-all
+                    result = extract_all(str(input_path), output_dir, args.dpi)
+
+                print("\n" + "=" * 60)
+                print("EXTRACTION RESULT:")
+                print("=" * 60)
+                print(json.dumps(result, indent=2))
+
+        except Exception as e:
+            import traceback
+            print(f"ERROR: {e}")
+            traceback.print_exc()
+            sys.exit(1)
+
+        return
+
+    # LLM modes require API key
     api_key = load_env_variable("GOOGLE_API_KEY") or load_env_variable("GEMINI_API_KEY")
     if not api_key:
         print("ERROR: GOOGLE_API_KEY or GEMINI_API_KEY not found in environment or .env")
+        print("Note: Use --mode=extract-images or --mode=extract-all for extraction without LLM")
         sys.exit(1)
 
     try:
