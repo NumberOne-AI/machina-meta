@@ -12,12 +12,18 @@ Usage:
     ./scripts/neo4j-query.py "MATCH (n) RETURN count(n) LIMIT 10"
     ./scripts/neo4j-query.py --file query.cypher
     just neo4j-query "MATCH (o:ObservationValue) RETURN count(o)"
+
+    # View Neo4j query execution logs
+    ./scripts/neo4j-query.py --query-logs
+    ./scripts/neo4j-query.py --query-logs --tail 50
+    ./scripts/neo4j-query.py --query-logs --format json
 """
 
 import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -658,6 +664,147 @@ def clear_all_data(config: dict[str, Any]) -> int:
     return total_count
 
 
+def fetch_query_logs(
+    tail: int = 100,
+    output_format: str = "table",
+    event_filter: list[str] | None = None,
+) -> None:
+    """Fetch Neo4j query logs from backend container.
+
+    Reads /app/logs/app.log from the backend container and filters for
+    neo4j_query_execute, neo4j_query_result, and graph_query_duration events.
+
+    Args:
+        tail: Number of log lines to fetch (default: 100)
+        output_format: "table", "json", or "raw"
+        event_filter: List of event names to filter (default: all query events)
+    """
+    workspace_root = find_workspace_root()
+
+    # Default event filter
+    if event_filter is None:
+        event_filter = [
+            "neo4j_query_execute",
+            "neo4j_query_result",
+            "graph_query_duration",
+        ]
+
+    # Build grep pattern for events
+    grep_pattern = "|".join(event_filter)
+
+    try:
+        # Use docker compose exec to read logs from container
+        cmd = [
+            "docker", "compose", "exec", "-T", "backend",
+            "grep", "-E", grep_pattern, "/app/logs/app.log"
+        ]
+
+        result = subprocess.run(
+            cmd,
+            cwd=workspace_root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        if result.returncode != 0 and result.returncode != 1:  # 1 = no matches
+            print(f"Error reading logs: {result.stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        lines = result.stdout.strip().split("\n") if result.stdout.strip() else []
+
+        # Apply tail limit
+        if tail > 0 and len(lines) > tail:
+            lines = lines[-tail:]
+
+        if not lines or lines == [""]:
+            print("No query log events found in /app/logs/app.log")
+            print("Make sure DYNACONF_LOGGING__LEVEL=DEBUG is set in .env")
+            return
+
+        # Parse and format output
+        if output_format == "raw":
+            for line in lines:
+                print(line)
+            return
+
+        # Parse JSON log lines
+        # Log format: "timestamp - logger - LEVEL - {json_dict}"
+        # The JSON uses single quotes (Python repr), so we need to extract and convert
+        parsed_logs = []
+        for line in lines:
+            try:
+                # Try direct JSON parse first
+                log_entry = json.loads(line)
+                parsed_logs.append(log_entry)
+            except json.JSONDecodeError:
+                # Try to extract JSON dict from log line
+                # Format: "2026-01-23 02:22:15,270 - logger - DEBUG - {'key': 'value'}"
+                match = re.search(r"\{.*\}$", line)
+                if match:
+                    try:
+                        # Convert Python dict repr to JSON (single quotes to double)
+                        json_str = match.group(0)
+                        # Replace single quotes with double quotes (careful with nested)
+                        json_str = re.sub(r"'([^']*)':", r'"\1":', json_str)
+                        json_str = re.sub(r": '([^']*)'([,}])", r': "\1"\2', json_str)
+                        log_entry = json.loads(json_str)
+                        parsed_logs.append(log_entry)
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+
+        if output_format == "json":
+            print(json.dumps(parsed_logs, indent=2))
+            return
+
+        # Table format (default)
+        if not parsed_logs:
+            print("No parseable log entries found")
+            return
+
+        print(f"Found {len(parsed_logs)} query log events:\n")
+
+        for entry in parsed_logs:
+            event = entry.get("event", "unknown")
+            timestamp = entry.get("timestamp", "")
+
+            if event == "neo4j_query_execute":
+                query = entry.get("query", "")[:100]
+                patient_id = entry.get("patient_id", "")[:8]
+                print(f"[EXECUTE] {timestamp}")
+                print(f"  patient: {patient_id}...")
+                print(f"  query: {query}...")
+                print()
+
+            elif event == "neo4j_query_result":
+                count = entry.get("result_count", 0)
+                print(f"[RESULT] {timestamp}")
+                print(f"  result_count: {count}")
+                print()
+
+            elif event == "graph_query_duration":
+                seconds = entry.get("seconds", 0)
+                paths = entry.get("paths", 0)
+                nodes = entry.get("nodes", 0)
+                preview = entry.get("cypher_preview", "")[:80]
+                print(f"[DURATION] {timestamp}")
+                print(f"  seconds: {seconds}, paths: {paths}, nodes: {nodes}")
+                print(f"  cypher: {preview}...")
+                print()
+
+            else:
+                print(f"[{event.upper()}] {timestamp}")
+                print(f"  {json.dumps(entry)[:100]}...")
+                print()
+
+    except subprocess.TimeoutExpired:
+        print("Error: Timeout reading logs from container", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print("Error: docker command not found", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run Cypher queries against local Neo4j instance",
@@ -704,6 +851,11 @@ Examples:
 
   # Clear all data
   %(prog)s --clear-all-data
+
+  # View Neo4j query execution logs from backend container
+  %(prog)s --query-logs
+  %(prog)s --query-logs --tail 50
+  %(prog)s --query-logs --format json
         """,
     )
 
@@ -778,8 +930,24 @@ Examples:
         action="store_true",
         help="Clear ALL nodes and relationships (WARNING: deletes everything!)",
     )
+    parser.add_argument(
+        "--query-logs",
+        action="store_true",
+        help="Fetch Neo4j query execution logs from backend container",
+    )
+    parser.add_argument(
+        "--tail",
+        type=int,
+        default=100,
+        help="Number of log lines to fetch (default: 100, use 0 for all)",
+    )
 
     args = parser.parse_args()
+
+    # Handle query-logs command (doesn't need Neo4j config)
+    if args.query_logs:
+        fetch_query_logs(tail=args.tail, output_format=args.format)
+        return
 
     try:
         # Load configuration
@@ -830,7 +998,7 @@ Examples:
             parser.error(
                 "Either query, --file, --list-biomarkers, --count-biomarkers, "
                 "--clear-biomarkers, --export-database, --import-database, "
-                "or --clear-all-data must be provided"
+                "--clear-all-data, or --query-logs must be provided"
             )
 
         # Run query
