@@ -520,7 +520,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - `OPENAI_API_KEY`, `GEMINI_API_KEY`, `SERPER_API_KEY`
     - `VISION_AGENT_API_KEY`, `GOOGLE_SEARCH_API_KEY`
     - `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`
-  - **Detailed plan**: `/home/dbeal/.claude/plans/snappy-bouncing-taco.md`
+  - **Detailed plan**: [docs/plans/minikube-dev-stack-support.md](docs/plans/minikube-dev-stack-support.md)
 
 ---
 
