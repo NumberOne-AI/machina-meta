@@ -36,6 +36,9 @@ mkShell {
   buildInputs = [ bashInteractive fd gnumake ];
 
   packages = with pkgs; [
+    libreoffice
+    gemini-cli
+    opencode
     # playwright-driver.browsers
     pnpm
     playwright-mcp
