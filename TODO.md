@@ -526,78 +526,69 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Agent System
 
-- [PROPOSED] **Replace TenantInjector with Neo4j RBAC security** - Fix syntax errors with database-enforced patient isolation
-  - Impact: HIGH | Added: 2026-01-23 | Revised: 2026-01-23 (v2 - Neo4j RBAC)
+- [PROPOSED] **Remove TenantInjector and add Neo4j RBAC security** - Two-stage fix for query syntax errors
+  - Impact: HIGH | Added: 2026-01-23 | Revised: 2026-01-23 (v3 - Two-stage approach)
   - **Plan**: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)
   - **Executive Summary**: [docs/plans/remove-tenant-injector-executive-summary.md](docs/plans/remove-tenant-injector-executive-summary.md)
   - **Related Problem**: [PROBLEMS.md - Syntax errors caused by tenant patient_id query injection](PROBLEMS.md)
   - **Evidence Log**: [logs/tenant-injection-syntax-errors-2026-01-23.log](logs/tenant-injection-syntax-errors-2026-01-23.log)
   - **Problem**: `TenantInjector` breaks queries containing `STARTS WITH`, `ENDS WITH`, `CONTAINS` operators
   - **Root Cause**: `WhereClauseBuilder` incorrectly parses multi-word Cypher operators
-  - **Solution (v2 - Defense in Depth)**:
-    - **Layer 1: Neo4j RBAC** (DATABASE-ENFORCED) - Per-patient users with property-based access control + impersonation
-    - **Layer 2: Query Validation** (APPLICATION) - Pre-execution validation, logging, alerting
-    - **Layer 3: Prompt Engineering** (LLM) - Agent instructions for patient_id inclusion (not relied upon for security)
-  - **Requirements**:
-    - Neo4j Enterprise Edition (for property-based access control and impersonation)
-    - Service account with impersonation privileges
-    - Per-patient Neo4j users with DENY rules on patient-scoped nodes
-  - **Patient-Scoped Nodes** (need DENY rules):
-    - ObservationValueNode, ConditionCaseNode, SymptomEpisodeNode
-    - EncounterNode, DocumentReferenceNode, IntakeEventNode, AllergyIntoleranceNode
-    - PatientNode (special case: uses uuid, not patient_id)
-  - **Files to Create**:
-    - `shared/.../graph_traversal/patient_user_manager.py` - Neo4j user lifecycle management
-    - `shared/.../graph_traversal/query_validator.py` - Query security validation (logging)
-    - `scripts/migrate_patient_users.py` - One-time migration for existing patients
-  - **Files to Modify**:
-    - `shared/.../graph_traversal/service.py` - Add impersonation, remove TenantInjector
-    - `agents/CypherAgent/config.yml` - Simplify tenant rules
-    - `agents/CypherAgent/factory.py` - Add patient_id to prompts
-    - `agents/CypherAgent/query_runner.py` - Remove tenant preview logging
-    - Kubernetes manifests - Add service account secrets
-    - `neo4j.conf` - Enable authentication
+  - **Solution (v3 - Two-Stage Approach)**:
+    - **Stage 1 (Immediate)**: Remove TenantInjector, rely on prompt engineering + query validation logging
+    - **Stage 2 (Future)**: Add Neo4j RBAC as database-enforced safety net (requires Enterprise Edition)
+  - **Current Status**: Running Neo4j Community Edition. Stage 1 proceeds immediately; Stage 2 deferred pending cost analysis.
+  - **Neo4j Enterprise Cost Analysis**:
+    - Self-Hosted Enterprise: ~$36,000+/year (starting price; large deployments $100,000+/year)
+    - AuraDB Professional: $65/month ($780/year) - may lack property-based access control
+    - AuraDB Business Critical: $146/month ($1,752/year) - enhanced security
+    - Sources: [Neo4j Pricing](https://neo4j.com/pricing/), [G2](https://www.g2.com/products/neo4j-graph-database/pricing)
   - **Files to Delete** (~918 lines):
     - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` (531 lines)
     - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` (387 lines)
     - `repos/dem2/shared/tests/graph_traversal/test_tenant_injector.py` (~200 lines)
-  - **Implementation Phases** (~10-12 days total):
-    - [ ] Phase 1 (2-3 days): RBAC Infrastructure
-      - [ ] Verify Neo4j Enterprise Edition: `CALL dbms.components() YIELD edition`
-      - [ ] Enable authentication in neo4j.conf
-      - [ ] Create service account with impersonation privileges
-      - [ ] Create base patient role with MATCH privileges
-      - [ ] Update Kubernetes secrets
-    - [ ] Phase 2 (2-3 days): Patient User Management
-      - [ ] Create PatientUserManager class
-      - [ ] Hook into patient creation workflow
-      - [ ] Migration script for existing patients
-      - [ ] Generate DENY rules per patient for all patient-scoped nodes
-    - [ ] Phase 3 (1-2 days): Impersonation Integration
-      - [ ] Update GraphTraversalService to use impersonation
-      - [ ] Update driver configuration for service account
-      - [ ] Remove TenantInjector from service initialization
-    - [ ] Phase 4 (1 day): Query Validation Layer
-      - [ ] Create QuerySecurityValidator class
-      - [ ] Implement patient_scope validation (logging, not blocking)
-      - [ ] Add alerting for suspicious patterns
-    - [ ] Phase 5 (0.5 days): Prompt Updates and Code Removal
-      - [ ] Update CypherAgent config.yml with simplified patient_id instructions
+  - **Stage 1 Implementation Phases** (Immediate):
+    - [ ] Phase 1 (Low): Prompt Updates
+      - [ ] Add patient_id injection via `{patient_id}` template variable
+      - [ ] Add explicit rules for patient-scoped node filtering
+      - [ ] List patient-scoped vs shared nodes in prompt
+    - [ ] Phase 2 (Low): Query Validation Layer
+      - [ ] Create QuerySecurityValidator class (logging only, not blocking)
+      - [ ] Integrate into GraphTraversalService
+      - [ ] Set up monitoring alerts for validation warnings
+    - [ ] Phase 3 (Low): Remove TenantInjector Code
       - [ ] Delete tenant_injector.py, where_clause_builder.py, tests
-    - [ ] Phase 6 (2 days): Testing and Validation
-      - [ ] Security tests: cross-patient access denied
+      - [ ] Update GraphTraversalService imports
+      - [ ] Clean up __init__.py exports
+    - [ ] Phase 4 (Medium): Testing and Validation
       - [ ] Regression tests: STARTS WITH, ENDS WITH, CONTAINS patterns
-      - [ ] Performance tests: < 10% latency increase target
-    - [ ] Phase 7 (1 day): Deployment
+      - [ ] Prompt effectiveness tests
+      - [ ] Audit log verification
+    - [ ] Phase 5 (Low): Deployment
       - [ ] Preview environment (tusdi-preview-92)
-      - [ ] Staging environment (24-48h soak test)
-      - [ ] Production rollout
-  - **Success Criteria**:
-    - Security: Cross-patient data access physically impossible at database level
-    - Functionality: All existing queries work (including STARTS WITH patterns)
-    - Performance: < 10% latency increase
-    - Audit: All queries logged with impersonated user identity
+      - [ ] Staging environment
+      - [ ] Production rollout with monitoring
+  - **Stage 2 Implementation Phases** (Future - requires Enterprise Edition):
+    - [ ] Phase 6 (Medium-High): Neo4j Enterprise Upgrade
+      - [ ] Contact Neo4j sales for pricing
+      - [ ] Budget approval
+      - [ ] Infrastructure update
+    - [ ] Phase 7 (Medium): Patient User Management
+      - [ ] Create PatientUserManager class
+      - [ ] Migration script for existing patients
+    - [ ] Phase 8 (Medium): Impersonation Integration
+      - [ ] Update GraphTraversalService with impersonation
+      - [ ] Update driver configuration
+    - [ ] Phase 9 (Medium): RBAC Testing and Deployment
+      - [ ] Security tests: cross-patient access denied at DB level
+      - [ ] Performance tests: < 10% latency increase target
+  - **Stage 1 Success Criteria**:
+    - Functionality: All queries work (including STARTS WITH patterns)
+    - Audit: All queries logged with patient context
     - Maintainability: ~918 lines of fragile regex code removed
+  - **Stage 2 Success Criteria** (Future):
+    - Security: Cross-patient data access physically impossible at database level
+    - Performance: < 10% latency increase from RBAC
 
 ---
 

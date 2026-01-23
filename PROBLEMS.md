@@ -256,21 +256,18 @@ Each problem includes:
     - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` - Bug location (lines 149-190)
     - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Uses TenantInjector
     - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Tenant scoping instructions
-  - **Proposed Solution (v2 - Defense in Depth)**:
-    - **Layer 1: Neo4j RBAC** (DATABASE-ENFORCED) - Primary security layer
-      - Create per-patient Neo4j users with property-based access control
+  - **Proposed Solution (v3 - Two-Stage Approach)**:
+    - **Stage 1 (Immediate)**: Remove TenantInjector, rely on prompt engineering + query validation logging
+      - Update CypherAgent prompts with patient_id injection rules
+      - Create QuerySecurityValidator for logging (not blocking)
+      - Delete ~918 lines of fragile regex code
+      - Acceptable risk for current scale and controlled access environment
+    - **Stage 2 (Future)**: Add Neo4j RBAC as database-enforced safety net
+      - Requires Neo4j Enterprise Edition (~$36,000+/year)
+      - Per-patient users with property-based access control
       - Use impersonation to execute queries in patient's security context
-      - DENY rules prevent access to other patients' data at database level
-      - Requires Neo4j Enterprise Edition
-    - **Layer 2: Query Validation** (APPLICATION) - Secondary safety
-      - Pre-execution validation for patient_id presence
-      - Logging and alerting on suspicious patterns
-      - Does not block execution (RBAC handles security)
-    - **Layer 3: Prompt Engineering** (LLM) - Tertiary layer
-      - Inject patient_id via ADK state into agent prompts
-      - Provides correct queries but NOT relied upon for security
-    - **Remove TenantInjector entirely** - ~918 lines of fragile regex code
-    - See plan document for full implementation details (7 phases, ~10-12 days)
+      - Deferred pending cost/benefit analysis
+    - See plan document for full implementation details
   - **Impact**:
     - All agents using `query_graph` tool are affected: HealthConsultantAgent, HealthConsultantLiteAgent, CypherAgent
     - Any natural language query using "starts with", "ends with" patterns will fail

@@ -1,19 +1,22 @@
-# Plan: Replace TenantInjector with Neo4j RBAC Security
+# Plan: Remove TenantInjector and Add Neo4j RBAC Security
 
 **Status**: PROPOSED
 **Created**: 2026-01-23
-**Revised**: 2026-01-23 (v2 - Added Neo4j RBAC security layer)
+**Revised**: 2026-01-23 (v3 - Two-stage approach: immediate fix + future RBAC)
 **Related Problem**: [PROBLEMS.md - Syntax errors caused by tenant patient_id query injection](../../PROBLEMS.md)
 **Evidence Log**: [logs/tenant-injection-syntax-errors-2026-01-23.log](../../logs/tenant-injection-syntax-errors-2026-01-23.log)
 **Executive Summary**: [remove-tenant-injector-executive-summary.md](remove-tenant-injector-executive-summary.md)
 
 ## Executive Summary
 
-The current `TenantInjector` breaks Cypher queries containing `STARTS WITH`, `ENDS WITH`, etc. Rather than simply removing it and relying on prompt engineering (high risk), this revised plan implements **Neo4j Role-Based Access Control (RBAC)** as a database-enforced security layer.
+The current `TenantInjector` breaks Cypher queries containing `STARTS WITH`, `ENDS WITH`, etc. This plan implements a **two-stage approach**:
 
-**Key Change from v1**: Security is enforced at the database level, not the application level.
+1. **Stage 1 (Immediate)**: Remove TenantInjector and rely on prompt engineering + query validation logging
+2. **Stage 2 (Future)**: Add Neo4j RBAC as database-enforced security layer (requires Enterprise Edition)
 
-## The Problem (Unchanged)
+**Current Status**: Running Neo4j Community Edition. Stage 1 proceeds immediately; Stage 2 deferred pending cost/benefit analysis of Enterprise upgrade.
+
+## The Problem
 
 `TenantInjector` uses regex to inject `WHERE patient_id = $patient_id` into Cypher queries. This breaks multi-word operators:
 
@@ -22,27 +25,252 @@ BEFORE: WHERE name STARTS WITH "T"
 AFTER:  WHERE (name STARTS) AND patient_id = $patient_id WITH "T"  ← BROKEN
 ```
 
-## Revised Solution: Defense in Depth
+## Solution Architecture: Defense in Depth
 
-|   Layer | Location           | Type              | Purpose                                                            |
-|--------:|:-------------------|:------------------|:-------------------------------------------------------------------|
-|       1 | Neo4j RBAC         | DATABASE-ENFORCED | Per-patient users, property-based access, impersonation            |
-|       2 | Query Validation   | APPLICATION       | Pre-execution checks, logging, alerting on suspicious patterns     |
-|       3 | Prompt Engineering | LLM               | Instruct agents to include patient_id (not relied on for security) |
+|   Layer | Location           | Type        | Status   | Purpose                                                        |
+|--------:|:-------------------|:------------|:---------|:---------------------------------------------------------------|
+|       1 | Neo4j RBAC         | DATABASE    | Future   | Per-patient users, property-based access, impersonation        |
+|       2 | Query Validation   | APPLICATION | Stage 1  | Pre-execution checks, logging, alerting on suspicious patterns |
+|       3 | Prompt Engineering | LLM         | Stage 1  | Instruct agents to include patient_id in all queries           |
 
-**Layer 1 Details** (Primary Security):
-- Patient-specific users with property-based access control
-- Impersonation for per-request security context
-- Queries physically cannot return unauthorized data
+**Stage 1 (Immediate)**: Layers 2 and 3 only - application-level security with logging
+**Stage 2 (Future)**: Layer 1 added - database-enforced security as safety net
 
-**Layer 2 Details** (Secondary Safety):
-- Pre-execution check for patient_id in queries
-- Reject queries that could bypass security
-- Logging and alerting on suspicious patterns
+### Risk Acknowledgment (Stage 1)
 
-**Layer 3 Details** (Tertiary - Correctness):
-- Instruct agents to include patient_id in generated queries
-- Provides correct queries, but NOT relied upon for security
+Running without Neo4j RBAC means:
+- Security relies on correct prompt engineering and query validation
+- A malformed or malicious query could potentially access cross-patient data
+- Logging provides audit trail but not prevention
+- Acceptable for current scale and controlled access environment
+
+---
+
+# STAGE 1: Immediate Fix (Prompt Engineering + Logging)
+
+## Phase 1: Prompt Updates
+
+**Technical difficulty**: Low (config updates and template changes)
+
+1. **Update CypherAgent Instructions**
+   - Add patient_id injection via `{patient_id}` template variable (from ADK state)
+   - Add explicit rules: "ALWAYS include `WHERE patient_id = '{patient_id}'` for patient-scoped nodes"
+   - List patient-scoped node types in prompt
+
+2. **Patient-Scoped Nodes** (must always filter by patient_id):
+   - `ObservationValueNode`
+   - `ConditionCaseNode`
+   - `SymptomEpisodeNode`
+   - `EncounterNode`
+   - `DocumentReferenceNode`
+   - `IntakeEventNode`
+   - `AllergyIntoleranceNode`
+   - `PatientNode` (filter by `uuid`)
+
+3. **Shared Nodes** (no patient filter needed):
+   - `ObservationTypeNode`, `ConditionTypeNode`, `SymptomTypeNode`
+   - `SubstanceNode`, `MedicationNode`, `SupplementNode`
+   - `ReferenceRangeNode`, `BodySystemNode`
+
+## Phase 2: Query Validation Layer
+
+**Technical difficulty**: Low (straightforward logging class)
+
+1. **Create Query Validator**
+   ```python
+   # repos/dem2/shared/src/machina/shared/graph_traversal/query_validator.py
+
+   class QuerySecurityValidator:
+       """Validates queries have appropriate patient_id constraints."""
+
+       PATIENT_SCOPED_NODES = [
+           "ObservationValueNode", "ConditionCaseNode", "SymptomEpisodeNode",
+           "EncounterNode", "DocumentReferenceNode", "IntakeEventNode",
+           "AllergyIntoleranceNode", "PatientNode",
+       ]
+
+       def validate_patient_scope(
+           self,
+           query: str,
+           patient_id: str,
+       ) -> ValidationResult:
+           """
+           Check if query references patient-scoped nodes with patient_id filter.
+
+           Does NOT block execution - logs warnings for investigation.
+           """
+           # Check for patient-scoped node references
+           # Log WARNING if node referenced without patient_id filter
+           # Log INFO with query details for audit trail
+           # Return validation result (always allows execution)
+   ```
+
+2. **Integrate into GraphTraversalService**
+   - Call validator before executing query
+   - Log validation results
+   - Continue with execution regardless (logging only)
+
+## Phase 3: Remove TenantInjector Code
+
+**Technical difficulty**: Low (code deletion and import cleanup)
+
+1. **Delete Files** (~918 lines removed):
+   - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` (531 lines)
+   - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` (387 lines)
+   - `repos/dem2/shared/tests/graph_traversal/test_tenant_injector.py` (~200 lines)
+
+2. **Update GraphTraversalService**
+   - Remove TenantInjector from constructor
+   - Remove tenant injection call before query execution
+   - Add QuerySecurityValidator integration
+
+3. **Update Imports**
+   - Remove TenantInjector imports from `__init__.py`
+   - Update any files that imported these modules
+
+## Phase 4: Testing and Validation
+
+**Technical difficulty**: Medium (comprehensive test coverage)
+
+1. **Regression Tests**
+   - Verify `STARTS WITH` / `ENDS WITH` / `CONTAINS` patterns work
+   - Verify all existing graph queries still function
+   - Test complex multi-hop traversals
+
+2. **Prompt Effectiveness Tests**
+   - Verify CypherAgent generates queries with patient_id filters
+   - Test various query patterns
+   - Log and review any validation warnings
+
+3. **Audit Log Verification**
+   - Verify all queries are logged with patient context
+   - Verify validation warnings are captured
+
+## Phase 5: Deployment (Stage 1)
+
+**Technical difficulty**: Low (standard deployment)
+
+1. **Preview Environment** (tusdi-preview-92)
+   - Deploy prompt updates and TenantInjector removal
+   - Monitor for validation warnings
+   - Manual testing of agent queries
+
+2. **Staging** (tusdi-staging)
+   - Extended monitoring
+   - Review audit logs for anomalies
+
+3. **Production** (tusdi-prod)
+   - Deploy with enhanced monitoring
+   - Set up alerts for validation warnings
+
+## Stage 1 Files Changed
+
+### New Files
+
+| File                                            | Purpose                      |
+|:------------------------------------------------|:-----------------------------|
+| `shared/.../graph_traversal/query_validator.py` | Query validation and logging |
+
+### Modified Files
+
+| File                                    | Changes                              |
+|:----------------------------------------|:-------------------------------------|
+| `shared/.../graph_traversal/service.py` | Remove TenantInjector, add validator |
+| `agents/CypherAgent/config.yml`         | Add patient_id injection and rules   |
+| `agents/CypherAgent/factory.py`         | Add patient_id to prompt context     |
+
+### Deleted Files
+
+| File                      | Lines   | Reason                   |
+|:--------------------------|:--------|:-------------------------|
+| `tenant_injector.py`      | 531     | Replaced by prompt rules |
+| `where_clause_builder.py` | 387     | Replaced by prompt rules |
+| `test_tenant_injector.py` | ~200    | Tests for deleted code   |
+
+## Stage 1 Phase Summary
+
+| Phase                    | Difficulty   | Dependencies   |
+|:-------------------------|:-------------|:---------------|
+| 1. Prompt Updates        | Low          | None           |
+| 2. Query Validation      | Low          | None           |
+| 3. Remove TenantInjector | Low          | Phase 1, 2     |
+| 4. Testing               | Medium       | Phase 3        |
+| 5. Deployment            | Low          | Phase 4        |
+
+---
+
+# STAGE 2: Future Enhancement (Neo4j RBAC)
+
+## Prerequisites
+
+### Neo4j Enterprise Edition Required
+
+Property-based access control and impersonation require **Neo4j Enterprise Edition**.
+
+**Current Status**: Running Community Edition
+
+**Verification Command**: `CALL dbms.components() YIELD edition`
+
+### What is PBAC and Why It Matters
+
+**PBAC = Property-Based Access Control**
+
+PBAC is a Neo4j Enterprise feature that allows security rules based on node/relationship property values, not just labels.
+
+**Standard RBAC (Community Edition):**
+```cypher
+-- Can only grant/deny access by label
+GRANT READ ON GRAPH FOR (n:PatientData) TO some_role
+-- Result: All users with this role see ALL PatientData nodes
+```
+
+**PBAC (Enterprise Edition):**
+```cypher
+-- Can grant/deny access based on property values
+DENY TRAVERSE ON GRAPH
+  FOR (n:ObservationValueNode) WHERE n.patient_id <> 'patient_123'
+  TO patient_123_role
+-- Result: User only sees nodes where patient_id matches their ID
+```
+
+**Why PBAC matters for patient isolation:**
+
+Without PBAC, we cannot enforce at the database level that Patient A only sees Patient A's data. The database returns all matching nodes regardless of `patient_id` value.
+
+| Feature                      | Community   | Enterprise   |
+|:-----------------------------|:------------|:-------------|
+| Label-based access control   | ✅          | ✅           |
+| Property-based access (PBAC) | ❌          | ✅           |
+| User impersonation           | ❌          | ✅           |
+
+For Stage 2 to work, we need PBAC to create rules like "this user can only traverse nodes where `patient_id` equals their ID." This is the key feature that requires Enterprise licensing.
+
+**Stage 1 workaround**: We rely on the LLM generating correct queries with `WHERE patient_id = 'X'` clauses, validated by logging. Less secure than database enforcement, but works without Enterprise licensing.
+
+### Cost Analysis
+
+Based on [Neo4j Pricing](https://neo4j.com/pricing/) research:
+
+| Option                       | Estimated Cost           | Notes                                                                    |
+|:-----------------------------|:-------------------------|:-------------------------------------------------------------------------|
+| **Self-Hosted Enterprise**   | ~$36,000+/year           | Starting price; varies by scale. Large deployments can be $100,000+/year |
+| **AuraDB Professional**      | $65/month ($780/year)    | Cloud-managed, may not include property-based access control             |
+| **AuraDB Business Critical** | $146/month ($1,752/year) | Enhanced security features, 99.95% SLA                                   |
+| **AuraDB Virtual Dedicated** | Contact sales            | Enterprise-grade, isolated environment                                   |
+| **Developer License**        | Free                     | Single machine only (Neo4j Desktop)                                      |
+
+**Key Considerations**:
+- Self-hosted Enterprise requires annual subscription based on server count/size
+- Property-based access control (PBAC) requires Enterprise tier
+- Impersonation requires Enterprise tier
+- Cloud options may have different feature availability per tier
+
+**Recommendation**: Before proceeding with Stage 2, contact Neo4j sales for accurate pricing based on our deployment (GKE, expected patient count, performance requirements).
+
+**Sources**:
+- [Neo4j Pricing Page](https://neo4j.com/pricing/)
+- [Neo4j G2 Pricing](https://www.g2.com/products/neo4j-graph-database/pricing)
+- [Vendr Neo4j Analysis](https://www.vendr.com/marketplace/neo4j)
 
 ## Neo4j RBAC Architecture
 
@@ -52,12 +280,6 @@ Neo4j Enterprise Edition provides fine-grained access control through:
 - **Property-Based Access Control**: DENY/GRANT based on node property values
 - **User Impersonation**: Execute queries in another user's security context
 - **Role-Based Privileges**: Assign permissions to roles, roles to users
-
-**References**:
-- [Neo4j Role-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/manage-privileges/)
-- [Neo4j Property-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/)
-- [Neo4j Impersonation](https://neo4j.com/docs/query-api/current/impersonation/)
-- [Fine-Grained Access Control Tutorial](https://neo4j.com/docs/operations-manual/current/tutorial/access-control/)
 
 ### Approach: User-per-Patient with Impersonation
 
@@ -86,57 +308,38 @@ Neo4j Enterprise Edition provides fine-grained access control through:
          "abc" data     "def" data     "xyz" data
 ```
 
-### How It Works
-
-1. **Patient User Creation**: When a patient is created in the system, create a corresponding Neo4j user
-2. **Role Assignment**: Assign patient-specific role with property-based restrictions
-3. **Query Execution**: Backend uses impersonation to execute queries as the patient user
-4. **Database Enforcement**: Neo4j filters results based on the impersonated user's permissions
-
 ### RBAC Setup Commands
 
 ```cypher
 // 1. Create base role for patient access
 CREATE ROLE patient_base;
-
-// 2. Grant read access to the healthcare graph
 GRANT ACCESS ON DATABASE healthcare TO patient_base;
 GRANT MATCH {*} ON GRAPH healthcare TO patient_base;
 
-// 3. Create patient-specific user (done per-patient)
+// 2. Create patient-specific user
 CREATE USER patient_abc123 SET PASSWORD 'generated_secure_password' CHANGE NOT REQUIRED;
 
-// 4. Create patient-specific role with property restrictions
+// 3. Create patient-specific role with property restrictions
 CREATE ROLE patient_abc123_role;
 GRANT ROLE patient_base TO patient_abc123_role;
 
-// 5. DENY access to other patients' data via property-based rules
+// 4. DENY access to other patients' data
 DENY TRAVERSE ON GRAPH healthcare
   FOR (n:ObservationValueNode) WHERE n.patient_id <> 'abc123'
   TO patient_abc123_role;
 
-DENY TRAVERSE ON GRAPH healthcare
-  FOR (n:ConditionCaseNode) WHERE n.patient_id <> 'abc123'
-  TO patient_abc123_role;
-
-DENY TRAVERSE ON GRAPH healthcare
-  FOR (n:SymptomEpisodeNode) WHERE n.patient_id <> 'abc123'
-  TO patient_abc123_role;
-
 // ... repeat for all patient-scoped node types
 
-// 6. Assign role to user
+// 5. Assign role to user
 GRANT ROLE patient_abc123_role TO patient_abc123;
 
-// 7. Grant service account impersonation privilege
+// 6. Grant service account impersonation privilege
 GRANT IMPERSONATE (patient_abc123) ON DBMS TO service_account;
 ```
 
 ### Python Driver Integration
 
 ```python
-# In GraphTraversalService
-
 async def execute_query(
     self,
     query: str,
@@ -145,66 +348,33 @@ async def execute_query(
 ) -> list[dict]:
     """Execute query with patient-scoped security context."""
 
-    # Impersonate the patient-specific user
     patient_user = f"patient_{patient_id}"
 
     async with self.driver.session(
         database="healthcare",
-        impersonated_user=patient_user,  # <-- KEY: Database-level security
+        impersonated_user=patient_user,  # <-- DATABASE-LEVEL SECURITY
     ) as session:
         result = await session.run(query, parameters or {})
         return [record.data() async for record in result]
 ```
 
-### Patient-Scoped Node Types
+## Stage 2 Implementation Phases
 
-Based on the graph schema, these nodes have `patient_id` property and need RBAC rules:
+### Phase 6: Neo4j Enterprise Upgrade
 
-| Node Type                | Property              | DENY Rule Needed    |
-|:-------------------------|:----------------------|:--------------------|
-| `ObservationValueNode`   | `patient_id`          | Yes                 |
-| `ConditionCaseNode`      | `patient_id`          | Yes                 |
-| `SymptomEpisodeNode`     | `patient_id`          | Yes                 |
-| `EncounterNode`          | `patient_id`          | Yes                 |
-| `DocumentReferenceNode`  | `patient_id`          | Yes                 |
-| `IntakeEventNode`        | `patient_id`          | Yes                 |
-| `AllergyIntoleranceNode` | `patient_id`          | Yes                 |
-| `PatientNode`            | `uuid` (special case) | Yes (match on uuid) |
+**Technical difficulty**: Medium-High (infrastructure change + licensing)
 
-### Shared/Type Nodes (No Restrictions)
+1. **Procurement**
+   - Contact Neo4j sales for enterprise pricing
+   - Evaluate self-hosted vs AuraDB options
+   - Budget approval
 
-These nodes are shared across patients (ontology/reference data):
+2. **Infrastructure Update**
+   - Update Neo4j deployment to Enterprise Edition
+   - Enable authentication in neo4j.conf
+   - Update Kubernetes manifests
 
-| Node Type             | Reason                       |
-|:----------------------|:-----------------------------|
-| `ObservationTypeNode` | Shared biomarker definitions |
-| `ConditionTypeNode`   | Shared condition definitions |
-| `SymptomTypeNode`     | Shared symptom definitions   |
-| `SubstanceNode`       | Shared substance catalog     |
-| `MedicationNode`      | Shared medication catalog    |
-| `SupplementNode`      | Shared supplement catalog    |
-| `ReferenceRangeNode`  | Shared reference ranges      |
-| `BodySystemNode`      | Shared body system ontology  |
-
-## Implementation Plan
-
-### Phase 1: Neo4j RBAC Infrastructure (Prerequisite)
-
-**Estimated effort**: 2-3 days
-
-1. **Verify Neo4j Enterprise Edition**
-   - Check current deployment: `CALL dbms.components() YIELD edition`
-   - Enterprise Edition required for property-based access control
-   - If Community Edition, plan upgrade path
-
-2. **Enable Authentication**
-   ```
-   # neo4j.conf
-   dbms.security.auth_enabled=true
-   dbms.security.procedures.unrestricted=apoc.*
-   ```
-
-3. **Create Service Account**
+3. **Service Account Setup**
    ```cypher
    CREATE USER machina_service SET PASSWORD 'secure_password' CHANGE NOT REQUIRED;
    CREATE ROLE machina_service_role;
@@ -213,25 +383,12 @@ These nodes are shared across patients (ontology/reference data):
    GRANT ROLE machina_service_role TO machina_service;
    ```
 
-4. **Create Base Patient Role**
-   ```cypher
-   CREATE ROLE patient_base;
-   GRANT ACCESS ON DATABASE healthcare TO patient_base;
-   GRANT MATCH {*} ON GRAPH healthcare TO patient_base;
-   ```
+### Phase 7: Patient User Management
 
-5. **Update Kubernetes Secrets**
-   - Add `NEO4J_SERVICE_USER` and `NEO4J_SERVICE_PASSWORD`
-   - Update deployment manifests
+**Technical difficulty**: Medium (new service with workflow integration)
 
-### Phase 2: Patient User Management
-
-**Estimated effort**: 2-3 days
-
-1. **Create Patient User Service**
+1. **Create PatientUserManager**
    ```python
-   # repos/dem2/shared/src/machina/shared/graph_traversal/patient_user_manager.py
-
    class PatientUserManager:
        """Manages Neo4j users for patient-level RBAC."""
 
@@ -245,306 +402,96 @@ These nodes are shared across patients (ontology/reference data):
            """Ensure all existing patients have Neo4j users."""
    ```
 
-2. **Hook into Patient Creation**
-   - Modify patient creation workflow to call `create_patient_user()`
-   - Add migration script to create users for existing patients
+2. **Hook into Patient Creation Workflow**
+3. **Migration Script for Existing Patients**
 
-3. **Generate DENY Rules per Patient**
-   ```python
-   def generate_patient_deny_rules(patient_id: str) -> list[str]:
-       """Generate Cypher DENY statements for patient-scoped nodes."""
-       patient_scoped_nodes = [
-           "ObservationValueNode",
-           "ConditionCaseNode",
-           "SymptomEpisodeNode",
-           "EncounterNode",
-           "DocumentReferenceNode",
-           "IntakeEventNode",
-           "AllergyIntoleranceNode",
-       ]
+### Phase 8: Impersonation Integration
 
-       rules = []
-       for node_type in patient_scoped_nodes:
-           rules.append(f"""
-               DENY TRAVERSE ON GRAPH healthcare
-               FOR (n:{node_type}) WHERE n.patient_id <> '{patient_id}'
-               TO patient_{patient_id}_role
-           """)
-
-       # Special case for PatientNode (uses uuid, not patient_id)
-       rules.append(f"""
-           DENY TRAVERSE ON GRAPH healthcare
-           FOR (n:PatientNode) WHERE n.uuid <> '{patient_id}'
-           TO patient_{patient_id}_role
-       """)
-
-       return rules
-   ```
-
-### Phase 3: Impersonation Integration
-
-**Estimated effort**: 1-2 days
+**Technical difficulty**: Medium (service refactoring)
 
 1. **Update GraphTraversalService**
-   ```python
-   # repos/dem2/shared/src/machina/shared/graph_traversal/service.py
+   - Add impersonation to query execution
+   - Update driver configuration for service account
 
-   class GraphTraversalService:
-       def __init__(
-           self,
-           neo4j_driver: Any,
-           validator: CypherValidator,
-           formatter: GraphResultFormatter,
-           # Remove: tenant_injector: TenantInjector,
-       ):
-           self.driver = neo4j_driver
-           self.validator = validator
-           self.formatter = formatter
+2. **Update QuerySecurityValidator**
+   - Change from logging-only to logging + RBAC verification
+   - Verify impersonation is active
 
-       async def execute_query(
-           self,
-           query: str,
-           patient_id: str,
-           user_id: str,
-           parameters: dict | None = None,
-       ) -> list[dict]:
-           """Execute query with patient-scoped security context."""
+### Phase 9: RBAC Testing and Deployment
 
-           # Validate query syntax
-           validated_query = self.validator.validate(query)
-
-           # Execute with impersonation (DATABASE-LEVEL SECURITY)
-           patient_user = f"patient_{patient_id}"
-
-           async with self.driver.session(
-               database=self.database_name,
-               impersonated_user=patient_user,
-           ) as session:
-               result = await session.run(validated_query, parameters or {})
-               records = [record.data() async for record in result]
-
-           return self.formatter.format(records)
-   ```
-
-2. **Update Driver Configuration**
-   ```python
-   # Update Neo4j driver to use service account
-   driver = AsyncGraphDatabase.driver(
-       uri=config.neo4j.uri,
-       auth=(config.neo4j.service_user, config.neo4j.service_password),
-   )
-   ```
-
-### Phase 4: Query Validation Layer (Secondary Safety)
-
-**Estimated effort**: 1 day
-
-1. **Add Query Validator**
-   ```python
-   # repos/dem2/shared/src/machina/shared/graph_traversal/query_validator.py
-
-   class QuerySecurityValidator:
-       """Validates queries have appropriate security constraints."""
-
-       def validate_patient_scope(
-           self,
-           query: str,
-           patient_id: str,
-       ) -> ValidationResult:
-           """
-           Check if query references patient-scoped nodes appropriately.
-
-           This is a SECONDARY safety check. Primary security is via RBAC.
-           Logs warnings for queries that might indicate prompt issues.
-           """
-           # Parse query for patient-scoped node references
-           # Log warning if no patient_id constraint found
-           # Does NOT block execution (RBAC handles security)
-   ```
-
-### Phase 5: Prompt Updates (Tertiary Layer)
-
-**Estimated effort**: 0.5 days
-
-1. **Update CypherAgent Instructions**
-   - Add patient_id injection via `{patient_id}` template
-   - Simplify tenant scoping rules (no longer critical for security)
-   - Focus on query correctness, not security
-
-2. **Remove TenantInjector Code**
-   - Delete `tenant_injector.py` (531 lines)
-   - Delete `where_clause_builder.py` (387 lines)
-   - Delete `test_tenant_injector.py`
-   - Update imports in `service.py`
-
-### Phase 6: Testing and Validation
-
-**Estimated effort**: 2 days
+**Technical difficulty**: Medium (security testing)
 
 1. **Security Tests**
-   ```python
-   async def test_cross_patient_access_denied():
-       """Verify patient A cannot access patient B's data."""
-       # Create two patients with observations
-       # Query as patient A
-       # Verify only patient A's data returned
-       # Query for patient B's data explicitly
-       # Verify empty result (not error - data appears non-existent)
+   - Verify cross-patient access denied at database level
+   - Verify shared data still accessible
+   - Verify impersonation audit trail
 
-   async def test_shared_data_accessible():
-       """Verify type nodes are accessible to all patients."""
-       # Query ObservationTypeNode as patient A
-       # Verify results returned
+2. **Performance Tests**
+   - Measure RBAC overhead (target: < 10% latency increase)
 
-   async def test_impersonation_context():
-       """Verify impersonation sets correct security context."""
-       # Execute query with impersonation
-       # Verify audit log shows correct user
-   ```
+3. **Staged Deployment**
+   - Preview → Staging → Production
 
-2. **Regression Tests**
-   - All existing graph query tests
-   - STARTS WITH / ENDS WITH / CONTAINS patterns
-   - Complex multi-hop traversals
-
-3. **Performance Tests**
-   - Measure query latency with RBAC enabled
-   - Compare to baseline without RBAC
-   - Target: < 10% performance impact
-
-### Phase 7: Deployment
-
-**Estimated effort**: 1 day
-
-1. **Preview Environment**
-   - Deploy to tusdi-preview-92
-   - Run security test suite
-   - Manual verification
-
-2. **Staging**
-   - Deploy to tusdi-staging
-   - Extended soak test (24-48 hours)
-   - Performance monitoring
-
-3. **Production**
-   - Deploy to tusdi-prod
-   - Gradual rollout if possible
-   - Monitoring and alerting
-
-## Requirements
-
-### Neo4j Enterprise Edition
-
-Property-based access control and impersonation require **Neo4j Enterprise Edition**.
-
-**Current Status**: Verify with `CALL dbms.components() YIELD edition`
-
-If Community Edition:
-- Upgrade to Enterprise (licensing cost)
-- Or use AuraDB Business Critical / Virtual Dedicated Cloud
-
-### Configuration Changes
-
-```
-# neo4j.conf additions
-dbms.security.auth_enabled=true
-dbms.security.procedures.unrestricted=apoc.*
-```
-
-## Performance Considerations
-
-From [Neo4j Documentation](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/):
-
-> Performance impact depends on:
-> - Number of properties on nodes/relationships (more = greater impact)
-> - Number of property-based privileges (more = greater impact)
-> - Type of privilege (TRAVERSE has greater impact than READ)
-
-**Mitigations**:
-- Use block storage format
-- Minimize number of DENY rules per patient (use role inheritance)
-- Monitor query performance after deployment
-- Consider caching for frequently accessed shared data
-
-## Scalability Considerations
-
-### User Management at Scale
-
-| Patients   | Neo4j Users   | Roles    | Consideration                   |
-|:-----------|:--------------|:---------|:--------------------------------|
-| 100        | 100           | 100      | No issues                       |
-| 1,000      | 1,000         | 1,000    | Monitor memory                  |
-| 10,000     | 10,000        | 10,000   | May need optimization           |
-| 100,000+   | 100,000+      | 100,000+ | Consider alternative approaches |
-
-**Alternatives for Very Large Scale**:
-- Database-per-tenant (expensive, complex)
-- Parameterized security rules (not supported in current Neo4j)
-- Application-level security with audit logging (less secure)
-
-## Rollback Plan
-
-If RBAC deployment fails:
-
-1. **Immediate**: Disable impersonation, revert to direct service account queries
-2. **Short-term**: Re-enable TenantInjector (keep code in branch)
-3. **Long-term**: Fix underlying issues and redeploy
-
-## Files Changed
+## Stage 2 Files Changed
 
 ### New Files
 
 | File                                                 | Purpose                   |
 |:-----------------------------------------------------|:--------------------------|
 | `shared/.../graph_traversal/patient_user_manager.py` | Neo4j user management     |
-| `shared/.../graph_traversal/query_validator.py`      | Query security validation |
 | `scripts/migrate_patient_users.py`                   | One-time migration script |
 
 ### Modified Files
 
-| File                                    | Changes                                  |
-|:----------------------------------------|:-----------------------------------------|
-| `shared/.../graph_traversal/service.py` | Add impersonation, remove TenantInjector |
-| `agents/CypherAgent/config.yml`         | Simplify tenant rules                    |
-| `agents/CypherAgent/factory.py`         | Add patient_id to prompts                |
-| `agents/CypherAgent/query_runner.py`    | Remove tenant preview logging            |
-| Kubernetes manifests                    | Add service account secrets              |
-| `neo4j.conf`                            | Enable authentication                    |
+| File                                            | Changes                     |
+|:------------------------------------------------|:----------------------------|
+| `shared/.../graph_traversal/service.py`         | Add impersonation           |
+| `shared/.../graph_traversal/query_validator.py` | Add RBAC verification       |
+| Kubernetes manifests                            | Add service account secrets |
+| `neo4j.conf`                                    | Enable authentication       |
 
-### Deleted Files
+## Stage 2 Phase Summary
 
-| File                      | Lines   | Reason                 |
-|:--------------------------|:--------|:-----------------------|
-| `tenant_injector.py`      | 531     | Replaced by RBAC       |
-| `where_clause_builder.py` | 387     | Replaced by RBAC       |
-| `test_tenant_injector.py` | ~200    | Tests for deleted code |
+| Phase                        | Difficulty   | Dependencies              |
+|:-----------------------------|:-------------|:--------------------------|
+| 6. Neo4j Enterprise Upgrade  | Medium-High  | Budget approval, planning |
+| 7. Patient User Management   | Medium       | Phase 6                   |
+| 8. Impersonation Integration | Medium       | Phase 7                   |
+| 9. RBAC Testing/Deployment   | Medium       | Phase 8                   |
 
-## Success Criteria
+---
 
+## Overall Success Criteria
+
+### Stage 1 Success
+1. **Functionality**: All queries work (including STARTS WITH patterns)
+2. **Audit**: All queries logged with patient context
+3. **Maintainability**: ~918 lines of fragile regex code removed
+4. **Monitoring**: Validation warnings alert on suspicious queries
+
+### Stage 2 Success (Future)
 1. **Security**: Cross-patient data access physically impossible at database level
-2. **Functionality**: All existing queries work (including STARTS WITH patterns)
-3. **Performance**: < 10% latency increase
-4. **Audit**: All queries logged with impersonated user identity
-5. **Maintainability**: Simpler codebase without regex manipulation
+2. **Performance**: < 10% latency increase from RBAC
+3. **Audit**: All queries logged with impersonated user identity
 
-## Timeline Summary
+## Rollback Plan
 
-| Phase                        | Duration        | Dependencies     |
-|:-----------------------------|:----------------|:-----------------|
-| 1. RBAC Infrastructure       | 2-3 days        | Neo4j Enterprise |
-| 2. Patient User Management   | 2-3 days        | Phase 1          |
-| 3. Impersonation Integration | 1-2 days        | Phase 2          |
-| 4. Query Validation          | 1 day           | Phase 3          |
-| 5. Prompt Updates            | 0.5 days        | Phase 3          |
-| 6. Testing                   | 2 days          | Phase 4, 5       |
-| 7. Deployment                | 1 day           | Phase 6          |
-| **Total**                    | **~10-12 days** |                  |
+### Stage 1 Rollback
+If prompt-based approach causes issues:
+- Re-enable TenantInjector from git branch
+- Investigate specific failing query patterns
+- Adjust prompt engineering
+
+### Stage 2 Rollback
+If RBAC deployment fails:
+- Disable impersonation
+- Revert to Stage 1 (prompt-only) approach
+- Investigate RBAC issues
 
 ## References
 
+- [Neo4j Pricing](https://neo4j.com/pricing/)
 - [Neo4j Role-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/manage-privileges/)
 - [Neo4j Property-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/)
+- [Neo4j Impersonation](https://neo4j.com/docs/query-api/current/impersonation/)
 - [Neo4j Fine-Grained Access Control Tutorial](https://neo4j.com/docs/operations-manual/current/tutorial/access-control/)
-- [Neo4j Impersonation - Query API](https://neo4j.com/docs/query-api/current/impersonation/)
-- [Neo4j Python Driver - Impersonation](https://neo4j.com/docs/python-manual/current/transactions/)
-- [Neo4j Security Best Practices](https://neo4j.com/product/neo4j-graph-database/security/)
