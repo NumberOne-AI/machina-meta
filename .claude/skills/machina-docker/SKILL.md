@@ -278,6 +278,152 @@ just gcloud-admin::kubectl get pods -n argocd
 just gcloud-admin::k9s
 ```
 
+### Pattern 9: Query Remote Neo4j on GKE (Preview/Dev)
+
+For debugging data issues on preview or dev environments, you can query Neo4j directly:
+
+**Step 1: Port-forward to Neo4j** (requires kubectl configured locally)
+
+```bash
+# Port-forward to Neo4j on a specific namespace
+# Uses 17474/17687 to avoid conflict with local Neo4j (7474/7687)
+kubectl port-forward -n tusdi-preview-92 svc/neo4j 17474:7474 17687:7687 &
+
+# Or for tusdi-dev
+kubectl port-forward -n tusdi-dev svc/neo4j 17474:7474 17687:7687 &
+```
+
+**Step 2: Get Neo4j credentials from Kubernetes**
+
+```bash
+# Get password from secret (username is always 'neo4j')
+kubectl get secret -n tusdi-preview-92 neo4j-secrets -o json | \
+  jq -r '.data.NEO4J_PASSWORD | @base64d'
+```
+
+**Step 3: Query using neo4j-query.py**
+
+```bash
+# Set credentials via environment variables
+DYNACONF_NEO4J_DB__HTTP_PORT=17474 \
+DYNACONF_NEO4J_DB__USER=neo4j \
+DYNACONF_NEO4J_DB__PASSWORD=<password-from-step-2> \
+./scripts/neo4j-query.py --format json "MATCH (n:ObservationTypeNode) RETURN n.name LIMIT 10"
+
+# Example: Find duplicate biomarkers
+DYNACONF_NEO4J_DB__HTTP_PORT=17474 \
+DYNACONF_NEO4J_DB__USER=neo4j \
+DYNACONF_NEO4J_DB__PASSWORD=<password> \
+./scripts/neo4j-query.py --format json "
+MATCH (ov:ObservationValueNode)-[:INSTANCE_OF]->(ot:ObservationTypeNode)
+WITH ot.name AS name, ov.observed_at AS observed, count(ov) AS cnt
+WHERE cnt > 1
+RETURN name, observed, cnt
+ORDER BY cnt DESC
+LIMIT 20
+"
+```
+
+**Step 4: Clean up port-forward**
+
+```bash
+# Find and kill the port-forward process
+pkill -f "port-forward.*neo4j"
+```
+
+**Common Namespaces:**
+- `tusdi-dev` - Development environment
+- `tusdi-staging` - Staging environment
+- `tusdi-preview-<id>` - Preview environments (e.g., tusdi-preview-92)
+
+**Note:** gcloud-admin port-forwarding runs inside the container, not accessible from host. Use kubectl directly on host for now. See TODO.md for planned improvement.
+
+### Pattern 10: Call Remote Backend API with Authentication
+
+For testing backend APIs on preview/dev environments with full authentication:
+
+**Step 1: Set up environment file** (e.g., `.env.tusdi-preview-92`)
+
+```bash
+# Create environment file with all required variables
+cat > .env.tusdi-preview-92 << 'EOF'
+# Backend API URL (port-forwarded from tusdi-api service)
+export BACKEND_URL="http://localhost:18000/api/v1"
+
+# PostgreSQL connection (port-forwarded from postgres service)
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=15432
+export POSTGRES_USER=tusdi
+export POSTGRES_PASSWORD='<password-from-k8s-secret>'
+export POSTGRES_DB=tusdi_preview
+
+# Neo4j connection (port-forwarded from neo4j service)
+export DYNACONF_NEO4J_DB__HTTP_PORT=17474
+export DYNACONF_NEO4J_DB__USER=neo4j
+export DYNACONF_NEO4J_DB__PASSWORD=<password-from-k8s-secret>
+
+# Default user for authentication
+export AUTH_EMAIL=dbeal@numberone.ai
+
+# Default patient context
+export PATIENT_FIRST_NAME=Stuart
+export PATIENT_LAST_NAME=McClure
+export PATIENT_DATE_OF_BIRTH=1969-03-09
+EOF
+```
+
+**Step 2: Port-forward all services**
+
+```bash
+# Backend API (use port 18000 to avoid conflict with local :8000)
+kubectl port-forward -n tusdi-preview-92 svc/tusdi-api 18000:8000 &
+
+# PostgreSQL (use port 15432 to avoid conflict with local :5432)
+kubectl port-forward -n tusdi-preview-92 svc/postgres 15432:5432 &
+
+# Neo4j (use ports 17474/17687 to avoid conflict with local :7474/:7687)
+kubectl port-forward -n tusdi-preview-92 svc/neo4j 17474:7474 17687:7687 &
+```
+
+**Step 3: Use curl_api.sh with authentication**
+
+```bash
+# curl_api.sh automatically handles authentication via user_manager.py
+# It generates JWT tokens and sets patient context headers
+
+# List observations grouped by type
+(. .env.tusdi-preview-92 && cd repos/dem2 && just curl_api '{"function": "get_observations_grouped", "per_type_values_limit": 3}')
+
+# Filter specific biomarker with jq
+(. .env.tusdi-preview-92 && cd repos/dem2 && just curl_api '{"function": "get_observations_grouped", "per_type_values_limit": 3}') | jq '.items[]|select(.observation_type.display_name=="Folate").values'
+
+# List documents
+(. .env.tusdi-preview-92 && cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+
+# List tasks
+(. .env.tusdi-preview-92 && cd repos/dem2 && just curl_api '{"function": "list_tasks"}')
+```
+
+**Authentication Scripts:**
+
+- **`user_manager.py`** - Generates JWT tokens for API authentication
+  - `uv run scripts/user_manager.py user token --export` - outputs `export AUTH_HEADER="Bearer ..."`
+  - `uv run scripts/user_manager.py user token --export-cookie` - for UI/browser authentication
+  - Called automatically by `curl_api.sh`
+
+- **`curl_api.sh`** - JSON dispatch system for API calls
+  - Automatically handles JWT token generation via `user_manager.py`
+  - Sets patient context header (`X-Patient-Context-ID`)
+  - Respects `BACKEND_URL` environment variable
+  - See `repos/dem2/CLAUDE.md` for full function reference
+
+**Step 4: Clean up port-forwards**
+
+```bash
+# Kill all port-forwards
+pkill -f "port-forward.*tusdi-preview"
+```
+
 ---
 
 ## Volume Management
