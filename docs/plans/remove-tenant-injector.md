@@ -1,435 +1,550 @@
-# Plan: Remove TenantInjector and Implement Prompt-Based Patient ID Restrictions
+# Plan: Replace TenantInjector with Neo4j RBAC Security
 
 **Status**: PROPOSED
 **Created**: 2026-01-23
+**Revised**: 2026-01-23 (v2 - Added Neo4j RBAC security layer)
 **Related Problem**: [PROBLEMS.md - Syntax errors caused by tenant patient_id query injection](../../PROBLEMS.md)
 **Evidence Log**: [logs/tenant-injection-syntax-errors-2026-01-23.log](../../logs/tenant-injection-syntax-errors-2026-01-23.log)
+**Executive Summary**: [remove-tenant-injector-executive-summary.md](remove-tenant-injector-executive-summary.md)
 
 ## Executive Summary
 
-The current `TenantInjector` system uses regex-based manipulation to inject `WHERE patient_id = $patient_id` clauses into Cypher queries. This approach is fundamentally fragile and breaks when Cypher queries contain multi-word operators like `STARTS WITH`, `ENDS WITH`, or `CONTAINS`.
+The current `TenantInjector` breaks Cypher queries containing `STARTS WITH`, `ENDS WITH`, etc. Rather than simply removing it and relying on prompt engineering (high risk), this revised plan implements **Neo4j Role-Based Access Control (RBAC)** as a database-enforced security layer.
 
-**This plan proposes:**
-1. Remove the `TenantInjector` and `WhereClauseBuilder` entirely
-2. Update CypherAgent instructions to include patient_id filtering in generated queries
-3. Use ADK's `MachinaMedState` to inject patient_id dynamically into agent prompts
-4. Apply the same pattern to all agents that need patient-scoped data access
+**Key Change from v1**: Security is enforced at the database level, not the application level.
 
-## Problem Statement
+## The Problem (Unchanged)
 
-### Current Architecture
+`TenantInjector` uses regex to inject `WHERE patient_id = $patient_id` into Cypher queries. This breaks multi-word operators:
 
 ```
-User Query
-    ↓
-CypherAgent generates Cypher (no patient_id filter)
-    ↓
-TenantInjector.inject_tenant_filters() -- REGEX MANIPULATION
-    ↓
-Broken Cypher (syntax errors with STARTS WITH, etc.)
-    ↓
-Neo4j rejects query
+BEFORE: WHERE name STARTS WITH "T"
+AFTER:  WHERE (name STARTS) AND patient_id = $patient_id WITH "T"  ← BROKEN
 ```
 
-### Root Cause
+## Revised Solution: Defense in Depth
 
-The `WhereClauseBuilder._find_where_clause_end()` method searches for `WITH` keyword to determine WHERE clause boundaries. When a query contains `STARTS WITH "value"`, the regex finds `WITH` at the wrong position and injects the patient_id filter mid-expression:
+|   Layer | Location           | Type              | Purpose                                                            |
+|--------:|:-------------------|:------------------|:-------------------------------------------------------------------|
+|       1 | Neo4j RBAC         | DATABASE-ENFORCED | Per-patient users, property-based access, impersonation            |
+|       2 | Query Validation   | APPLICATION       | Pre-execution checks, logging, alerting on suspicious patterns     |
+|       3 | Prompt Engineering | LLM               | Instruct agents to include patient_id (not relied on for security) |
 
-**Before injection:**
+**Layer 1 Details** (Primary Security):
+- Patient-specific users with property-based access control
+- Impersonation for per-request security context
+- Queries physically cannot return unauthorized data
+
+**Layer 2 Details** (Secondary Safety):
+- Pre-execution check for patient_id in queries
+- Reject queries that could bypass security
+- Logging and alerting on suspicious patterns
+
+**Layer 3 Details** (Tertiary - Correctness):
+- Instruct agents to include patient_id in generated queries
+- Provides correct queries, but NOT relied upon for security
+
+## Neo4j RBAC Architecture
+
+### Overview
+
+Neo4j Enterprise Edition provides fine-grained access control through:
+- **Property-Based Access Control**: DENY/GRANT based on node property values
+- **User Impersonation**: Execute queries in another user's security context
+- **Role-Based Privileges**: Assign permissions to roles, roles to users
+
+**References**:
+- [Neo4j Role-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/manage-privileges/)
+- [Neo4j Property-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/)
+- [Neo4j Impersonation](https://neo4j.com/docs/query-api/current/impersonation/)
+- [Fine-Grained Access Control Tutorial](https://neo4j.com/docs/operations-manual/current/tutorial/access-control/)
+
+### Approach: User-per-Patient with Impersonation
+
+```
+                    ┌──────────────────┐
+                    │   Application    │
+                    │  (service user)  │
+                    └────────┬─────────┘
+                             │ impersonated_user=patient_<uuid>
+                             ▼
+                    ┌──────────────────┐
+                    │     Neo4j        │
+                    │  (RBAC enforced) │
+                    └────────┬─────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              ▼              ▼              ▼
+         ┌────────┐    ┌────────┐    ┌────────┐
+         │patient_│    │patient_│    │patient_│
+         │  abc   │    │  def   │    │  xyz   │
+         └────────┘    └────────┘    └────────┘
+              │              │              │
+              ▼              ▼              ▼
+         Only sees      Only sees      Only sees
+         patient_id=    patient_id=    patient_id=
+         "abc" data     "def" data     "xyz" data
+```
+
+### How It Works
+
+1. **Patient User Creation**: When a patient is created in the system, create a corresponding Neo4j user
+2. **Role Assignment**: Assign patient-specific role with property-based restrictions
+3. **Query Execution**: Backend uses impersonation to execute queries as the patient user
+4. **Database Enforcement**: Neo4j filters results based on the impersonated user's permissions
+
+### RBAC Setup Commands
+
 ```cypher
-WHERE toLower(ot.summary) STARTS WITH "t"
+// 1. Create base role for patient access
+CREATE ROLE patient_base;
+
+// 2. Grant read access to the healthcare graph
+GRANT ACCESS ON DATABASE healthcare TO patient_base;
+GRANT MATCH {*} ON GRAPH healthcare TO patient_base;
+
+// 3. Create patient-specific user (done per-patient)
+CREATE USER patient_abc123 SET PASSWORD 'generated_secure_password' CHANGE NOT REQUIRED;
+
+// 4. Create patient-specific role with property restrictions
+CREATE ROLE patient_abc123_role;
+GRANT ROLE patient_base TO patient_abc123_role;
+
+// 5. DENY access to other patients' data via property-based rules
+DENY TRAVERSE ON GRAPH healthcare
+  FOR (n:ObservationValueNode) WHERE n.patient_id <> 'abc123'
+  TO patient_abc123_role;
+
+DENY TRAVERSE ON GRAPH healthcare
+  FOR (n:ConditionCaseNode) WHERE n.patient_id <> 'abc123'
+  TO patient_abc123_role;
+
+DENY TRAVERSE ON GRAPH healthcare
+  FOR (n:SymptomEpisodeNode) WHERE n.patient_id <> 'abc123'
+  TO patient_abc123_role;
+
+// ... repeat for all patient-scoped node types
+
+// 6. Assign role to user
+GRANT ROLE patient_abc123_role TO patient_abc123;
+
+// 7. Grant service account impersonation privilege
+GRANT IMPERSONATE (patient_abc123) ON DBMS TO service_account;
 ```
 
-**After injection (BROKEN):**
-```cypher
-WHERE (toLower(ot.summary) STARTS) AND ov.patient_id = $patient_id WITH "t"
+### Python Driver Integration
+
+```python
+# In GraphTraversalService
+
+async def execute_query(
+    self,
+    query: str,
+    patient_id: str,
+    parameters: dict | None = None,
+) -> list[dict]:
+    """Execute query with patient-scoped security context."""
+
+    # Impersonate the patient-specific user
+    patient_user = f"patient_{patient_id}"
+
+    async with self.driver.session(
+        database="healthcare",
+        impersonated_user=patient_user,  # <-- KEY: Database-level security
+    ) as session:
+        result = await session.run(query, parameters or {})
+        return [record.data() async for record in result]
 ```
 
-### Evidence
+### Patient-Scoped Node Types
 
-From `tusdi-preview-92` logs on 2026-01-23:
-```
-Neo.ClientError.Statement.SyntaxError
-Invalid input ')': expected 'WITH' (line 1, column 107)
-```
+Based on the graph schema, these nodes have `patient_id` property and need RBAC rules:
 
-See [evidence log](../../logs/tenant-injection-syntax-errors-2026-01-23.log) for full details.
+| Node Type                | Property              | DENY Rule Needed    |
+|:-------------------------|:----------------------|:--------------------|
+| `ObservationValueNode`   | `patient_id`          | Yes                 |
+| `ConditionCaseNode`      | `patient_id`          | Yes                 |
+| `SymptomEpisodeNode`     | `patient_id`          | Yes                 |
+| `EncounterNode`          | `patient_id`          | Yes                 |
+| `DocumentReferenceNode`  | `patient_id`          | Yes                 |
+| `IntakeEventNode`        | `patient_id`          | Yes                 |
+| `AllergyIntoleranceNode` | `patient_id`          | Yes                 |
+| `PatientNode`            | `uuid` (special case) | Yes (match on uuid) |
 
-## Proposed Solution
+### Shared/Type Nodes (No Restrictions)
 
-### Target Architecture
+These nodes are shared across patients (ontology/reference data):
 
-```
-User Query
-    ↓
-CypherAgent receives patient_id via MachinaMedState
-    ↓
-Agent instructions include patient_id filtering rules
-    ↓
-CypherAgent generates Cypher WITH patient_id filter built-in
-    ↓
-Valid Cypher executes against Neo4j
-```
-
-### Key Changes
-
-1. **Remove TenantInjector entirely** - No more regex-based query manipulation
-2. **Instruct agents to include patient_id** - Prompt engineering instead of post-processing
-3. **Pass patient_id via ADK state** - Use existing `MachinaMedState` infrastructure
-4. **Agents responsible for scoping** - Shift responsibility to the LLM that generates queries
+| Node Type             | Reason                       |
+|:----------------------|:-----------------------------|
+| `ObservationTypeNode` | Shared biomarker definitions |
+| `ConditionTypeNode`   | Shared condition definitions |
+| `SymptomTypeNode`     | Shared symptom definitions   |
+| `SubstanceNode`       | Shared substance catalog     |
+| `MedicationNode`      | Shared medication catalog    |
+| `SupplementNode`      | Shared supplement catalog    |
+| `ReferenceRangeNode`  | Shared reference ranges      |
+| `BodySystemNode`      | Shared body system ontology  |
 
 ## Implementation Plan
 
-### Phase 1: CypherAgent Config Changes
+### Phase 1: Neo4j RBAC Infrastructure (Prerequisite)
 
-**File**: `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml`
+**Estimated effort**: 2-3 days
 
-#### Remove These Sections (currently lines 28-60)
+1. **Verify Neo4j Enterprise Edition**
+   - Check current deployment: `CALL dbms.components() YIELD edition`
+   - Enterprise Edition required for property-based access control
+   - If Community Edition, plan upgrade path
 
-Delete all mentions of:
-- "CRITICAL: VARIABLE SCOPE FOR TENANT FILTERING"
-- "CRITICAL TENANT SCOPING RULES"
-- "Correct query examples for tenant scoping"
-- TypeNode vs Instance node distinction for multi-tenancy
+2. **Enable Authentication**
+   ```
+   # neo4j.conf
+   dbms.security.auth_enabled=true
+   dbms.security.procedures.unrestricted=apoc.*
+   ```
 
-#### Add New Patient ID Filtering Instructions
+3. **Create Service Account**
+   ```cypher
+   CREATE USER machina_service SET PASSWORD 'secure_password' CHANGE NOT REQUIRED;
+   CREATE ROLE machina_service_role;
+   GRANT ALL ON DATABASE healthcare TO machina_service_role;
+   GRANT IMPERSONATE (*) ON DBMS TO machina_service_role;
+   GRANT ROLE machina_service_role TO machina_service;
+   ```
 
-Replace with clear, positive instructions:
+4. **Create Base Patient Role**
+   ```cypher
+   CREATE ROLE patient_base;
+   GRANT ACCESS ON DATABASE healthcare TO patient_base;
+   GRANT MATCH {*} ON GRAPH healthcare TO patient_base;
+   ```
 
-```yaml
-instruction: |
-  Generate Cypher queries for the medical knowledge graph from natural language.
+5. **Update Kubernetes Secrets**
+   - Add `NEO4J_SERVICE_USER` and `NEO4J_SERVICE_PASSWORD`
+   - Update deployment manifests
 
-  # PATIENT SCOPING (REQUIRED)
+### Phase 2: Patient User Management
 
-  The current patient ID is: {patient_id}
+**Estimated effort**: 2-3 days
 
-  **All queries MUST filter by patient_id:**
-  - For nodes with `patient_id` property: Add `WHERE node.patient_id = "{patient_id}"`
-  - For PatientNode: Add `WHERE p.uuid = "{patient_id}"`
+1. **Create Patient User Service**
+   ```python
+   # repos/dem2/shared/src/machina/shared/graph_traversal/patient_user_manager.py
 
-  **Patient-scoped nodes** (have patient_id property):
-  - ObservationValueNode
-  - ConditionCaseNode
-  - SymptomEpisodeNode
-  - EncounterNode
-  - DocumentReferenceNode
-  - IntakeEventNode
-  - AllergyIntoleranceNode
+   class PatientUserManager:
+       """Manages Neo4j users for patient-level RBAC."""
 
-  **Type nodes** (NO patient_id, shared across patients):
-  - ObservationTypeNode, ConditionTypeNode, SymptomTypeNode
-  - SubstanceNode, MedicationNode, SupplementNode
-  - BodySystemNode, IngredientNode
+       async def create_patient_user(self, patient_id: str) -> None:
+           """Create Neo4j user and role for a patient."""
 
-  **Query Pattern:**
-  ```cypher
-  MATCH (ov:ObservationValueNode)-[:INSTANCE_OF]->(ot:ObservationTypeNode)
-  WHERE ov.patient_id = "{patient_id}"
-    AND toLower(ot.summary) CONTAINS "cholesterol"
-  RETURN ov, ot
-  ```
+       async def delete_patient_user(self, patient_id: str) -> None:
+           """Remove Neo4j user and role when patient deleted."""
 
-  **Medication/Regimen Pattern** (IntakeRegimenNode has no patient_id):
-  ```cypher
-  MATCH (p:PatientNode)-[:HAS_REGIMEN]->(regimen:IntakeRegimenNode)
-  WHERE p.uuid = "{patient_id}"
-  RETURN regimen
-  ```
+       async def sync_all_patients(self) -> None:
+           """Ensure all existing patients have Neo4j users."""
+   ```
 
-  # ... rest of existing instructions ...
+2. **Hook into Patient Creation**
+   - Modify patient creation workflow to call `create_patient_user()`
+   - Add migration script to create users for existing patients
+
+3. **Generate DENY Rules per Patient**
+   ```python
+   def generate_patient_deny_rules(patient_id: str) -> list[str]:
+       """Generate Cypher DENY statements for patient-scoped nodes."""
+       patient_scoped_nodes = [
+           "ObservationValueNode",
+           "ConditionCaseNode",
+           "SymptomEpisodeNode",
+           "EncounterNode",
+           "DocumentReferenceNode",
+           "IntakeEventNode",
+           "AllergyIntoleranceNode",
+       ]
+
+       rules = []
+       for node_type in patient_scoped_nodes:
+           rules.append(f"""
+               DENY TRAVERSE ON GRAPH healthcare
+               FOR (n:{node_type}) WHERE n.patient_id <> '{patient_id}'
+               TO patient_{patient_id}_role
+           """)
+
+       # Special case for PatientNode (uses uuid, not patient_id)
+       rules.append(f"""
+           DENY TRAVERSE ON GRAPH healthcare
+           FOR (n:PatientNode) WHERE n.uuid <> '{patient_id}'
+           TO patient_{patient_id}_role
+       """)
+
+       return rules
+   ```
+
+### Phase 3: Impersonation Integration
+
+**Estimated effort**: 1-2 days
+
+1. **Update GraphTraversalService**
+   ```python
+   # repos/dem2/shared/src/machina/shared/graph_traversal/service.py
+
+   class GraphTraversalService:
+       def __init__(
+           self,
+           neo4j_driver: Any,
+           validator: CypherValidator,
+           formatter: GraphResultFormatter,
+           # Remove: tenant_injector: TenantInjector,
+       ):
+           self.driver = neo4j_driver
+           self.validator = validator
+           self.formatter = formatter
+
+       async def execute_query(
+           self,
+           query: str,
+           patient_id: str,
+           user_id: str,
+           parameters: dict | None = None,
+       ) -> list[dict]:
+           """Execute query with patient-scoped security context."""
+
+           # Validate query syntax
+           validated_query = self.validator.validate(query)
+
+           # Execute with impersonation (DATABASE-LEVEL SECURITY)
+           patient_user = f"patient_{patient_id}"
+
+           async with self.driver.session(
+               database=self.database_name,
+               impersonated_user=patient_user,
+           ) as session:
+               result = await session.run(validated_query, parameters or {})
+               records = [record.data() async for record in result]
+
+           return self.formatter.format(records)
+   ```
+
+2. **Update Driver Configuration**
+   ```python
+   # Update Neo4j driver to use service account
+   driver = AsyncGraphDatabase.driver(
+       uri=config.neo4j.uri,
+       auth=(config.neo4j.service_user, config.neo4j.service_password),
+   )
+   ```
+
+### Phase 4: Query Validation Layer (Secondary Safety)
+
+**Estimated effort**: 1 day
+
+1. **Add Query Validator**
+   ```python
+   # repos/dem2/shared/src/machina/shared/graph_traversal/query_validator.py
+
+   class QuerySecurityValidator:
+       """Validates queries have appropriate security constraints."""
+
+       def validate_patient_scope(
+           self,
+           query: str,
+           patient_id: str,
+       ) -> ValidationResult:
+           """
+           Check if query references patient-scoped nodes appropriately.
+
+           This is a SECONDARY safety check. Primary security is via RBAC.
+           Logs warnings for queries that might indicate prompt issues.
+           """
+           # Parse query for patient-scoped node references
+           # Log warning if no patient_id constraint found
+           # Does NOT block execution (RBAC handles security)
+   ```
+
+### Phase 5: Prompt Updates (Tertiary Layer)
+
+**Estimated effort**: 0.5 days
+
+1. **Update CypherAgent Instructions**
+   - Add patient_id injection via `{patient_id}` template
+   - Simplify tenant scoping rules (no longer critical for security)
+   - Focus on query correctness, not security
+
+2. **Remove TenantInjector Code**
+   - Delete `tenant_injector.py` (531 lines)
+   - Delete `where_clause_builder.py` (387 lines)
+   - Delete `test_tenant_injector.py`
+   - Update imports in `service.py`
+
+### Phase 6: Testing and Validation
+
+**Estimated effort**: 2 days
+
+1. **Security Tests**
+   ```python
+   async def test_cross_patient_access_denied():
+       """Verify patient A cannot access patient B's data."""
+       # Create two patients with observations
+       # Query as patient A
+       # Verify only patient A's data returned
+       # Query for patient B's data explicitly
+       # Verify empty result (not error - data appears non-existent)
+
+   async def test_shared_data_accessible():
+       """Verify type nodes are accessible to all patients."""
+       # Query ObservationTypeNode as patient A
+       # Verify results returned
+
+   async def test_impersonation_context():
+       """Verify impersonation sets correct security context."""
+       # Execute query with impersonation
+       # Verify audit log shows correct user
+   ```
+
+2. **Regression Tests**
+   - All existing graph query tests
+   - STARTS WITH / ENDS WITH / CONTAINS patterns
+   - Complex multi-hop traversals
+
+3. **Performance Tests**
+   - Measure query latency with RBAC enabled
+   - Compare to baseline without RBAC
+   - Target: < 10% performance impact
+
+### Phase 7: Deployment
+
+**Estimated effort**: 1 day
+
+1. **Preview Environment**
+   - Deploy to tusdi-preview-92
+   - Run security test suite
+   - Manual verification
+
+2. **Staging**
+   - Deploy to tusdi-staging
+   - Extended soak test (24-48 hours)
+   - Performance monitoring
+
+3. **Production**
+   - Deploy to tusdi-prod
+   - Gradual rollout if possible
+   - Monitoring and alerting
+
+## Requirements
+
+### Neo4j Enterprise Edition
+
+Property-based access control and impersonation require **Neo4j Enterprise Edition**.
+
+**Current Status**: Verify with `CALL dbms.components() YIELD edition`
+
+If Community Edition:
+- Upgrade to Enterprise (licensing cost)
+- Or use AuraDB Business Critical / Virtual Dedicated Cloud
+
+### Configuration Changes
+
+```
+# neo4j.conf additions
+dbms.security.auth_enabled=true
+dbms.security.procedures.unrestricted=apoc.*
 ```
 
-### Phase 2: Dynamic Patient ID Injection
-
-**File**: `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/factory.py`
-
-#### Current State Access Pattern
-
-The codebase already has `MachinaMedState` infrastructure:
-
-```python
-# Already exists in factory.py
-async def test_cypher_wrapper(tool_context: ToolContext, cypher_query: str, dry_run: bool = True):
-    state = MachinaMedState.from_tool_context(tool_context)
-    return await test_cypher(
-        self.graph_traversal_service,
-        cypher_query=cypher_query,
-        patient_id=state.patient_id,  # <-- Already extracted
-        user_id=tool_context._invocation_context.user_id,
-        # ...
-    )
-```
-
-#### Add Instruction Rendering with Patient ID
-
-Modify agent creation to inject patient_id into instructions:
-
-```python
-def create_agent(self, config: AgentConfig | None = None) -> LlmAgent:
-    """Create agent using provided config or load from config.yml."""
-    if config is None:
-        config = self._load_config()
-
-    # Render instruction with dynamic patient_id
-    # Note: patient_id will be injected via before_agent_callback at runtime
-
-    return LlmAgent(
-        name=config.name,
-        model=self._model,
-        instruction=config.instruction,  # Contains {patient_id} placeholder
-        tools=[self._build_test_cypher_tool()],
-        before_agent_callback=[self._inject_patient_context],
-        # ...
-    )
-
-async def _inject_patient_context(self, callback_context: CallbackContext):
-    """Inject patient_id into agent instruction at runtime."""
-    from machina.shared.utils.render import render_template
-
-    state = MachinaMedState.from_callback_context(callback_context)
-
-    # Store patient_id in state for use in prompt rendering
-    callback_context.state["patient_id"] = state.patient_id
-
-    # The instruction template contains {patient_id} which gets
-    # substituted when the agent processes its instruction
-```
-
-#### Alternative: Use State Variables in Prompts
-
-ADK supports `{state_variable}` syntax in instructions. If the agent instruction contains `{patient_id}`, and `callback_context.state["patient_id"]` is set, ADK will substitute it.
-
-```python
-# In before_agent_callback
-callback_context.state["patient_id"] = state.patient_id
-```
-
-Then in config.yml:
-```yaml
-instruction: |
-  The current patient ID is: {patient_id}
-
-  All queries MUST filter by this patient_id...
-```
-
-### Phase 3: Remove TenantInjector from GraphTraversalService
-
-**File**: `repos/dem2/shared/src/machina/shared/graph_traversal/service.py`
-
-#### Before (Current)
-
-```python
-from machina.shared.graph_traversal.tenant_injector import TenantInjector
-
-class GraphTraversalService:
-    def __init__(
-        self,
-        neo4j_driver: Any,
-        validator: CypherValidator,
-        tenant_injector: TenantInjector,  # <-- Remove
-        formatter: GraphResultFormatter,
-    ):
-        self.tenant_injector = tenant_injector  # <-- Remove
-
-    def _prepare_query(self, query: str, patient_id: str, user_id: str) -> str:
-        # ... validation ...
-        query_with_limit = self.validator.enforce_limit(query)
-        query_with_filters = self.tenant_injector.inject_tenant_filters(  # <-- Remove
-            query_with_limit, patient_id, user_id
-        )
-        return query_with_filters
-```
-
-#### After (Proposed)
-
-```python
-# Remove TenantInjector import entirely
-
-class GraphTraversalService:
-    def __init__(
-        self,
-        neo4j_driver: Any,
-        validator: CypherValidator,
-        formatter: GraphResultFormatter,
-        # tenant_injector removed
-    ):
-        # self.tenant_injector removed
-
-    def _prepare_query(self, query: str, patient_id: str, user_id: str) -> str:
-        # ... validation ...
-        query_with_limit = self.validator.enforce_limit(query)
-        # No tenant injection - agent is responsible for patient_id filtering
-        return query_with_limit
-```
-
-### Phase 4: Remove Files
-
-Delete these files entirely:
-
-| File | Lines | Purpose |
-|------|-------|---------|
-| `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` | 531 | Main injector class |
-| `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` | 387 | WHERE clause manipulation |
-| `repos/dem2/shared/tests/graph_traversal/test_tenant_injector.py` | ~200 | Tests for deleted code |
-
-### Phase 5: Update Other Agents
-
-Based on research, these agents need patient_id context in their instructions:
-
-| Agent | Needs patient_id | Action |
-|-------|------------------|--------|
-| **CypherAgent** | YES | Update config.yml with patient_id injection |
-| **HealthConsultantAgent** | YES (via query_graph) | No change needed - uses CypherAgent |
-| **HealthConsultantLiteAgent** | YES (via query_graph) | No change needed - uses CypherAgent |
-| **DataExtractorAgent** | YES | Already uses MachinaMedState |
-| **DataEntryAgent** | YES | Already uses MachinaMedState |
-| **MedicalMeasurementsAgent** | YES | Already uses MachinaMedState |
-| **MedicalContextAgent** | YES | Already uses MachinaMedState |
-| **TriageAgent** | NO | Routes to other agents |
-| **GoogleSearchAgent** | NO | External search only |
-| **UrlHandlerAgent** | NO | External URLs only |
-| **FastGraphSummaryAgent** | NO | Receives pre-filtered data |
-
-### Phase 6: Query Runner Cleanup
-
-**File**: `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/query_runner.py`
-
-Remove tenant injection preview logging (lines 1087-1091):
-
-```python
-# DELETE this preview code
-augmented_query_preview = (
-    traversal_service.tenant_injector.inject_tenant_filters(
-        preview_source, patient_id, user_id
-    )
-)
-```
-
-Replace with:
-```python
-# No tenant injection - query is used as-is
-augmented_query_preview = preview_source
-```
-
-## Risk Assessment
-
-### Risks
-
-1. **LLM may forget to include patient_id filter**
-   - Mitigation: Strong prompt engineering with examples
-   - Mitigation: Add validation in `test_cypher()` to check for patient_id
-   - Mitigation: Unit tests for generated queries
-
-2. **Cross-patient data leakage if filter omitted**
-   - Mitigation: Add safety check in `GraphTraversalService.execute_query()` that validates patient-scoped nodes have filters
-   - Mitigation: Log warnings for queries without patient_id filters
-
-3. **Migration complexity**
-   - Mitigation: Phase implementation, test in preview environment first
-   - Mitigation: Keep TenantInjector code in separate branch for rollback
-
-### Benefits
-
-1. **No more syntax errors** - LLM generates complete, valid Cypher
-2. **Simpler architecture** - Remove ~918 lines of fragile regex code
-3. **Better query quality** - LLM can optimize entire query including filters
-4. **Maintainability** - Prompt changes easier than regex debugging
-
-## Testing Strategy
-
-### Unit Tests
-
-1. **CypherAgent output validation**
-   - Test that generated queries include patient_id filter
-   - Test with STARTS WITH, ENDS WITH, CONTAINS patterns
-   - Test medication queries include PatientNode filter
-
-2. **GraphTraversalService**
-   - Test query execution without tenant injection
-   - Test that patient_id parameter is passed correctly
-
-### Integration Tests
-
-1. **End-to-end query flow**
-   - Natural language query → Cypher → Neo4j
-   - Verify results are patient-scoped
-
-2. **Security validation**
-   - Verify no cross-patient data leakage
-   - Test with multiple patients in database
-
-### Preview Environment Testing
-
-1. Deploy to tusdi-preview-92
-2. Run same queries that previously failed (STARTS WITH patterns)
-3. Verify queries succeed with correct patient scoping
-
-## Rollout Plan
-
-### Phase 1: Development (1-2 days)
-- [ ] Update CypherAgent config.yml with new instructions
-- [ ] Add patient_id injection to CypherAgent factory
-- [ ] Remove TenantInjector from GraphTraversalService
-- [ ] Update query_runner.py to remove tenant preview logging
-
-### Phase 2: Testing (1 day)
-- [ ] Run existing unit tests (expect some failures for deleted code)
-- [ ] Update/remove tests for deleted TenantInjector
-- [ ] Add new tests for patient_id in generated queries
-- [ ] Manual testing with STARTS WITH queries
-
-### Phase 3: Preview Deployment (1 day)
-- [ ] Deploy to tusdi-preview-92
-- [ ] Test previously failing queries
-- [ ] Verify patient scoping with multiple test patients
-- [ ] Monitor for any errors
-
-### Phase 4: Production Deployment
-- [ ] Merge to dev branch
-- [ ] Deploy to tusdi-dev
-- [ ] Monitor for 24-48 hours
-- [ ] Deploy to production
-
-### Phase 5: Cleanup
-- [ ] Delete tenant_injector.py
-- [ ] Delete where_clause_builder.py
-- [ ] Delete test_tenant_injector.py
-- [ ] Update CLAUDE.md documentation
-
-## Open Questions
-
-1. **Should we add a validation layer that checks queries have patient_id filters?**
-   - Pro: Safety net against LLM mistakes
-   - Con: Adds complexity, may have false positives
-
-2. **Should patient_id be a Cypher parameter ($patient_id) or literal value?**
-   - Parameter: More secure (prevents injection), standard Neo4j practice
-   - Literal: Simpler prompt, but potential security concern
-   - **Recommendation**: Use parameter `$patient_id` with explicit instruction
-
-3. **How to handle queries that intentionally span all patients (admin use cases)?**
-   - Option A: Special admin flag that bypasses patient scoping
-   - Option B: Separate admin agent without patient_id injection
-   - **Recommendation**: Not needed for current use cases; add later if required
-
-## Appendix: Affected Files Summary
-
-| File | Action | Lines Changed |
-|------|--------|---------------|
-| `agents/CypherAgent/config.yml` | Modify | ~60 lines |
-| `agents/CypherAgent/factory.py` | Modify | ~20 lines |
-| `graph_traversal/service.py` | Modify | ~15 lines |
-| `agents/CypherAgent/query_runner.py` | Modify | ~10 lines |
-| `graph_traversal/tenant_injector.py` | DELETE | -531 lines |
-| `graph_traversal/where_clause_builder.py` | DELETE | -387 lines |
-| `tests/graph_traversal/test_tenant_injector.py` | DELETE | ~-200 lines |
-
-**Net change**: ~-1,000 lines of code removed, ~100 lines modified
+## Performance Considerations
+
+From [Neo4j Documentation](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/):
+
+> Performance impact depends on:
+> - Number of properties on nodes/relationships (more = greater impact)
+> - Number of property-based privileges (more = greater impact)
+> - Type of privilege (TRAVERSE has greater impact than READ)
+
+**Mitigations**:
+- Use block storage format
+- Minimize number of DENY rules per patient (use role inheritance)
+- Monitor query performance after deployment
+- Consider caching for frequently accessed shared data
+
+## Scalability Considerations
+
+### User Management at Scale
+
+| Patients   | Neo4j Users   | Roles    | Consideration                   |
+|:-----------|:--------------|:---------|:--------------------------------|
+| 100        | 100           | 100      | No issues                       |
+| 1,000      | 1,000         | 1,000    | Monitor memory                  |
+| 10,000     | 10,000        | 10,000   | May need optimization           |
+| 100,000+   | 100,000+      | 100,000+ | Consider alternative approaches |
+
+**Alternatives for Very Large Scale**:
+- Database-per-tenant (expensive, complex)
+- Parameterized security rules (not supported in current Neo4j)
+- Application-level security with audit logging (less secure)
+
+## Rollback Plan
+
+If RBAC deployment fails:
+
+1. **Immediate**: Disable impersonation, revert to direct service account queries
+2. **Short-term**: Re-enable TenantInjector (keep code in branch)
+3. **Long-term**: Fix underlying issues and redeploy
+
+## Files Changed
+
+### New Files
+
+| File                                                 | Purpose                   |
+|:-----------------------------------------------------|:--------------------------|
+| `shared/.../graph_traversal/patient_user_manager.py` | Neo4j user management     |
+| `shared/.../graph_traversal/query_validator.py`      | Query security validation |
+| `scripts/migrate_patient_users.py`                   | One-time migration script |
+
+### Modified Files
+
+| File                                    | Changes                                  |
+|:----------------------------------------|:-----------------------------------------|
+| `shared/.../graph_traversal/service.py` | Add impersonation, remove TenantInjector |
+| `agents/CypherAgent/config.yml`         | Simplify tenant rules                    |
+| `agents/CypherAgent/factory.py`         | Add patient_id to prompts                |
+| `agents/CypherAgent/query_runner.py`    | Remove tenant preview logging            |
+| Kubernetes manifests                    | Add service account secrets              |
+| `neo4j.conf`                            | Enable authentication                    |
+
+### Deleted Files
+
+| File                      | Lines   | Reason                 |
+|:--------------------------|:--------|:-----------------------|
+| `tenant_injector.py`      | 531     | Replaced by RBAC       |
+| `where_clause_builder.py` | 387     | Replaced by RBAC       |
+| `test_tenant_injector.py` | ~200    | Tests for deleted code |
+
+## Success Criteria
+
+1. **Security**: Cross-patient data access physically impossible at database level
+2. **Functionality**: All existing queries work (including STARTS WITH patterns)
+3. **Performance**: < 10% latency increase
+4. **Audit**: All queries logged with impersonated user identity
+5. **Maintainability**: Simpler codebase without regex manipulation
+
+## Timeline Summary
+
+| Phase                        | Duration        | Dependencies     |
+|:-----------------------------|:----------------|:-----------------|
+| 1. RBAC Infrastructure       | 2-3 days        | Neo4j Enterprise |
+| 2. Patient User Management   | 2-3 days        | Phase 1          |
+| 3. Impersonation Integration | 1-2 days        | Phase 2          |
+| 4. Query Validation          | 1 day           | Phase 3          |
+| 5. Prompt Updates            | 0.5 days        | Phase 3          |
+| 6. Testing                   | 2 days          | Phase 4, 5       |
+| 7. Deployment                | 1 day           | Phase 6          |
+| **Total**                    | **~10-12 days** |                  |
 
 ## References
 
-- [MachinaMedState implementation](../../repos/dem2/shared/src/machina/shared/medical_agent/state.py)
-- [ADK state access patterns](../../repos/dem2/services/medical-agent/src/machina/medical_agent/agents/DataExtractorAgent/agent.py)
-- [Template rendering](../../repos/dem2/shared/src/machina/shared/utils/render.py)
-- [Evidence log](../../logs/tenant-injection-syntax-errors-2026-01-23.log)
+- [Neo4j Role-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/manage-privileges/)
+- [Neo4j Property-Based Access Control](https://neo4j.com/docs/operations-manual/current/authentication-authorization/property-based-access-control/)
+- [Neo4j Fine-Grained Access Control Tutorial](https://neo4j.com/docs/operations-manual/current/tutorial/access-control/)
+- [Neo4j Impersonation - Query API](https://neo4j.com/docs/query-api/current/impersonation/)
+- [Neo4j Python Driver - Impersonation](https://neo4j.com/docs/python-manual/current/transactions/)
+- [Neo4j Security Best Practices](https://neo4j.com/product/neo4j-graph-database/security/)

@@ -1,8 +1,10 @@
-# Executive Summary: TenantInjector Removal Plan
+# Executive Summary: Replace TenantInjector with Neo4j RBAC
 
 **Date**: 2026-01-23
-**Status**: PROPOSED - Requires Critical Review
+**Revised**: 2026-01-23 (v2 - Neo4j RBAC Security Layer)
+**Status**: PROPOSED
 **Full Plan**: [remove-tenant-injector.md](remove-tenant-injector.md)
+**Timeline**: ~10-12 days across 7 phases
 
 ## The Problem
 
@@ -10,104 +12,106 @@ The `TenantInjector` system uses regex to inject `WHERE patient_id = $patient_id
 
 ```
 BEFORE: WHERE name STARTS WITH "T"
-AFTER:  WHERE (name STARTS) AND patient_id = $patient_id WITH "T"  ← BROKEN
+AFTER:  WHERE (name STARTS) AND patient_id = $patient_id WITH "T"  ← BROKEN SYNTAX
 ```
 
 **Impact**: All graph queries using string matching patterns fail on tusdi-preview-92 and other environments.
 
-## Proposed Solution
+## Revised Solution: Defense in Depth
 
-Remove TenantInjector (~918 lines) and instruct agents to include patient_id filters directly in generated Cypher via prompt engineering.
+The v2 plan addresses security concerns by implementing **database-enforced** patient isolation rather than relying on application-level query manipulation or prompt engineering.
 
-## Critical Concerns
+|   Layer | Location           | Purpose                                                                                                                                                                         |
+|--------:|:-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|       1 | Neo4j RBAC         | **PRIMARY SECURITY** - Per-patient users with property-based access control, impersonation for per-request security context, queries physically cannot return unauthorized data |
+|       2 | Query Validation   | APPLICATION - Pre-execution check for patient_id, logging/alerting on suspicious patterns, does NOT block (RBAC handles security)                                               |
+|       3 | Prompt Engineering | LLM - Instruct agents to include patient_id in queries, provides correct queries but NOT relied upon for security                                                               |
 
-### 1. Security: LLM Reliability Risk (HIGH)
+## Key Design: Neo4j RBAC with Impersonation
 
-| Current State | Proposed State |
-|--------------|----------------|
-| TenantInjector adds filters automatically (defense-in-depth) | 100% reliant on LLM following instructions |
-| Bugs cause syntax errors (visible failures) | LLM omission causes data leakage (silent failures) |
+**How It Works**:
 
-**The failure mode changes from "query fails" to "returns wrong patient's data."**
+1. **Patient User Creation**: When patient created, create corresponding Neo4j user
+2. **Property-Based DENY Rules**: User can only access nodes where `patient_id` matches
+3. **Impersonation**: Application executes queries as patient-specific user
+4. **Database Enforcement**: Neo4j filters results—cross-patient access is physically impossible
 
-### 2. Missing: Query Validation Safety Net
+```python
+# Query execution with impersonation
+async with self.driver.session(
+    database="healthcare",
+    impersonated_user=f"patient_{patient_id}",  # ← DATABASE-LEVEL SECURITY
+) as session:
+    result = await session.run(query, parameters)
+```
 
-The plan removes TenantInjector without adding a replacement safety check.
+## Comparison: v1 vs v2
 
-**Recommendation**: Add a pre-execution validator that:
-- Parses generated Cypher
-- Verifies patient-scoped nodes have `patient_id` filter
-- Rejects queries that could leak cross-patient data
+| Aspect              | v1 (Prompt-Only)   | v2 (Neo4j RBAC)                |
+|:--------------------|:-------------------|:-------------------------------|
+| **Security Layer**  | Application (LLM)  | Database (Neo4j)               |
+| **Failure Mode**    | Silent data leak   | Query returns empty (secure)   |
+| **LLM Reliability** | 100% dependence    | 0% dependence for security     |
+| **Audit Trail**     | Application logs   | Database audit + impersonation |
+| **Risk Level**      | **HIGH**           | **LOW**                        |
 
-### 3. Alternative Solutions Not Evaluated
+## Requirements
 
-| Alternative | Effort | Risk | Considered? |
-|-------------|--------|------|-------------|
-| Fix WhereClauseBuilder regex | Medium | Low | No |
-| Use proper Cypher parser (libcypher-parser) | High | Low | No |
-| Add validation layer + keep TenantInjector | Medium | Low | No |
-| Prompt-only (proposed) | Medium | **High** | Yes |
+| Requirement              | Status     | Notes                                      |
+|:-------------------------|:-----------|:-------------------------------------------|
+| Neo4j Enterprise Edition | **VERIFY** | Required for property-based access control |
+| Service account          | To create  | Needs IMPERSONATE privilege                |
+| Per-patient users        | To create  | ~1 user per patient                        |
 
-### 4. Testing Gap
+## Implementation Timeline
 
-Plan lacks specifics on verifying no cross-patient data leakage:
-- How to test Patient A cannot see Patient B's data?
-- What's the test matrix for all query patterns?
-- How to regression test after deployment?
+| Phase                        | Duration        | Description                              |
+|:-----------------------------|:----------------|:-----------------------------------------|
+| 1. RBAC Infrastructure       | 2-3 days        | Service account, base roles, auth config |
+| 2. Patient User Management   | 2-3 days        | PatientUserManager, migration script     |
+| 3. Impersonation Integration | 1-2 days        | Update GraphTraversalService             |
+| 4. Query Validation          | 1 day           | Logging layer (secondary safety)         |
+| 5. Prompt Updates + Cleanup  | 0.5 days        | Remove TenantInjector (~918 lines)       |
+| 6. Testing                   | 2 days          | Security, regression, performance tests  |
+| 7. Deployment                | 1 day           | Preview → Staging → Production           |
+| **Total**                    | **~10-12 days** |                                          |
 
-## Risk Assessment
+## Risk Assessment (v2)
 
-| Risk | Likelihood | Impact | Mitigation in Plan? |
-|------|------------|--------|---------------------|
-| LLM forgets patient_id filter | Medium | **Critical** (data leak) | No |
-| Prompt injection via patient_id | Low | High | No |
-| Regression in production | Medium | High | Partial |
-| Rollback complexity | - | Medium | No |
+| Risk                         | Likelihood   | Impact   | Mitigation                                     |
+|:-----------------------------|:-------------|:---------|:-----------------------------------------------|
+| Neo4j not Enterprise Edition | Medium       | High     | Verify before starting; plan upgrade if needed |
+| Performance impact from RBAC | Low          | Medium   | < 10% target; monitor post-deployment          |
+| User management complexity   | Low          | Low      | Automated via PatientUserManager               |
+| Rollback needed              | Low          | Medium   | Keep TenantInjector in branch temporarily      |
 
-## Recommendations
+## Success Criteria
 
-### Before Proceeding
+1. **Security**: Cross-patient data access **physically impossible** at database level
+2. **Functionality**: All queries work, including `STARTS WITH` patterns
+3. **Performance**: < 10% latency increase
+4. **Audit**: All queries logged with impersonated user identity
+5. **Maintainability**: ~918 lines of fragile regex code removed
 
-1. **Add Query Validation Layer** (non-negotiable for security)
-   - Validate all Cypher queries contain patient_id filters before execution
-   - Reject queries that could return cross-patient data
-   - Log/alert on validation failures
+## Decision
 
-2. **Evaluate Fixing WhereClauseBuilder**
-   - The bug is specific to `STARTS WITH` / `ENDS WITH` detection
-   - A targeted fix may be lower risk than full removal
+The v2 plan addresses all critical concerns from the v1 review:
 
-3. **Define Security Test Plan**
-   - Create test cases with multiple patients
-   - Verify query isolation before and after changes
-   - Automate as regression tests
+- ✅ **Security**: Database-enforced, not LLM-dependent
+- ✅ **Validation Layer**: Added as secondary safety (logging/alerting)
+- ✅ **Testing**: Explicit security tests for cross-patient isolation
+- ✅ **Failure Mode**: Returns empty (safe), not data leak (catastrophic)
 
-### If Proceeding with Removal
+**Recommendation**: Proceed with v2 implementation pending Neo4j Enterprise Edition verification.
 
-1. **Phase the rollout**:
-   - Phase 1: Add validation layer (safety net)
-   - Phase 2: Update prompts with patient_id instructions
-   - Phase 3: Remove TenantInjector (only after Phase 1-2 proven)
+## Next Steps
 
-2. **Use parameterized patient_id** (`$patient_id`) not literal strings in prompts
-
-3. **Add monitoring/alerting** for queries without patient_id filters
-
-## Decision Required
-
-| Option | Description | Risk Level |
-|--------|-------------|------------|
-| A | Proceed as planned (prompt-only) | **High** |
-| B | Add validation layer first, then remove TenantInjector | Medium |
-| C | Fix WhereClauseBuilder bug instead of removal | Low |
-| D | Hybrid: Fix bug + add validation + improve prompts | **Lowest** |
-
-**Recommendation**: Option D - Fix the immediate bug, add validation layer, improve prompts. Defer full TenantInjector removal until validation layer proves effective.
+1. **Verify Neo4j Edition**: `CALL dbms.components() YIELD edition`
+2. If Enterprise: Begin Phase 1 (RBAC Infrastructure)
+3. If Community: Plan upgrade path before proceeding
 
 ## Summary
 
-The plan correctly identifies the problem but proposes a high-risk solution. Removing the safety net (TenantInjector) without adding a replacement validation layer changes failure modes from visible errors to silent data leakage.
+The revised plan transforms patient isolation from a fragile regex-based application layer to a robust database-enforced security layer. Neo4j RBAC with impersonation ensures that even if an LLM generates a query without patient_id filters, the database will only return data the impersonated user is authorized to see.
 
-**Key question**: Is a syntax error bug worse than potential cross-patient data exposure?
-
-The syntax error is frustrating but safe. Data leakage is catastrophic.
+**The key insight**: Move security enforcement from "fixing queries" to "restricting what queries can return."

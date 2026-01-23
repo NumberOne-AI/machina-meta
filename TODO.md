@@ -526,36 +526,78 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Agent System
 
-- [PROPOSED] **Remove TenantInjector and implement prompt-based patient_id restrictions** - Fix syntax errors caused by regex-based query manipulation
-  - Impact: HIGH | Added: 2026-01-23
+- [PROPOSED] **Replace TenantInjector with Neo4j RBAC security** - Fix syntax errors with database-enforced patient isolation
+  - Impact: HIGH | Added: 2026-01-23 | Revised: 2026-01-23 (v2 - Neo4j RBAC)
   - **Plan**: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)
+  - **Executive Summary**: [docs/plans/remove-tenant-injector-executive-summary.md](docs/plans/remove-tenant-injector-executive-summary.md)
   - **Related Problem**: [PROBLEMS.md - Syntax errors caused by tenant patient_id query injection](PROBLEMS.md)
   - **Evidence Log**: [logs/tenant-injection-syntax-errors-2026-01-23.log](logs/tenant-injection-syntax-errors-2026-01-23.log)
   - **Problem**: `TenantInjector` breaks queries containing `STARTS WITH`, `ENDS WITH`, `CONTAINS` operators
   - **Root Cause**: `WhereClauseBuilder` incorrectly parses multi-word Cypher operators
-  - **Solution**: Remove regex-based injection, instruct agents to include patient_id in generated queries
+  - **Solution (v2 - Defense in Depth)**:
+    - **Layer 1: Neo4j RBAC** (DATABASE-ENFORCED) - Per-patient users with property-based access control + impersonation
+    - **Layer 2: Query Validation** (APPLICATION) - Pre-execution validation, logging, alerting
+    - **Layer 3: Prompt Engineering** (LLM) - Agent instructions for patient_id inclusion (not relied upon for security)
+  - **Requirements**:
+    - Neo4j Enterprise Edition (for property-based access control and impersonation)
+    - Service account with impersonation privileges
+    - Per-patient Neo4j users with DENY rules on patient-scoped nodes
+  - **Patient-Scoped Nodes** (need DENY rules):
+    - ObservationValueNode, ConditionCaseNode, SymptomEpisodeNode
+    - EncounterNode, DocumentReferenceNode, IntakeEventNode, AllergyIntoleranceNode
+    - PatientNode (special case: uses uuid, not patient_id)
+  - **Files to Create**:
+    - `shared/.../graph_traversal/patient_user_manager.py` - Neo4j user lifecycle management
+    - `shared/.../graph_traversal/query_validator.py` - Query security validation (logging)
+    - `scripts/migrate_patient_users.py` - One-time migration for existing patients
+  - **Files to Modify**:
+    - `shared/.../graph_traversal/service.py` - Add impersonation, remove TenantInjector
+    - `agents/CypherAgent/config.yml` - Simplify tenant rules
+    - `agents/CypherAgent/factory.py` - Add patient_id to prompts
+    - `agents/CypherAgent/query_runner.py` - Remove tenant preview logging
+    - Kubernetes manifests - Add service account secrets
+    - `neo4j.conf` - Enable authentication
   - **Files to Delete** (~918 lines):
     - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` (531 lines)
     - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` (387 lines)
     - `repos/dem2/shared/tests/graph_traversal/test_tenant_injector.py` (~200 lines)
-  - **Files to Modify**:
-    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Add patient_id instructions
-    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/factory.py` - Add state injection
-    - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Remove TenantInjector
-    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/query_runner.py` - Remove preview logging
-  - **Affected Agents** (use query_graph tool):
-    - CypherAgent - Direct Cypher generation (update config.yml)
-    - HealthConsultantAgent - Uses query_graph (no change needed)
-    - HealthConsultantLiteAgent - Uses query_graph (no change needed)
-  - **Implementation Steps**:
-    - [ ] Phase 1: Update CypherAgent config.yml with patient_id injection instructions
-    - [ ] Phase 2: Add patient_id state injection to CypherAgent factory
-    - [ ] Phase 3: Remove TenantInjector from GraphTraversalService
-    - [ ] Phase 4: Remove tenant preview logging from query_runner.py
-    - [ ] Phase 5: Delete tenant_injector.py, where_clause_builder.py, and tests
-    - [ ] Phase 6: Test in preview environment with STARTS WITH queries
-    - [ ] Phase 7: Deploy to dev and verify no cross-patient data leakage
-  - **Key Design Decision**: Use ADK's `MachinaMedState` and template rendering to inject `{patient_id}` into agent instructions at runtime
+  - **Implementation Phases** (~10-12 days total):
+    - [ ] Phase 1 (2-3 days): RBAC Infrastructure
+      - [ ] Verify Neo4j Enterprise Edition: `CALL dbms.components() YIELD edition`
+      - [ ] Enable authentication in neo4j.conf
+      - [ ] Create service account with impersonation privileges
+      - [ ] Create base patient role with MATCH privileges
+      - [ ] Update Kubernetes secrets
+    - [ ] Phase 2 (2-3 days): Patient User Management
+      - [ ] Create PatientUserManager class
+      - [ ] Hook into patient creation workflow
+      - [ ] Migration script for existing patients
+      - [ ] Generate DENY rules per patient for all patient-scoped nodes
+    - [ ] Phase 3 (1-2 days): Impersonation Integration
+      - [ ] Update GraphTraversalService to use impersonation
+      - [ ] Update driver configuration for service account
+      - [ ] Remove TenantInjector from service initialization
+    - [ ] Phase 4 (1 day): Query Validation Layer
+      - [ ] Create QuerySecurityValidator class
+      - [ ] Implement patient_scope validation (logging, not blocking)
+      - [ ] Add alerting for suspicious patterns
+    - [ ] Phase 5 (0.5 days): Prompt Updates and Code Removal
+      - [ ] Update CypherAgent config.yml with simplified patient_id instructions
+      - [ ] Delete tenant_injector.py, where_clause_builder.py, tests
+    - [ ] Phase 6 (2 days): Testing and Validation
+      - [ ] Security tests: cross-patient access denied
+      - [ ] Regression tests: STARTS WITH, ENDS WITH, CONTAINS patterns
+      - [ ] Performance tests: < 10% latency increase target
+    - [ ] Phase 7 (1 day): Deployment
+      - [ ] Preview environment (tusdi-preview-92)
+      - [ ] Staging environment (24-48h soak test)
+      - [ ] Production rollout
+  - **Success Criteria**:
+    - Security: Cross-patient data access physically impossible at database level
+    - Functionality: All existing queries work (including STARTS WITH patterns)
+    - Performance: < 10% latency increase
+    - Audit: All queries logged with impersonated user identity
+    - Maintainability: ~918 lines of fragile regex code removed
 
 ---
 

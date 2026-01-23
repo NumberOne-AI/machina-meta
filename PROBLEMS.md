@@ -236,8 +236,9 @@ Each problem includes:
 
 - [INVESTIGATING] **Syntax errors caused by tenant patient_id query injection in CypherAgent** - TenantInjector breaks multi-word Cypher operators
   - Severity: HIGH | Added: 2026-01-23
-  - Related TODOs: "Remove TenantInjector and implement prompt-based patient_id restrictions" (planned)
+  - Related TODOs: "Replace TenantInjector with Neo4j RBAC security" (TODO.md - Workspace - Agent System)
   - Related Plan: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)
+  - Executive Summary: [docs/plans/remove-tenant-injector-executive-summary.md](docs/plans/remove-tenant-injector-executive-summary.md)
   - Evidence Log: [logs/tenant-injection-syntax-errors-2026-01-23.log](logs/tenant-injection-syntax-errors-2026-01-23.log)
   - **Environment**: tusdi-preview-92 (and all environments using TenantInjector)
   - **Symptoms**:
@@ -255,11 +256,21 @@ Each problem includes:
     - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` - Bug location (lines 149-190)
     - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Uses TenantInjector
     - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Tenant scoping instructions
-  - **Proposed Solution**:
-    - **Remove TenantInjector entirely** - The regex-based query manipulation is too fragile
-    - **Inject patient_id via ADK state** - Use `MachinaMedState` to pass patient_id to agent prompts
-    - **Update CypherAgent instructions** - Instruct agents to always include `patient_id` filter in generated Cypher
-    - See plan document for full implementation details
+  - **Proposed Solution (v2 - Defense in Depth)**:
+    - **Layer 1: Neo4j RBAC** (DATABASE-ENFORCED) - Primary security layer
+      - Create per-patient Neo4j users with property-based access control
+      - Use impersonation to execute queries in patient's security context
+      - DENY rules prevent access to other patients' data at database level
+      - Requires Neo4j Enterprise Edition
+    - **Layer 2: Query Validation** (APPLICATION) - Secondary safety
+      - Pre-execution validation for patient_id presence
+      - Logging and alerting on suspicious patterns
+      - Does not block execution (RBAC handles security)
+    - **Layer 3: Prompt Engineering** (LLM) - Tertiary layer
+      - Inject patient_id via ADK state into agent prompts
+      - Provides correct queries but NOT relied upon for security
+    - **Remove TenantInjector entirely** - ~918 lines of fragile regex code
+    - See plan document for full implementation details (7 phases, ~10-12 days)
   - **Impact**:
     - All agents using `query_graph` tool are affected: HealthConsultantAgent, HealthConsultantLiteAgent, CypherAgent
     - Any natural language query using "starts with", "ends with" patterns will fail
@@ -268,7 +279,16 @@ Each problem includes:
     - [x] Document root cause with log evidence
     - [x] Research ADK state injection patterns
     - [x] Identify all affected agents
-    - [ ] Implement plan from docs/plans/remove-tenant-injector.md
+    - [x] Research Neo4j RBAC (property-based access control, impersonation)
+    - [x] Revise plan with defense-in-depth architecture (v2)
+    - [ ] Verify Neo4j Enterprise Edition deployment
+    - [ ] Implement Phase 1: RBAC Infrastructure
+    - [ ] Implement Phase 2: Patient User Management
+    - [ ] Implement Phase 3: Impersonation Integration
+    - [ ] Implement Phase 4: Query Validation Layer
+    - [ ] Implement Phase 5: Prompt Updates and TenantInjector Removal
+    - [ ] Implement Phase 6: Testing and Validation
+    - [ ] Implement Phase 7: Deployment
 
 ---
 
