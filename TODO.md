@@ -747,6 +747,29 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [docs/Claude_HealthCare_Assessment_20260113_Full.md](docs/Claude_HealthCare_Assessment_20260113_Full.md) - Detailed analysis with roadmap
   - **Commit**: aefe30c - "docs: add Claude Healthcare competitive assessment reports"
 
+- [STARTED] **DOCX to image conversion for Gemini Vision processing** - High-quality document rendering for LLM extraction
+  - Impact: MEDIUM | Added: 2026-01-22
+  - **Problem**: Need to convert DOCX files to images for Gemini Vision API processing
+  - **Current State**:
+    - ✅ Spire.Doc: Works but only outputs ~96 DPI (unreadable for OCR)
+    - ✅ LibreOffice + poppler: Works at 300 DPI (industry standard)
+    - ✅ Docker container: Fixed for non-root users
+  - **Completed**:
+    - [x] Add extraction-only modes (extract-text, extract-images, extract-all)
+    - [x] Increase default DPI from 200 to 300
+    - [x] Add `media_resolution="high"` for Gemini API
+    - [x] Skip Spire.Doc when DPI > 150 (doesn't support custom resolution)
+    - [x] Fix Docker container permissions (uv, cache, HOME)
+    - [x] Commit: a8763c7 "feat(scripts): add extraction-only modes and 300 DPI support"
+  - **Research**:
+    - [ ] Evaluate Syncfusion's DocIO as alternative to Spire.Doc
+      - .NET library (like Spire.Doc) for DOCX processing
+      - May support custom DPI for image rendering
+      - Check licensing and Python integration options
+  - **Files**:
+    - `scripts/gemini_docx_poc.py` - Main conversion script
+    - `scripts/spire-doc-poc/` - Docker container for DOCX processing
+
 ---
 
 ## Repository-Specific TODOs
