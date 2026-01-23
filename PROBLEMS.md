@@ -232,6 +232,46 @@ Each problem includes:
 
 ---
 
+## Workspace - Agent System
+
+- [INVESTIGATING] **Syntax errors caused by tenant patient_id query injection in CypherAgent** - TenantInjector breaks multi-word Cypher operators
+  - Severity: HIGH | Added: 2026-01-23
+  - Related TODOs: "Remove TenantInjector and implement prompt-based patient_id restrictions" (planned)
+  - Related Plan: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)
+  - Evidence Log: [logs/tenant-injection-syntax-errors-2026-01-23.log](logs/tenant-injection-syntax-errors-2026-01-23.log)
+  - **Environment**: tusdi-preview-92 (and all environments using TenantInjector)
+  - **Symptoms**:
+    - Queries with `STARTS WITH`, `ENDS WITH`, or similar patterns fail with `Neo.ClientError.Statement.SyntaxError`
+    - Error: `Invalid input ')': expected 'WITH'`
+    - Agent sees repeated failures and cannot recover
+  - **Root Cause Analysis**:
+    - `WhereClauseBuilder._find_where_clause_end()` in `where_clause_builder.py` (lines 149-190) searches for clause boundaries
+    - When CypherAgent generates `STARTS WITH "value"`, the injector finds `WITH` keyword
+    - It incorrectly interprets this as a new WITH clause, not part of `STARTS WITH`
+    - Injects `AND ov.patient_id = $patient_id` between `STARTS` and `WITH "value"`
+    - **Result**: `WHERE (toLower(ot.summary) STARTS) AND ov.patient_id = $patient_id WITH "t"` - BROKEN SYNTAX
+  - **Files Involved**:
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` - Main injector class
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` - Bug location (lines 149-190)
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Uses TenantInjector
+    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Tenant scoping instructions
+  - **Proposed Solution**:
+    - **Remove TenantInjector entirely** - The regex-based query manipulation is too fragile
+    - **Inject patient_id via ADK state** - Use `MachinaMedState` to pass patient_id to agent prompts
+    - **Update CypherAgent instructions** - Instruct agents to always include `patient_id` filter in generated Cypher
+    - See plan document for full implementation details
+  - **Impact**:
+    - All agents using `query_graph` tool are affected: HealthConsultantAgent, HealthConsultantLiteAgent, CypherAgent
+    - Any natural language query using "starts with", "ends with" patterns will fail
+  - **Workaround**: None - queries with these patterns consistently fail
+  - **Next Steps**:
+    - [x] Document root cause with log evidence
+    - [x] Research ADK state injection patterns
+    - [x] Identify all affected agents
+    - [ ] Implement plan from docs/plans/remove-tenant-injector.md
+
+---
+
 ## Repository-Specific Problems
 
 For repository-specific problems, see:
