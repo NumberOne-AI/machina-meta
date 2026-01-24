@@ -234,8 +234,8 @@ Each problem includes:
 
 ## Workspace - Agent System
 
-- [INVESTIGATING] **Syntax errors caused by tenant patient_id query injection in CypherAgent** - TenantInjector breaks multi-word Cypher operators
-  - Severity: HIGH | Added: 2026-01-23
+- [SOLVED] **Syntax errors caused by tenant patient_id query injection in CypherAgent** - TenantInjector breaks multi-word Cypher operators
+  - Severity: HIGH | Added: 2026-01-23 | Solved: 2026-01-23
   - Related TODOs: "Replace TenantInjector with Neo4j RBAC security" (TODO.md - Workspace - Agent System)
   - Related Plan: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)
   - Executive Summary: [docs/plans/remove-tenant-injector-executive-summary.md](docs/plans/remove-tenant-injector-executive-summary.md)
@@ -246,46 +246,30 @@ Each problem includes:
     - Error: `Invalid input ')': expected 'WITH'`
     - Agent sees repeated failures and cannot recover
   - **Root Cause Analysis**:
-    - `WhereClauseBuilder._find_where_clause_end()` in `where_clause_builder.py` (lines 149-190) searches for clause boundaries
-    - When CypherAgent generates `STARTS WITH "value"`, the injector finds `WITH` keyword
-    - It incorrectly interprets this as a new WITH clause, not part of `STARTS WITH`
-    - Injects `AND ov.patient_id = $patient_id` between `STARTS` and `WITH "value"`
+    - `WhereClauseBuilder._find_where_clause_end()` in `where_clause_builder.py` (lines 149-190) searched for clause boundaries
+    - When CypherAgent generated `STARTS WITH "value"`, the injector found `WITH` keyword
+    - It incorrectly interpreted this as a new WITH clause, not part of `STARTS WITH`
+    - Injected `AND ov.patient_id = $patient_id` between `STARTS` and `WITH "value"`
     - **Result**: `WHERE (toLower(ot.summary) STARTS) AND ov.patient_id = $patient_id WITH "t"` - BROKEN SYNTAX
-  - **Files Involved**:
-    - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` - Main injector class
-    - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` - Bug location (lines 149-190)
-    - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Uses TenantInjector
-    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Tenant scoping instructions
-  - **Proposed Solution (v3 - Two-Stage Approach)**:
-    - **Stage 1 (Immediate)**: Remove TenantInjector, rely on prompt engineering + query validation logging
-      - Update CypherAgent prompts with patient_id injection rules
-      - Create QuerySecurityValidator for logging (not blocking)
-      - Delete ~918 lines of fragile regex code
-      - Acceptable risk for current scale and controlled access environment
-    - **Stage 2 (Future)**: Add Neo4j RBAC as database-enforced safety net
-      - Requires Neo4j Enterprise Edition (~$36,000+/year)
-      - Per-patient users with property-based access control
-      - Use impersonation to execute queries in patient's security context
-      - Deferred pending cost/benefit analysis
-    - See plan document for full implementation details
-  - **Impact**:
-    - All agents using `query_graph` tool are affected: HealthConsultantAgent, HealthConsultantLiteAgent, CypherAgent
-    - Any natural language query using "starts with", "ends with" patterns will fail
-  - **Workaround**: None - queries with these patterns consistently fail
-  - **Next Steps**:
-    - [x] Document root cause with log evidence
-    - [x] Research ADK state injection patterns
-    - [x] Identify all affected agents
-    - [x] Research Neo4j RBAC (property-based access control, impersonation)
-    - [x] Revise plan with defense-in-depth architecture (v2)
-    - [ ] Verify Neo4j Enterprise Edition deployment
-    - [ ] Implement Phase 1: RBAC Infrastructure
-    - [ ] Implement Phase 2: Patient User Management
-    - [ ] Implement Phase 3: Impersonation Integration
-    - [ ] Implement Phase 4: Query Validation Layer
-    - [ ] Implement Phase 5: Prompt Updates and TenantInjector Removal
-    - [ ] Implement Phase 6: Testing and Validation
-    - [ ] Implement Phase 7: Deployment
+  - **Solution Implemented (Stage 1)**:
+    - Removed TenantInjector (~918 lines of fragile regex code deleted)
+    - Updated CypherAgent prompts with explicit patient_id injection rules
+    - Created QuerySecurityValidator for logging (audit trail, not blocking)
+    - Queries now generated with `WHERE ov.patient_id = $patient_id` by LLM prompt engineering
+  - **Files Changed**:
+    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/CypherAgent/config.yml` - Added patient_id filtering rules
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/service.py` - Removed TenantInjector
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/query_validator.py` - NEW: QuerySecurityValidator
+  - **Files Deleted**:
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/tenant_injector.py` (531 lines)
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/where_clause_builder.py` (387 lines)
+    - `repos/dem2/shared/tests/graph_traversal/test_tenant_injector.py`
+    - `repos/dem2/shared/tests/graph_traversal/test_where_clause_builder.py`
+  - **Stage 2 (Future - Deferred)**: Add Neo4j RBAC as database-enforced safety net
+    - Requires Neo4j Enterprise Edition (~$36,000+/year)
+    - Per-patient users with property-based access control
+    - Use impersonation to execute queries in patient's security context
+    - Deferred pending cost/benefit analysis
 
 ---
 
