@@ -606,6 +606,35 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - Security: Cross-patient data access physically impossible at database level
     - Performance: < 10% latency increase from RBAC
 
+- [REVIEW] **Fix CypherValidator false validation failures** - is_valid calculated before filtering parameter errors
+  - Impact: MEDIUM | Added: 2026-01-24 | Completed: 2026-01-24
+  - **Related Problem**: [PROBLEMS.md - CypherValidator false failures](PROBLEMS.md) - SOLVED
+  - **Problem**: CypherValidator incorrectly flagged valid queries as invalid when only `patient_id`/`user_id` parameter warnings existed
+  - **Root Cause**: `is_valid = len(errors) == 0` calculated BEFORE `_filter_parameter_errors()` filtering
+  - **Bug Behavior**:
+    - SyntaxValidator emits `parameternotprovided` for `$patient_id`/`$user_id` (expected, parameters injected later)
+    - `_filter_parameter_errors()` correctly removes these warnings
+    - But `is_valid` was calculated BEFORE filtering → `is_valid = False` with empty errors
+    - Result: `CypherValidationError` raised with no errors to report
+  - **Fix**:
+    ```python
+    # Before (buggy):
+    is_valid = len(errors) == 0
+    return is_valid, self._filter_parameter_errors(errors)
+
+    # After (fixed):
+    filtered_errors = self._filter_parameter_errors(errors)
+    is_valid = len(filtered_errors) == 0
+    return is_valid, filtered_errors
+    ```
+  - **File Modified**:
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/validator.py` (lines 126-128)
+  - **Verification**:
+    - [x] Static analysis passed (ruff, mypy)
+    - [x] Backend rebuilt with `just dev-restart`
+    - [x] Test query executed successfully
+    - [x] 0 "Query validation failed" messages in logs after fix
+
 ---
 
 ## Workspace - Documentation & Tooling

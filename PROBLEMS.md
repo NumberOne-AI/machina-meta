@@ -271,6 +271,40 @@ Each problem includes:
     - Use impersonation to execute queries in patient's security context
     - Deferred pending cost/benefit analysis
 
+- [SOLVED] **CypherValidator false failures when only parameter errors exist** - is_valid calculated before filtering
+  - Severity: MEDIUM | Added: 2026-01-24 | Solved: 2026-01-24
+  - Related TODOs: "Fix CypherValidator false validation failures" (TODO.md - Workspace - Agent System)
+  - **Environment**: All environments using CypherValidator (graph query validation)
+  - **Symptoms**:
+    - Backend logs show `Query validation failed` with empty errors array
+    - Valid queries incorrectly flagged as invalid
+    - Log entry: `{'event': 'Query validation failed', 'errors': []}`
+    - CypherValidationError raised but no actual errors to report
+  - **Root Cause Analysis**:
+    - `CypherValidator.validate()` in `validator.py` (lines 126-127) had logic bug:
+      ```python
+      is_valid = len(errors) == 0  # Calculated BEFORE filtering
+      return is_valid, self._filter_parameter_errors(errors)  # Returns FILTERED list
+      ```
+    - When SyntaxValidator reports `parameternotprovided` for `patient_id`/`user_id`:
+      - Raw `errors` list has 1 entry → `is_valid = False`
+      - `_filter_parameter_errors()` removes patient_id/user_id warnings
+      - Returns `(False, [])` - invalid status with empty errors
+    - This causes `CypherValidationError` to be raised with no explanation
+  - **Solution Implemented**:
+    - Calculate `is_valid` AFTER filtering:
+      ```python
+      filtered_errors = self._filter_parameter_errors(errors)
+      is_valid = len(filtered_errors) == 0
+      return is_valid, filtered_errors
+      ```
+  - **File Modified**:
+    - `repos/dem2/shared/src/machina/shared/graph_traversal/validator.py` (lines 126-128)
+  - **Verification**:
+    - Rebuilt backend with `just dev-restart`
+    - Ran test query: "Show me all my test results where the biomarker name starts with the letter T"
+    - 0 "Query validation failed" messages in logs after fix
+
 ---
 
 ## Repository-Specific Problems
