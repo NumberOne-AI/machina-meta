@@ -101,6 +101,14 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - ✅ Local: `thoughtsTokenCount` confirms thinking used internally but not exposed
     - ✅ Preview-92: Deployed and manual smoke test completed successfully
 
+- [STARTED] Enhance docproc generic parser with Gemini 3 controls
+  - Impact: HIGH
+  - Added: 2026-01-24
+  - [x] Research Gemini 3 input token limits and controls
+  - [x] Update config to support thinking_level and media_resolution
+  - [x] Maximize output tokens to 65536
+  - [ ] Verify fix in preview environment
+
 - [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules
   - Impact: HIGH | Added: 2026-01-07
   - Create `just repo-rebase` command for rebasing feature branches onto merge-base (e.g., origin/dev)

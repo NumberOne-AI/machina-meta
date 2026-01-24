@@ -156,6 +156,14 @@ Each problem includes:
     - [ ] Add logging at task enqueue time with file ID
     - [ ] Create reconciliation script to detect orphaned files
 
+- [INVESTIGATING] **Gemini 3 Max Tokens Error (2026-01-24)**
+  - Severity: MEDIUM | Added: 2026-01-24
+  - Status: [INVESTIGATING]
+  - Description: `FinishReason.MAX_TOKENS` observed in `tusdi-preview-92` logs for Gemini 3 Pro.
+  - Evidence: `finish_reason=FinishReason.MAX_TOKENS model=gemini-3-pro-preview`
+  - Impact: Document extraction fails for large documents or complex reasoning paths.
+  - Related TODO: "Enhance docproc generic parser with Gemini 3 controls"
+
 ---
 
 ## Workspace - Documentation & Tooling
