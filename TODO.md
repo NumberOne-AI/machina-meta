@@ -573,6 +573,13 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - [x] Type checking passed (mypy)
       - [x] Import validation passed
       - [x] QuerySecurityValidator unit tests passed
+    - [x] Phase 4.5: Bug Validation (2026-01-24)
+      - [x] Triggered bug on tusdi-preview-92 with query: "Show me all my test results where the biomarker name starts with the letter T"
+      - [x] Session ID: `66c90688-40b7-40be-b2ea-fb59da4db552` (verified via list_sessions)
+      - [x] Bug confirmed: `Neo.ClientError.Statement.SyntaxError: Invalid input ')': expected 'WITH'` at 01:10:26-01:10:47 UTC
+      - [x] Evidence: agent-trace.log shows `query_graph` tool call at `2026-01-24T01:10:34.839123Z`
+      - [x] Same query on local dev: **0 Neo4j SyntaxErrors** - fix verified working
+      - [x] Note: Local logs show unrelated "Query validation failed" from pre-existing CypherValidator issue (is_valid before filtering), NOT from QuerySecurityValidator
     - [ ] Phase 5: Deployment (PENDING)
       - [ ] Preview environment (tusdi-preview-92)
       - [ ] Staging environment
