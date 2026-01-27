@@ -1096,15 +1096,6 @@ def output_compare_as_json(result: CompareResult) -> None:
     print(json.dumps(output_data, indent=2))
 
 
-def _format_cell_value(value: str | None, *, max_length: int = 40) -> str:
-    """Format a value for markdown table cell."""
-    if value is None:
-        return ""
-    if len(value) <= max_length:
-        return f"`{value}`"
-    return f"`{value[: max_length - 3]}...`"
-
-
 def output_compare_as_markdown(
     result: CompareResult,
     *,
@@ -1118,65 +1109,42 @@ def output_compare_as_markdown(
 
     # Removed: in old, not in new
     for diff in result.removed:
-        rows.append(
-            (
-                f"`{diff.name}`",
-                _format_cell_value(diff.old_value),
-                "",
-                "🔴 REMOVED",
-            )
-        )
+        rows.append((f"`{diff.name}`", f"`{diff.old_value}`", "", "🔴 REMOVED"))
 
     # Added: not in old, in new
     for diff in result.added:
-        rows.append(
-            (
-                f"`{diff.name}`",
-                "",
-                _format_cell_value(diff.new_value),
-                "🟢 ADDED",
-            )
-        )
+        rows.append((f"`{diff.name}`", "", f"`{diff.new_value}`", "🟢 ADDED"))
 
     # Changed: different values
     for diff in result.changed:
-        rows.append(
-            (
-                f"`{diff.name}`",
-                _format_cell_value(diff.old_value),
-                _format_cell_value(diff.new_value),
-                "🟡 CHANGED",
-            )
-        )
+        rows.append((f"`{diff.name}`", f"`{diff.old_value}`", f"`{diff.new_value}`", "🟡 CHANGED"))
 
     # Identical: same values (optional)
     if show_identical:
         for diff in result.identical:
-            rows.append(
-                (
-                    f"`{diff.name}`",
-                    _format_cell_value(diff.old_value),
-                    _format_cell_value(diff.new_value),
-                    "⚪ IDENTICAL",
-                )
-            )
+            rows.append((f"`{diff.name}`", f"`{diff.old_value}`", f"`{diff.new_value}`", "⚪ IDENTICAL"))
 
     # Sort rows by variable name
     rows.sort(key=lambda r: r[0])
 
-    # Print summary header
+    # Print summary table
     total = len(result.removed) + len(result.added) + len(result.changed) + len(result.identical)
     print("## Environment Comparison\n")
-    print(f"**Old:** `{old_file}`  ")
-    print(f"**New:** `{new_file}`\n")
-    print(f"**Summary:** {total} variables total")
-    print(f"- 🔴 Removed: {len(result.removed)}")
-    print(f"- 🟢 Added: {len(result.added)}")
-    print(f"- 🟡 Changed: {len(result.changed)}")
-    print(f"- ⚪ Identical: {len(result.identical)}\n")
+    summary_headers = ["Old", "New", "Total", "🔴 Removed", "🟢 Added", "🟡 Changed", "⚪ Identical"]
+    summary_row = [(
+        f"`{old_file}`",
+        f"`{new_file}`",
+        total,
+        len(result.removed),
+        len(result.added),
+        len(result.changed),
+        len(result.identical),
+    )]
+    print(tabulate(summary_row, headers=summary_headers, tablefmt="github"))
+    print()
 
     # Print table
-    headers = ["Variable", f"Old ({old_file.name})", f"New ({new_file.name})", "Status"]
+    headers = ["Variable", old_file.name, new_file.name, "Status"]
     print(tabulate(rows, headers=headers, tablefmt="github"))
 
 
