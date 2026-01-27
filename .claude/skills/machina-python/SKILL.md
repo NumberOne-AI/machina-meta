@@ -1,6 +1,6 @@
 ---
 name: machina-python
-description: World-class Python development expert for machina-meta. Enforces hyper-perfect coding standards, modern Python 3.10+ syntax, strict type hinting, security best practices, and project-specific conventions. Use for ALL Python coding tasks, refactoring, and static analysis.
+description: World-class Python development expert for machina-meta. Enforces hyper-perfect coding standards, modern Python 3.10+ syntax, strict type hinting, security best practices, and project-specific conventions. MANDATORY: Use for ANY interaction with Python files (*.py) OR scripts where the shebang line mentions python, uv, or pip. This includes reading, analyzing, debugging, editing, refactoring, or writing new code. NO EXCEPTIONS.
 ---
 
 # machina-python Skill
