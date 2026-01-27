@@ -12,14 +12,14 @@ We propose migrating to **`neo4j-graphrag`**, the official Python library from N
 
 ## 2. Comparison: Current vs. Proposed
 
-| Feature              | Current (`CypherAgent`)                                                                                          | Proposed (`neo4j-graphrag`)                                                       | Verdict                           |
-|:---------------------|:-----------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|:----------------------------------|
-| **Schema Source**    | **Static JSON/YAML** (`schema.json`). Must be manually updated/synced.                                           | **Dynamic Introspection** (`apoc.meta.data`). Always in sync with DB.             | ✅ **GraphRAG**                   |
-| **Query Generation** | Custom prompt template + regex parsing. Prone to syntax errors (e.g., `WITH` clause bugs).                       | Optimized prompt + `extract_cypher` regex sanitization (fixes backticks, quotes). | ✅ **GraphRAG**                   |
-| **Security (RLS)**   | **Prompt Engineering + Regex Validation**. Injects `patient_id` via `TenantInjector` (complex, sometimes buggy). | **None Native**. Requires custom wrapper or prompt injection to enforce RLS.      | ⚠️ **Tie** (Requires custom work) |
-| **Parameters**       | Supports bind params (`$patient_id`).                                                                            | **No native bind param support** in Text2Cypher (uses literals).                  | ❌ **Current is safer**           |
-| **Maintenance**      | High. We maintain the prompt, parser, and validator.                                                             | Low. Maintained by Neo4j.                                                         | ✅ **GraphRAG**                   |
-| **Licensing**        | Proprietary (Our code).                                                                                          | **Apache 2.0** (Open Source).                                                     | ✅ **GraphRAG**                   |
+| Feature              | Current (`CypherAgent`)                                                                                          | Proposed (`neo4j-graphrag`)                                                       | Verdict                 |
+|----------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|-------------------------|
+| **Schema Source**    | **Static JSON/YAML** (`schema.json`). Must be manually updated/synced.                                           | **Dynamic Introspection** (`apoc.meta.data`). Always in sync with DB.             | ✅ **GraphRAG**         |
+| **Query Generation** | Custom prompt template + regex parsing. Prone to syntax errors (e.g., `WITH` clause bugs).                       | Optimized prompt + `extract_cypher` regex sanitization (fixes backticks, quotes). | ✅ **GraphRAG**         |
+| **Security (RLS)**   | **Prompt Engineering + Regex Validation**. Injects `patient_id` via `TenantInjector` (complex, sometimes buggy). | **Neo4j PBAC + Impersonation**. Enforced by database kernel.                      | ✅ **GraphRAG**         |
+| **Parameters**       | Supports bind params (`$patient_id`).                                                                            | **No native bind param support** in Text2Cypher (uses literals).                  | ❌ **Current is safer** |
+| **Maintenance**      | High. We maintain the prompt, parser, and validator.                                                             | Low. Maintained by Neo4j.                                                         | ✅ **GraphRAG**         |
+| **Licensing**        | Proprietary (Our code).                                                                                          | **Apache 2.0** (Open Source).                                                     | ✅ **GraphRAG**         |
 
 ## 3. Cost Estimate
 
@@ -79,12 +79,12 @@ While PBAC enforces security, we still need the LLM to write meaningful queries.
 
 ### 4.3. Comparison
 
-| Feature | TenantInjector (Old) | GraphRAG + PBAC (Proposed) |
-| :--- | :--- | :--- |
-| **Mechanism** | Regex Injection (`WHERE ...`) | Database Policy + Impersonation |
-| **Robustness** | Low (Fragile parsing) | High (Kernel enforcement) |
-| **LLM Risk** | High (Leakage if injection fails) | None (LLM cannot bypass DB policy) |
-| **Complexity** | High App Complexity | High DB Config / Low App Complexity |
+| Feature        | TenantInjector (Old)              | GraphRAG + PBAC (Proposed)          |
+|----------------|-----------------------------------|-------------------------------------|
+| **Mechanism**  | Regex Injection (`WHERE ...`)     | Database Policy + Impersonation     |
+| **Robustness** | Low (Fragile parsing)             | High (Kernel enforcement)           |
+| **LLM Risk**   | High (Leakage if injection fails) | None (LLM cannot bypass DB policy)  |
+| **Complexity** | High App Complexity               | High DB Config / Low App Complexity |
 
 **Conclusion:** This is the ideal architecture. It removes the need for complex/fragile query parsing in Python and leverages the Enterprise database features we are paying for.
 
@@ -97,9 +97,8 @@ While PBAC enforces security, we still need the LLM to write meaningful queries.
 *   [x] Enable APOC in infrastructure (Prerequisite for native schema introspection).
 
 ### Phase 2: Implementation of Safe Components
-*   [ ] Create `SafeText2CypherRetriever` class.
-*   [ ] Implement the "PatientNode Lock" validation logic.
-*   [ ] Integrate with `GoogleGenAILLM` adapter (created in Phase 1).
+*   [ ] Create `PBACText2CypherRetriever` class (implements impersonation).
+*   [ ] Integrate with `GoogleGenAILLM` adapter.
 
 ### Phase 3: Agent Migration
 *   [ ] Modify `CypherAgent` (or `ExpertCypherAgent`) to use `SafeText2CypherRetriever` for query generation instead of the current custom prompt templates.
