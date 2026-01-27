@@ -854,6 +854,7 @@ Before executing any git operation:
 - [ ] Ensure changes are related and atomic (separate unrelated changes)
 - [ ] Stage specific files only (NEVER use `git add .` or `git add -A`)
 - [ ] Verify no sensitive files are being staged (.env, credentials, keys)
+- [ ] **Verify NO files will be deleted or lost (check status for 'D' or missing files)**
 - [ ] **Run security scan on staged diff (git diff --cached) - STOP if secrets detected**
 - [ ] **Perform commit readiness evaluation (impact, testing, static analysis, problem, risk)**
 - [ ] **Present evaluation to user and get confirmation to proceed**
@@ -943,6 +944,19 @@ git commit -am "message"
 ```bash
 # BAD - No automatic chaining to push
 git commit -m "message" && git push
+```
+
+❌ **Create feature branches automatically:**
+```bash
+# BAD - Do not create branches unless explicitly asked
+git checkout -b feature/my-branch
+```
+
+❌ **Reset or squash history automatically:**
+```bash
+# BAD - Never reset to origin or squash unless explicitly asked
+git reset --soft origin/main
+git reset --hard
 ```
 
 ## Best Practices
