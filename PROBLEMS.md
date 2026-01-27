@@ -243,6 +243,15 @@ Each problem includes:
 
 ## Workspace - Agent System
 
+- [OPEN] **Fragile Text-to-Cypher implementation in CypherAgent** - Custom regex-based parsing causes maintenance burden and risks
+  - Severity: HIGH | Added: 2026-01-27
+  - Related TODOs: "Migrate Text-to-Cypher to `neo4j-graphrag`" (TODO.md)
+  - **Observations**:
+    - **Vector Search Fallback**: `_parse_contains_query` uses complex regex to attempt to parse `WHERE ... CONTAINS` clauses, which is brittle to LLM formatting changes (e.g. whitespace, nesting).
+    - **Query Patching**: `_add_label_to_yield_variable` and other patching methods use regex to modify invalid queries on-the-fly, which is error-prone.
+    - **Schema Drift**: Reliance on manual `schema.json` means agent context often lags behind actual DB schema.
+  - **Proposed Solution**: Migrate to `neo4j-graphrag` library (see `docs/proposals/GRAPH_RAG_MIGRATION.md`)
+
 - [SOLVED] **Syntax errors caused by tenant patient_id query injection in CypherAgent** - TenantInjector breaks multi-word Cypher operators
   - Severity: HIGH | Added: 2026-01-23 | Solved: 2026-01-23
   - Related TODOs: "Replace TenantInjector with Neo4j RBAC security" (TODO.md - Workspace - Agent System)

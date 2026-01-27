@@ -534,6 +534,23 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Agent System
 
+- [PROPOSED] **Migrate Text-to-Cypher to `neo4j-graphrag`** - Standardize GraphRAG implementation with security best practices
+  - Impact: HIGH | Added: 2026-01-27
+  - **Proposal**: [docs/proposals/GRAPH_RAG_MIGRATION.md](docs/proposals/GRAPH_RAG_MIGRATION.md)
+  - **Goal**: Replace custom, fragile Text-to-Cypher implementation in `CypherAgent` with official `neo4j-graphrag` library
+  - **Benefits**:
+    - **Security**: Moves from regex-based validation to Neo4j PBAC + Impersonation (enforced by DB kernel)
+    - **Reliability**: Uses standard, battle-tested schema introspection via APOC
+    - **Maintenance**: Offloads prompt engineering and parsing logic to official library
+  - **Migration Phases**:
+    1.  Integration & Proof of Concept (Done)
+    2.  Implementation of Safe Components (`PBACText2CypherRetriever`)
+    3.  Agent Migration (Update `CypherAgent`)
+    4.  Cleanup (Remove legacy schema formatter and regex parsers)
+  - **Related**:
+    - PROBLEMS.md "Fragile Text-to-Cypher implementation in CypherAgent" [OPEN]
+    - TODO.md "Remove TenantInjector and add Neo4j RBAC security" [REVIEW]
+
 - [REVIEW] **Remove TenantInjector and add Neo4j RBAC security** - Two-stage fix for query syntax errors
   - Impact: HIGH | Added: 2026-01-23 | Revised: 2026-01-23 (v3 - Two-stage approach) | Stage 1 Completed: 2026-01-23
   - **Plan**: [docs/plans/remove-tenant-injector.md](docs/plans/remove-tenant-injector.md)

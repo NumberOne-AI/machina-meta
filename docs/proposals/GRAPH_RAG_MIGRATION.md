@@ -21,7 +21,31 @@ We propose migrating to **`neo4j-graphrag`**, the official Python library from N
 | **Maintenance**      | High. We maintain the prompt, parser, and validator.                                                             | Low. Maintained by Neo4j.                                                         | ✅ **GraphRAG**         |
 | **Licensing**        | Proprietary (Our code).                                                                                          | **Apache 2.0** (Open Source).                                                     | ✅ **GraphRAG**         |
 
-## 3. Cost Estimate
+## 3. Vector Search Deep Dive & Qdrant
+
+A key question is how `neo4j-graphrag` handles vector search compared to our current architecture, especially regarding Qdrant.
+
+### 3.1. Architecture Comparison
+
+| Feature           | Our Current Code                                                                                                                                                   | `neo4j-graphrag`                                                                                                    |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| **Vector Store**  | **Qdrant** (via `rag_plugin.py`).                                                                                                                                  | **Qdrant** (supported via `QdrantNeo4jRetriever`).                                                                  |
+| **Integration**   | **Separate Lanes**. The agent calls `rag_plugin` for docs (chunks) and `CypherAgent` for graph (nodes). They do not query together.                                | **ID Linking**. `QdrantNeo4jRetriever` queries Qdrant → gets IDs → fetches Nodes from Neo4j.                        |
+| **Hybrid Cypher** | **Theoretically**. `CypherAgent` prompt mentions `db.index.vector`, but the tool code does **not** inject embeddings, so it cannot actually execute these queries. | **No Native Support**. The `Text2CypherRetriever` does not support embedding injection for `db.index.vector` calls. |
+| **Retrievers**    | Custom `rag_plugin` + `semantic_router`.                                                                                                                           | Standardized `VectorRetriever`, `HybridRetriever`, `ExternalRetriever`.                                             |
+
+### 3.2. Integration Strategy
+
+Since `neo4j-graphrag` separates "Text-to-Cypher" (structured) from "Vector Search" (unstructured), the migration path is:
+
+1.  **Structured Data:** Migrate `CypherAgent` to `Text2CypherRetriever` (as proposed).
+2.  **Unstructured Data:** We can either:
+    *   **Keep** existing `rag_plugin.py` (Low effort, already works).
+    *   **Migrate** to `QdrantNeo4jRetriever` (Standardization, but requires ensuring Qdrant payload contains Neo4j IDs).
+
+**Recommendation:** Focus on migrating **Text-to-Cypher** first. Our vector search (RAG) is currently functional and decoupled. The `neo4j-graphrag` library does *not* offer a magic "Cypher + Vector in one query" solution that we are missing; it treats them as separate retrieval strategies just like we do.
+
+## 4. Cost Estimate
 
 *   **Licensing:** **$0**. `neo4j-graphrag` is Apache 2.0 licensed.
 *   **LLM Costs:**
