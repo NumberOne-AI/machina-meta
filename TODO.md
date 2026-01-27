@@ -101,13 +101,12 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - ✅ Local: `thoughtsTokenCount` confirms thinking used internally but not exposed
     - ✅ Preview-92: Deployed and manual smoke test completed successfully
 
-- [STARTED] Enhance docproc generic parser with Gemini 3 controls
-  - Impact: HIGH
-  - Added: 2026-01-24
+- [DONE] **Enhance docproc generic parser with Gemini 3 controls** - Research input limits and update config
+  - Impact: HIGH | Added: 2026-01-24 | Completed: 2026-01-27
   - [x] Research Gemini 3 input token limits and controls
   - [x] Update config to support thinking_level and media_resolution
   - [x] Maximize output tokens to 65536
-  - [ ] Verify fix in preview environment
+  - [x] Verify fix in preview environment
 
 - [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules
   - Impact: HIGH | Added: 2026-01-07
@@ -382,7 +381,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Infrastructure & CI/CD
 
-- [PROPOSED] **Research Argo Workflows and install on GKE** - Evaluate workflow orchestration capabilities
+- [STARTED] **Research Argo Workflows and install on GKE** - Evaluate workflow orchestration capabilities
   - Impact: MEDIUM | Added: 2026-01-21
   - **Documentation**: [docs/ARGO_WORKFLOWS.md](docs/ARGO_WORKFLOWS.md)
   - **Goal**: Understand Argo Workflows capabilities and install on GKE cluster for document processing
@@ -888,7 +887,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [docs/Claude_HealthCare_Assessment_20260113_Full.md](docs/Claude_HealthCare_Assessment_20260113_Full.md) - Detailed analysis with roadmap
   - **Commit**: aefe30c - "docs: add Claude Healthcare competitive assessment reports"
 
-- [STARTED] **DOCX to image conversion for Gemini Vision processing** - High-quality document rendering for LLM extraction
+- [REVIEW] **DOCX to image conversion for Gemini Vision processing** - High-quality document rendering for LLM extraction
   - Impact: MEDIUM | Added: 2026-01-22
   - **Problem**: Need to convert DOCX files to images for Gemini Vision API processing
   - **Current State**:
