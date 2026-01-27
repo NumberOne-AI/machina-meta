@@ -1,3 +1,8 @@
+---
+name: machina-python
+description: World-class Python development expert for machina-meta. Enforces hyper-perfect coding standards, modern Python 3.10+ syntax, strict type hinting, security best practices, and project-specific conventions. Use for ALL Python coding tasks, refactoring, and static analysis.
+---
+
 # machina-python Skill
 
 > **⚠️ NOTE: STANDARDS UNDER REVIEW**
