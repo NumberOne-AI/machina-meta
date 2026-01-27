@@ -171,6 +171,25 @@ User: "commit these changes"
 Assistant: [Runs bash git commands directly] ❌ WRONG
 ```
 
+## ⚠️ CRITICAL: Machina-Python Skill Requirement
+
+**When the user requests ANY interaction with Python files (*.py) or scripts:**
+
+1. **IMMEDIATELY invoke the machina-python skill** using the Skill tool
+2. **DO NOT read, analyze, or edit Python files until this skill is loaded**
+3. **DO NOT bypass this skill for "simple" edits**
+
+**This is a hard requirement for code quality and standardization.**
+
+- The machina-python skill provides the specific typing, formatting, and structural standards for this workspace.
+- Bypassing this skill results in inconsistent code that may fail CI/CD checks.
+
+**Pattern:**
+```
+User: "refactor user_manager.py"
+Assistant: [Immediately invokes Skill tool with skill: "machina-python"]
+```
+
 ## ⚠️ CRITICAL: Git Rules
 
 This workspace uses **git submodules**, which means multiple independent git repositories exist within the directory structure. Follow these rules carefully to avoid corrupting repository state.
