@@ -109,6 +109,74 @@ uv run pytest path/to/test_file.py
 *   **Commands**: `make process`, `make verify-only`.
 *   **Split Files**: Outputs are split to keep files < 25k tokens.
 
+### Standalone Scripts (PEP 723)
+
+For self-contained scripts with dependencies, use **PEP 723 inline script metadata**.
+
+**Full specification**: `PEP-0723-Inline-Script-Metadata.md` (in skill directory)
+
+#### Template
+
+```python
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#   "httpx>=0.27",
+#   "rich>=13.0",
+# ]
+# ///
+"""Script description.
+
+Development Commands (run from workspace root):
+===============================================
+1. Type checking:
+   uv run --with mypy -- mypy --strict scripts/myscript.py
+
+2. Linting:
+   uvx ruff check --select=E,W,F,B,I,UP,N,S,PL,RUF --line-length 120 scripts/myscript.py
+
+3. Formatting:
+   uvx ruff format --line-length 120 scripts/myscript.py
+"""
+
+from __future__ import annotations
+
+# ... imports and code following machina-python standards
+```
+
+#### Key Points
+
+| Element | Requirement |
+|---------|-------------|
+| Shebang | `#!/usr/bin/env -S uv run --quiet --script` |
+| Python version | `requires-python = ">=3.12"` (or appropriate) |
+| Dependencies | PEP 508 specs with version constraints |
+| Code standards | **All machina-python rules still apply** (types, `*` args, etc.) |
+
+#### When to Use
+
+*   ✅ Standalone utility scripts (e.g., `scripts/` directory)
+*   ✅ One-off automation tools
+*   ✅ Scripts shared outside the package structure
+*   ❌ Code within packages (use pyproject.toml)
+*   ❌ Libraries or reusable modules
+
+#### Running Scripts
+
+```bash
+# Make executable and run directly
+chmod +x scripts/myscript.py
+./scripts/myscript.py
+
+# Or run via uv
+uv run scripts/myscript.py
+```
+
+#### Reference Implementation
+
+See `scripts/import_k8s_environment.py` for a production example.
+
 ## 🛡️ Security Checklist
 *   [ ] No hardcoded secrets (use env vars).
 *   [ ] Inputs validated (types, ranges, formats).
@@ -120,7 +188,7 @@ uv run pytest path/to/test_file.py
 
 # Detailed Python Standards
 
-**Reference Documents**: `PEP-0008-Style-Guide.md` | `PEP-0020-Zen-of-Python.md` | `PEP-0257-Docstring-Conventions.md` | `PEP-0484-Type-Hints.md` | `Google-Python-Style-Guide.md` (All available in skill directory)
+**Reference Documents**: `PEP-0008-Style-Guide.md` | `PEP-0020-Zen-of-Python.md` | `PEP-0257-Docstring-Conventions.md` | `PEP-0484-Type-Hints.md` | `PEP-0723-Inline-Script-Metadata.md` | `Google-Python-Style-Guide.md` (All available in skill directory)
 
 ---
 
