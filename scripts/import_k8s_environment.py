@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet --script
 # /// script
 # requires-python = ">=3.12"
-# dependencies = []
+# dependencies = ["tabulate>=0.9"]
 # ///
 """Import and compare Kubernetes environment variables for local development.
 
@@ -42,8 +42,14 @@ Compare two .env files and show differences (removed, added, changed, identical)
 
 Usage:
     ./scripts/import_k8s_environment.py compare .env.old .env.new
+    ./scripts/import_k8s_environment.py compare .env.old .env.new --markdown
     ./scripts/import_k8s_environment.py compare .env.old .env.new --json
     ./scripts/import_k8s_environment.py compare .env.old .env.new --no-identical
+
+Output Formats:
+    --markdown  GitHub-flavored markdown table (columns: Variable, Old, New, Status)
+    --json      JSON with categorized arrays (removed, added, changed, identical)
+    (default)   Colored terminal output grouped by status
 """
 
 from __future__ import annotations
@@ -58,6 +64,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from tabulate import tabulate
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -1088,6 +1096,90 @@ def output_compare_as_json(result: CompareResult) -> None:
     print(json.dumps(output_data, indent=2))
 
 
+def _format_cell_value(value: str | None, *, max_length: int = 40) -> str:
+    """Format a value for markdown table cell."""
+    if value is None:
+        return ""
+    if len(value) <= max_length:
+        return f"`{value}`"
+    return f"`{value[: max_length - 3]}...`"
+
+
+def output_compare_as_markdown(
+    result: CompareResult,
+    *,
+    old_file: Path,
+    new_file: Path,
+    show_identical: bool = True,
+) -> None:
+    """Output comparison result as GitHub-flavored markdown table."""
+    # Build table rows: (Variable, Old Value, New Value, Status)
+    rows: list[tuple[str, str, str, str]] = []
+
+    # Removed: in old, not in new
+    for diff in result.removed:
+        rows.append(
+            (
+                f"`{diff.name}`",
+                _format_cell_value(diff.old_value),
+                "",
+                "🔴 REMOVED",
+            )
+        )
+
+    # Added: not in old, in new
+    for diff in result.added:
+        rows.append(
+            (
+                f"`{diff.name}`",
+                "",
+                _format_cell_value(diff.new_value),
+                "🟢 ADDED",
+            )
+        )
+
+    # Changed: different values
+    for diff in result.changed:
+        rows.append(
+            (
+                f"`{diff.name}`",
+                _format_cell_value(diff.old_value),
+                _format_cell_value(diff.new_value),
+                "🟡 CHANGED",
+            )
+        )
+
+    # Identical: same values (optional)
+    if show_identical:
+        for diff in result.identical:
+            rows.append(
+                (
+                    f"`{diff.name}`",
+                    _format_cell_value(diff.old_value),
+                    _format_cell_value(diff.new_value),
+                    "⚪ IDENTICAL",
+                )
+            )
+
+    # Sort rows by variable name
+    rows.sort(key=lambda r: r[0])
+
+    # Print summary header
+    total = len(result.removed) + len(result.added) + len(result.changed) + len(result.identical)
+    print("## Environment Comparison\n")
+    print(f"**Old:** `{old_file}`  ")
+    print(f"**New:** `{new_file}`\n")
+    print(f"**Summary:** {total} variables total")
+    print(f"- 🔴 Removed: {len(result.removed)}")
+    print(f"- 🟢 Added: {len(result.added)}")
+    print(f"- 🟡 Changed: {len(result.changed)}")
+    print(f"- ⚪ Identical: {len(result.identical)}\n")
+
+    # Print table
+    headers = ["Variable", f"Old ({old_file.name})", f"New ({new_file.name})", "Status"]
+    print(tabulate(rows, headers=headers, tablefmt="github"))
+
+
 # ============================================================
 # CLI
 # ============================================================
@@ -1128,6 +1220,7 @@ def create_compare_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         epilog="""
 Examples:
   %(prog)s .env.old .env.new
+  %(prog)s .env.old .env.new --markdown
   %(prog)s .env.old .env.new --json
   %(prog)s .env.old .env.new --no-identical
 """,
@@ -1135,6 +1228,7 @@ Examples:
 
     compare_parser.add_argument("old_file", type=Path, help="Path to old/baseline .env file")
     compare_parser.add_argument("new_file", type=Path, help="Path to new .env file")
+    compare_parser.add_argument("--markdown", action="store_true", help="Output as GitHub markdown table")
     compare_parser.add_argument("--json", action="store_true", help="Output as JSON")
     compare_parser.add_argument("--no-identical", action="store_true", help="Hide identical variables")
 
@@ -1308,6 +1402,13 @@ def run_compare_command(args: argparse.Namespace) -> None:
 
     if args.json:
         output_compare_as_json(result)
+    elif args.markdown:
+        output_compare_as_markdown(
+            result,
+            old_file=args.old_file,
+            new_file=args.new_file,
+            show_identical=not args.no_identical,
+        )
     else:
         print_compare_result(result, show_identical=not args.no_identical)
 
