@@ -60,9 +60,6 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Documentation & Tooling
 
-- [DONE] **Update GEMINI.md to point to AGENTS.md** - Align guidance files for AI agents
-  - Impact: LOW | Added: 2026-01-27 | Completed: 2026-01-27
-
 - [PROPOSED] **Convert CLAUDE.md to skill-based architecture** - Reduce context size by 68% through on-demand skill loading
 
 ---

@@ -63,6 +63,9 @@ Structure follows the workspace hierarchy. For active tasks, see [TODO.md](TODO.
 
 ## Workspace - Documentation & Tooling
 
+- [DONE] **Update GEMINI.md to point to AGENTS.md** - Align guidance files for AI agents
+  - Impact: LOW | Added: 2026-01-27 | Completed: 2026-01-27
+
 - [DONE] **Create workspace-level TODO.md and PROBLEMS.md framework** - Establish task/issue tracking at workspace level
   - Impact: MEDIUM | Added: 2025-12-29 | Completed: 2025-12-29
   - Created PROBLEMS.md and TODO.md with framework instructions and skeleton structure.
