@@ -117,6 +117,22 @@ def print_kv(key: str, value: str) -> None:
 
 WORKSPACE_ROOT = Path(__file__).parent.parent.resolve()
 
+# Environment variable names that contain hostnames and should be rewritten to localhost
+# for local port-forwarded access. These are checked by exact name match.
+LOCALHOST_REWRITE_VARS = frozenset({
+    "DYNACONF_PG_DB__HOST",
+    "DYNACONF_NEO4J_DB__HOST",
+    "DYNACONF_QDRANT__HOST",
+})
+
+# Environment variable names that contain URLs with hostnames embedded.
+# The hostname portion will be replaced with localhost.
+# Format: var_name -> (scheme_prefix, default_port)
+LOCALHOST_REWRITE_URL_VARS: dict[str, tuple[str, str]] = {
+    "DYNACONF_REDIS_DB__HOST": ("redis://", "6379"),
+    "NEO4J_URI": ("bolt://", "7687"),
+}
+
 
 # ============================================================
 # Exceptions
@@ -753,6 +769,58 @@ def import_environment(
 
 
 # ============================================================
+# Localhost Rewriting
+# ============================================================
+
+
+def _rewrite_url_to_localhost(value: str, scheme: str, default_port: str) -> str:
+    """Rewrite a URL value to use localhost, preserving the port.
+
+    Examples:
+        redis://redis:6379 -> redis://localhost:6379
+        bolt://neo4j:7687 -> bolt://localhost:7687
+        redis://myhost -> redis://localhost:6379 (uses default port)
+    """
+    if not value.startswith(scheme):
+        return value
+
+    # Extract the part after the scheme
+    rest = value[len(scheme):]
+
+    # Parse host:port or just host
+    if ":" in rest:
+        # Has port: redis://redis:6379 -> get port
+        parts = rest.split(":", 1)
+        port = parts[1].split("/")[0]  # Handle paths after port
+        path = "/" + "/".join(rest.split("/")[1:]) if "/" in rest else ""
+    else:
+        # No port: use default
+        port = default_port
+        path = "/" + "/".join(rest.split("/")[1:]) if "/" in rest else ""
+
+    return f"{scheme}localhost:{port}{path}"
+
+
+def rewrite_env_vars_for_localhost(env_vars: dict[str, EnvVar]) -> None:
+    """Rewrite K8s service hostnames to localhost for port-forwarded access.
+
+    Modifies env_vars in place.
+    """
+    for name, env_var in env_vars.items():
+        if env_var.value is None:
+            continue
+
+        # Direct hostname variables -> localhost
+        if name in LOCALHOST_REWRITE_VARS:
+            env_var.value = "localhost"
+
+        # URL variables -> rewrite hostname portion
+        elif name in LOCALHOST_REWRITE_URL_VARS:
+            scheme, default_port = LOCALHOST_REWRITE_URL_VARS[name]
+            env_var.value = _rewrite_url_to_localhost(env_var.value, scheme, default_port)
+
+
+# ============================================================
 # File Generation
 # ============================================================
 
@@ -1177,6 +1245,11 @@ File permissions are set to 600 (owner read/write only).
     import_parser.add_argument("--no-comments", action="store_true", help="Omit comments from output file")
     import_parser.add_argument("--json", action="store_true", help="Output as JSON instead of .env file")
     import_parser.add_argument("-q", "--quiet", action="store_true", help="Suppress progress output")
+    import_parser.add_argument(
+        "--no-localhost",
+        action="store_true",
+        help="Disable rewriting K8s service hostnames to localhost (default: rewrite enabled for port-forwarding)",
+    )
 
 
 def create_compare_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -1343,6 +1416,13 @@ def run_import_command(args: argparse.Namespace) -> None:
         for error in result.errors:
             print(f"  - {error}")
         sys.exit(1)
+
+    # Apply localhost rewriting (default: enabled)
+    if not args.no_localhost:
+        rewrite_env_vars_for_localhost(result.env_vars)
+        if not args.quiet:
+            print()
+            print_color(Color.CYAN, "Rewriting K8s hostnames to localhost for port-forwarding...")
 
     if not args.quiet:
         print_import_summary(result)

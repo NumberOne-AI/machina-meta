@@ -27,10 +27,11 @@ with automatic restart on failure.
 Origin: Adapted from Wethos-AI/wethos-meeting-ai-assistant/port_forward_service.py
 """
 
+import re
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from asyncio import Task, as_completed, create_subprocess_shell, create_task, run
 from asyncio.queues import Queue
-from collections.abc import Coroutine
+from collections.abc import Coroutine, Sequence
 from json import dumps, loads
 from shlex import quote
 from subprocess import PIPE
@@ -40,12 +41,16 @@ from pydantic import BaseModel, ConfigDict
 
 
 class PortForwardTarget(BaseModel):
-    """A single service to port-forward."""
+    """A single service to port-forward.
+
+    The service_name field supports regex patterns (using re.fullmatch).
+    Use ".*" to match all services in a namespace.
+    """
 
     model_config = ConfigDict(strict=True)
 
     namespace: str
-    service_name: str
+    service_name: str  # Regex pattern (fullmatch)
 
 
 class PortForwardConfig(BaseModel):
@@ -54,6 +59,19 @@ class PortForwardConfig(BaseModel):
     model_config = ConfigDict(strict=True)
 
     port_forward: list[PortForwardTarget]
+
+
+def _matches_any_target(
+    *,
+    namespace: str,
+    service_name: str,
+    targets: Sequence[PortForwardTarget],
+) -> bool:
+    """Check if a service matches any target using regex fullmatch on service_name."""
+    for target in targets:
+        if target.namespace == namespace and re.fullmatch(target.service_name, service_name):
+            return True
+    return False
 
 
 def get_task_runner() -> tuple[
@@ -91,7 +109,7 @@ def get_task_runner() -> tuple[
 
         while tasks:
             for i, task in enumerate(tasks):
-                print(f"task {i + 1}: {task.get_name()}")  # noqa: T201
+                print(f"task {i + 1}: {task.get_name()}")
             for future in as_completed((create_task(task_queue()), *tasks)):
                 await future
                 break
@@ -109,17 +127,14 @@ def start_port_forward(
     """Create a coroutine that runs kubectl port-forward in a loop."""
     service_namespace_sh = quote(service_namespace)
     service_name_sh = quote(service_name)
-    cmd = (
-        f"kubectl port-forward -n {service_namespace_sh} "
-        f"services/{service_name_sh} {host_port}:{service_port}"
-    )
+    cmd = f"kubectl port-forward -n {service_namespace_sh} services/{service_name_sh} {host_port}:{service_port}"
 
     async def coro() -> NoReturn:
         while True:
             proc = await create_subprocess_shell(cmd)
-            print(f"spawned: {cmd=}: {proc.pid=}")  # noqa: T201
+            print(f"spawned: {cmd=}: {proc.pid=}")
             returncode = await proc.wait()
-            print(f"exited: {cmd=}: {returncode=}")  # noqa: T201
+            print(f"exited: {cmd=}: {returncode=}")
 
     coro.__name__ = cmd
     return coro()
@@ -139,16 +154,17 @@ async def amain(*, config: PortForwardConfig) -> None:
         raise RuntimeError(msg)
     services = loads(js)
 
-    # Build lookup: (namespace, service_name) -> True
-    config_targets = {(t.namespace, t.service_name): True for t in config.port_forward}
-
     for service in services["items"]:
         service_name: str = service["metadata"]["name"]
         service_namespace: str = service["metadata"]["namespace"]
 
-        if (service_namespace, service_name) in config_targets:
+        if _matches_any_target(
+            namespace=service_namespace,
+            service_name=service_name,
+            targets=config.port_forward,
+        ):
             for service_port_info in service["spec"]["ports"]:
-                print(f"{service_port_info=}")  # noqa: T201
+                print(f"{service_port_info=}")
                 service_port: int = service_port_info["port"]
                 host_port: int = service_port_info["targetPort"]
                 coro = start_port_forward(
@@ -162,6 +178,12 @@ async def amain(*, config: PortForwardConfig) -> None:
 
 
 _EXAMPLE_CONFIG = """{
+  "port_forward": [
+    {"namespace": "tusdi-staging", "service_name": ".*"}
+  ]
+}"""
+
+_EXAMPLE_CONFIG_EXPLICIT = """{
   "port_forward": [
     {"namespace": "tusdi-staging", "service_name": "neo4j"},
     {"namespace": "tusdi-staging", "service_name": "postgres"},
@@ -178,10 +200,7 @@ def parse_args() -> Namespace:
     """Parse command-line arguments."""
     parser = ArgumentParser(
         description="Kubernetes Port Forward Helper",
-        epilog=(
-            "Example (forward all tusdi-staging services):\n"
-            f"%(prog)s '{_EXAMPLE_CONFIG}'"
-        ),
+        epilog=(f"Example (forward all tusdi-staging services):\n%(prog)s '{_EXAMPLE_CONFIG}'"),
         formatter_class=RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -189,8 +208,9 @@ def parse_args() -> Namespace:
         nargs="?",
         type=str,
         help=(
-            "JSON config, e.g.: "
-            '{"port_forward": [{"namespace": "ns", "service_name": "svc"}]}'
+            "JSON config. service_name supports regex (fullmatch). "
+            'Use ".*" to match all services. '
+            'e.g.: {"port_forward": [{"namespace": "ns", "service_name": ".*"}]}'
         ),
     )
     parser.add_argument(
@@ -207,7 +227,7 @@ def main() -> None:
 
     if args.schema:
         schema = PortForwardConfig.model_json_schema()
-        print(dumps(schema, indent=2))  # noqa: T201
+        print(dumps(schema, indent=2))
         raise SystemExit(0)
 
     if not args.config_json:
@@ -215,7 +235,7 @@ def main() -> None:
         raise SystemExit(msg)
 
     config = PortForwardConfig.model_validate_json(args.config_json)
-    print(f"{config=}")  # noqa: T201
+    print(f"{config=}")
     run(amain(config=config))
 
 
