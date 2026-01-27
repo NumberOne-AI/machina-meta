@@ -36,6 +36,7 @@ mkShell {
   buildInputs = [ bashInteractive fd gnumake ];
 
   packages = with pkgs; [
+    typora # markdown editor
     libreoffice
     gemini-cli
     opencode
