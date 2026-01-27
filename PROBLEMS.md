@@ -286,6 +286,40 @@ Each problem includes:
 
 ## Workspace - Agent System
 
+- [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
+  - Severity: HIGH | Added: 2026-01-27
+  - Related TODOs: "Support multi-interval reference range extraction in generic parser" (TODO.md)
+  - **Problem Statement**:
+    - Current generic parser extracts only ONE reference range interval per biomarker (e.g., `<18 mg/L`)
+    - Real lab reports often include multiple range classifications for a single biomarker
+    - Example: hs-CRP may have: `<1.0 mg/L (Low Risk)`, `1.0-3.0 mg/L (Borderline)`, `>3.0 mg/L (Increased Risk)`
+    - Example: BMI may have: `18.5-24.9 (Normal)`, `25.0-29.9 (Overweight)`, `30.0+ (Obese)`
+    - Users cannot see the full clinical context of their results
+  - **Current Behavior**:
+    - Generic parser extracts: `reference_range: "<18 mg/L"` (single text field)
+    - Interval matching only works with one range boundary
+    - Clinical designations like "Optimal", "Borderline", "High Risk" are lost
+  - **Required Data to Extract**:
+    1. **Range interval notation**: The numeric bounds (e.g., `<1.0`, `1.0-3.0`, `>3.0`, `18.5-24.9`)
+    2. **Range unit**: The measurement unit (e.g., `mg/L`, `kg/m²`, `mmol/L`)
+    3. **Range clinical designation**: The clinical label (e.g., `Normal`, `Borderline`, `Increased Risk`, `Optimal`, `Obese`)
+  - **Affected Components**:
+    - `repos/dem2/services/docproc/src/machina/docproc/extractors/generic_parser.py` - LLM extraction
+    - `repos/dem2/packages/medical-types/src/machina/medical_types/observation.py` - Data models
+    - `repos/dem2/services/medical-data-engine/` - Graph storage
+    - `repos/dem2-webui/src/components/fhir-storage/` - Frontend display
+  - **Impact**:
+    - Clinical context lost during extraction
+    - Interval matching incomplete (can only match against single range)
+    - Users must manually interpret multi-range reference tables
+  - **Next Steps**:
+    - [ ] Analyze sample lab reports to catalog multi-interval patterns
+    - [ ] Design updated LLM output schema supporting array of intervals
+    - [ ] Update generic parser prompts to extract all intervals
+    - [ ] Update data models (`RangeInterval`, `ObservationReferenceRange`)
+    - [ ] Update Neo4j storage to handle multiple intervals per reference range
+    - [ ] Update frontend to display multiple intervals with clinical designations
+
 - [OPEN] **Fragile Text-to-Cypher implementation in CypherAgent** - Custom regex-based parsing causes maintenance burden and risks
   - Severity: HIGH | Added: 2026-01-27
   - Related TODOs: "Migrate Text-to-Cypher to `neo4j-graphrag`" (TODO.md)

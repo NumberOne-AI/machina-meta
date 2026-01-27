@@ -140,6 +140,49 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ## Workspace - Agent System
 
+- [PROPOSED] **Support multi-interval reference range extraction in generic parser** - Extract all range classifications (Normal, Borderline, Increased Risk, etc.)
+  - Impact: HIGH | Added: 2026-01-27
+  - Related Problem: "Reference range extraction incomplete - only extracts single interval" (PROBLEMS.md)
+  - **Problem**: Current generic parser extracts only ONE reference range per biomarker, losing clinical context
+  - **Goal**: Extract ALL reference range intervals with their clinical designations
+  - **Data to Extract Per Interval**:
+    1. `interval_notation`: Numeric bounds (e.g., `<1.0`, `1.0-3.0`, `>3.0`)
+    2. `unit`: Measurement unit (e.g., `mg/L`, `kg/m²`)
+    3. `clinical_designation`: Clinical label (e.g., `Normal`, `Borderline`, `Increased Risk`)
+  - **Implementation Plan**:
+    - [ ] **Phase 1: Analysis** - Catalog multi-interval patterns from sample lab reports
+      - hs-CRP risk categories, BMI classifications, cholesterol levels, blood pressure ranges
+      - Document common patterns and edge cases
+    - [ ] **Phase 2: Schema Design** - Update LLM output schema
+      - Change `reference_range: str` to `reference_ranges: list[ReferenceRangeInterval]`
+      - Define `ReferenceRangeInterval` schema: `{interval: str, unit: str, designation: str}`
+      - Update Pydantic models in generic parser
+    - [ ] **Phase 3: Prompt Engineering** - Update generic parser prompts
+      - Modify extraction prompts to request array of intervals
+      - Add examples showing multi-interval extraction
+      - Test with sample documents
+    - [ ] **Phase 4: Data Models** - Update backend data structures
+      - Update `RangeInterval` in `repos/dem2/packages/medical-types/`
+      - Update `ObservationReferenceRange` to support multiple intervals
+      - Ensure backward compatibility with existing single-interval data
+    - [ ] **Phase 5: Graph Storage** - Update Neo4j storage
+      - Modify reference range node creation in medical-data-engine
+      - Consider `[:HAS_INTERVAL]` relationships for multiple intervals
+      - Update Cypher queries for interval matching
+    - [ ] **Phase 6: Frontend Display** - Update UI components
+      - Update `ReferenceRangeDisplay` component to show multiple intervals
+      - Add clinical designation badges/labels
+      - Update `IntervalStatusBadge` to match against correct interval
+    - [ ] **Phase 7: Testing** - End-to-end validation
+      - Unit tests for multi-interval parsing
+      - Integration tests for graph storage
+      - E2E tests with real lab documents
+  - **Key Files**:
+    - `repos/dem2/services/docproc/src/machina/docproc/extractors/generic_parser.py`
+    - `repos/dem2/packages/medical-types/src/machina/medical_types/observation.py`
+    - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/`
+    - `repos/dem2-webui/src/components/fhir-storage/reference-range-display.tsx`
+
 - [PROPOSED] **Migrate Text-to-Cypher to `neo4j-graphrag`** - Standardize GraphRAG implementation
   - Impact: HIGH | Added: 2026-01-27
   - **Proposal**: [docs/proposals/GRAPH_RAG_MIGRATION.md](docs/proposals/GRAPH_RAG_MIGRATION.md)
