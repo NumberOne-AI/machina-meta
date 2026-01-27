@@ -1,3 +1,8 @@
+---
+name: machina-doc
+description: Automated documentation generation for accomplishments reports and contribution summaries from git history.
+---
+
 # machina-doc Skill
 
 Automated documentation generation for accomplishments reports and contribution summaries.

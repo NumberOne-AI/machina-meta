@@ -1,0 +1,5 @@
+{
+  "name": "machina-git",
+  "description": "Git workflow for machina-meta workspace with submodules. Use ALWAYS for ALL git operations including commit, push, pull, status, diff, add, checkout, branch, tag, log, show, submodule updates. Enforces working directory safety, conventional commits, push confirmation, secret scanning, and commit readiness evaluation.",
+  "category": "project"
+}

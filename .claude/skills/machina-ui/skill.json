@@ -1,0 +1,5 @@
+{
+  "name": "machina-ui",
+  "description": "Debug and understand MachinaMed frontend UI data flow. Use for investigating UI display issues, tracing data from backend API to React components, and understanding how biomarkers and reference ranges are rendered at /markers page (port 3000). Includes browser automation for visual verification and testing.",
+  "category": "project"
+}

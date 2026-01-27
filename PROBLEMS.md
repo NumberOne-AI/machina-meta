@@ -313,6 +313,9 @@ Each problem includes:
     - Rebuilt backend with `just dev-restart`
     - Ran test query: "Show me all my test results where the biomarker name starts with the letter T"
     - 0 "Query validation failed" messages in logs after fix
+  - **Deployed**: preview-92 (tusdi-preview-92) - 2026-01-24
+    - Tag `preview-dbeal-docproc-dev` at commit `0bc941c9`
+    - ArgoCD sync completed, health status: Healthy
 
 ---
 

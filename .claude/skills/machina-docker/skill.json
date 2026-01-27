@@ -1,0 +1,5 @@
+{
+  "name": "machina-docker",
+  "description": "Docker development environment for machina-meta workspace. Use for container management, development stacks, database services, health checks, volume management, and infrastructure. The single authoritative source for all Docker operations.",
+  "category": "project"
+}

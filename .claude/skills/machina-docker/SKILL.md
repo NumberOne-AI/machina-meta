@@ -67,6 +67,64 @@ All Docker commands should be run from the **machina-meta workspace root**.
 | `just gcloud-admin::helm <args>` | Run helm | `docker compose run --rm gcloud-admin helm <args>` |
 | `just gcloud-admin::k9s` | Cluster TUI | `docker compose run --rm gcloud-admin k9s` |
 | `just gcloud-admin::argocd <args>` | Run ArgoCD CLI | `docker compose run --rm gcloud-admin argocd <args>` |
+| `just gcloud-admin::preview-info <identifier>` | Get preview deployment info | Shows tags, commits, PR status, ArgoCD health |
+
+**Preview Environment Info:**
+
+Check the current state of a preview deployment using any identifier:
+
+```bash
+# By GKE namespace
+just gcloud-admin::preview-info --gke-namespace tusdi-preview-92
+
+# By git tag
+just gcloud-admin::preview-info --git-tag preview-dbeal-docproc-dev
+
+# By ArgoCD app name
+just gcloud-admin::preview-info --argocd-app preview-pr-92
+
+# By infra branch
+just gcloud-admin::preview-info --infra-branch preview/dbeal-docproc-dev
+
+# By infra PR number
+just gcloud-admin::preview-info --pr 92
+
+# By git branch
+just gcloud-admin::preview-info --git-branch feature/dbeal-docproc-dev
+
+# Output formats: terminal, json, markdown (default: markdown)
+just gcloud-admin::preview-info --gke-namespace tusdi-preview-92 --format json
+```
+
+**Output includes:**
+- Preview ID resolved from identifier
+- Backend/Frontend tag commits and dates
+- Infrastructure branch and PR status
+- ArgoCD sync and health status
+- GitHub workflow status for all repos
+
+**Updating Preview Deployments:**
+
+To deploy new changes to a preview environment:
+
+```bash
+# Step 1: Check current preview state and get the Preview Tag name
+just gcloud-admin::preview-info --gke-namespace tusdi-preview-92
+# Look for: | **dem2 (Backend)** | Preview Tag | ✅ preview-dbeal-docproc-dev |
+
+# Step 2: Tag the desired commit with the EXACT preview tag name
+cd repos/dem2 && git tag -f preview-dbeal-docproc-dev HEAD
+
+# Step 3: Push and overwrite the tag to remote (triggers CI/CD)
+cd repos/dem2 && git push origin preview-dbeal-docproc-dev --force
+
+# Step 4: Monitor for deployment progress
+just gcloud-admin::preview-info --gke-namespace tusdi-preview-92
+# Watch for: Workflows status → ArgoCD sync → Health status
+```
+
+**Note:** The preview tag name comes from `preview-info` output (e.g., `preview-dbeal-docproc-dev`).
+Frontend (dem2-webui) follows the same pattern if frontend changes need deployment.
 
 ### Deprecated Commands (in child repos)
 
@@ -424,6 +482,80 @@ kubectl port-forward -n tusdi-preview-92 svc/neo4j 17474:7474 17687:7687 &
 pkill -f "port-forward.*tusdi-preview"
 ```
 
+### Pattern 11: Multi-Service Port Forwarding (Automated)
+
+For forwarding multiple services simultaneously with automatic restart on failure, use the `port_forward_service.py` script.
+
+**Location**: `scripts/port_forward_service.py`
+
+**Features**:
+- Forward multiple services from different namespaces simultaneously
+- Automatic restart when port-forwards fail
+- JSON configuration for easy scripting
+- Async process management
+
+**Basic Usage**:
+
+```bash
+# Forward single service
+./scripts/port_forward_service.py '{"port_forward": [{"namespace": "tusdi-staging", "service_name": "redis"}]}'
+
+# Forward multiple services from same namespace
+./scripts/port_forward_service.py '{"port_forward": [
+  {"namespace": "tusdi-staging", "service_name": "neo4j"},
+  {"namespace": "tusdi-staging", "service_name": "postgres"},
+  {"namespace": "tusdi-staging", "service_name": "redis"}
+]}'
+
+# Forward services from DIFFERENT namespaces (key feature)
+./scripts/port_forward_service.py '{"port_forward": [
+  {"namespace": "tusdi-staging", "service_name": "redis"},
+  {"namespace": "tusdi-preview-92", "service_name": "neo4j"}
+]}'
+```
+
+**Forward All Services from a Namespace**:
+
+```bash
+# All tusdi-staging services
+./scripts/port_forward_service.py '{
+  "port_forward": [
+    {"namespace": "tusdi-staging", "service_name": "neo4j"},
+    {"namespace": "tusdi-staging", "service_name": "postgres"},
+    {"namespace": "tusdi-staging", "service_name": "qdrant"},
+    {"namespace": "tusdi-staging", "service_name": "redis"},
+    {"namespace": "tusdi-staging", "service_name": "redisinsight"},
+    {"namespace": "tusdi-staging", "service_name": "tusdi-api"},
+    {"namespace": "tusdi-staging", "service_name": "tusdi-webui"}
+  ]
+}'
+```
+
+**View JSON Schema**:
+
+```bash
+./scripts/port_forward_service.py --schema
+```
+
+**Port Mapping Behavior**:
+- The script uses `targetPort` as the local port (maps service port to targetPort on localhost)
+- Multi-port services (like Neo4j with 7474 and 7687) forward all ports automatically
+- No port conflict handling - ensure local ports are free before running
+
+**When to Use This vs Manual kubectl**:
+
+| Use Case | Recommended Approach |
+|----------|---------------------|
+| Quick single-service debug | Manual `kubectl port-forward` |
+| Multiple services, same namespace | `port_forward_service.py` |
+| Multiple services, different namespaces | `port_forward_service.py` ✓ |
+| Long-running port-forward sessions | `port_forward_service.py` (auto-restart) |
+| CI/CD scripts | `port_forward_service.py` (JSON config) |
+
+**Stopping Port Forwards**:
+
+Press `Ctrl+C` to stop all port-forwards managed by the script.
+
 ---
 
 ## Volume Management
@@ -604,6 +736,325 @@ docker compose logs -f backend
 See `references/troubleshooting.md` for comprehensive troubleshooting guide.
 
 ---
+
+## API Testing with curl_api
+
+The `curl_api` justfile rule in `repos/dem2` provides a convenient JSON-based interface for testing backend APIs without writing code.
+
+### Overview
+
+**Location**: `repos/dem2/justfile` (rule: `curl_api`)
+**Backend Script**: `repos/dem2/scripts/curl_api.sh`
+**Purpose**: Call backend API functions using JSON dispatch for development and testing
+
+### How It Works
+
+The `curl_api` rule uses a JSON dispatch system that:
+1. Accepts a JSON payload with a `function` field and arguments
+2. Routes the call to a registered bash function in `curl_api.sh`
+3. Handles authentication automatically (JWT tokens + patient context)
+4. Executes the API call and returns the result
+
+### Basic Usage
+
+```bash
+# From repos/dem2 directory
+(cd repos/dem2 && just curl_api '{"function": "function_name", "arg1": "value1", ...}')
+```
+
+**Authentication**:
+- Automatically handles JWT token generation via `user_manager.py`
+- Sets patient context header (`X-Patient-Context-ID`)
+- Default user: `dbeal@numberone.ai`
+- Default patient: Stuart McClure, DOB: 1969-03-03
+
+### Available Function Categories
+
+#### Document Management
+
+**List documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Upload a file**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "datasets/documents/test.pdf"}')
+```
+
+**Process a specific document**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "uuid-here"}')
+```
+
+**Process all uploaded documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "process_all_documents"}')
+```
+
+**Delete all documents**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "delete_all_documents"}')
+```
+
+#### Task Management
+
+**List all document processing tasks**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')
+```
+
+**Get specific task details**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "get_task", "task_id": "uuid-here"}')
+```
+
+**List failed tasks only**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_failed_tasks"}')
+```
+
+#### Patient Management
+
+**List all patients**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_patients"}')
+```
+
+#### Agent Session Management
+
+**Create a new agent session**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "create_session", "name": "My Session"}')
+```
+
+**Set/update session name**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "set_session_name", "session_id": "uuid-here", "name": "New Name"}')
+```
+
+**List all sessions**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_sessions"}')
+```
+
+#### Agent Query
+
+**Query the medical agent**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my cholesterol?"}')
+```
+
+**Query with specific session**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my cholesterol?", "session_id": "uuid-here"}')
+```
+
+#### Agent Diagnostics
+
+**Check agent dependencies**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "check_agent_dependencies"}')
+```
+
+**Validate agent configuration**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "validate_agent_config"}')
+```
+
+#### Medical Catalog (Biomarker Enrichment)
+
+**Enrich biomarkers**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich", "names": ["ApoA-1", "Factor II"]}')
+```
+
+**Check enrichment status**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich_status", "task_id": "uuid-here"}')
+```
+
+**Search for biomarkers**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search", "names": ["cholesterol"], "limit": 5}')
+```
+
+**Search by alias groups**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search_by_alias", "alias_groups": [["LDL"], ["HDL", "HDL-C"]]}')
+```
+
+**Search derivative biomarkers** (ratios, calculated values):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_search_derivatives", "names": ["ApoB/ApoA-1"]}')
+```
+
+**Enrich derivatives** (ratios, sums, percentages):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich_derivatives", "names": ["ApoB/ApoA-1", "TC/HDL-C"]}')
+```
+
+**List all derivatives** (with pagination):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "catalog_list_derivatives", "limit": 100, "offset": 0}')
+```
+
+#### Debug
+
+**Debug JSON argument structure**:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "debug_args", "names": ["test1", "test2"]}')
+```
+
+### Common Workflows
+
+#### List Available Test Documents
+
+Before uploading documents for testing, list available test documents in the repository:
+
+```bash
+# List all test documents with full paths
+just list-test-docs
+
+# Output example:
+# [
+#   "pdf_tests/medical_records/.../Boston Heart July 2021.pdf",
+#   "pdf_tests/medical_records/.../Dutch cortisol 9-01-25.pdf",
+#   ...
+# ]
+```
+
+**Use this to**:
+- Find available test documents before testing document processing
+- Get correct paths for upload functions
+- Identify specific documents for debugging (e.g., Dutch cortisol document for "Estrone (E1)" testing)
+
+#### Upload and Process a Document
+
+```bash
+# First, list available test documents
+just list-test-docs
+
+# Upload document using path from list-test-docs
+(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "pdf_tests/medical_records/Stuart Mcclure Medical Records (PRIVATE)/Dutch cortisol 9-01-25.pdf"}')
+
+# Process the uploaded document (use the file_id from upload response)
+(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "file-id-from-upload"}')
+```
+
+#### Query Agent About Health Markers
+
+```bash
+# Query agent
+(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "What is my latest cholesterol level?"}')
+```
+
+#### Check Task Processing Status
+
+```bash
+# List all tasks to find IDs
+(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')
+
+# Get specific task details
+(cd repos/dem2 && just curl_api '{"function": "get_task", "task_id": "abc-123-def"}')
+```
+
+#### Enrich and Validate Biomarkers
+
+```bash
+# Enrich biomarkers in catalog
+(cd repos/dem2 && just curl_api '{"function": "catalog_enrich", "names": ["Total Cholesterol", "LDL", "HDL"]}')
+
+# Search to verify they exist
+(cd repos/dem2 && just curl_api '{"function": "catalog_search", "names": ["Total Cholesterol"], "limit": 5}')
+```
+
+### How It Differs from Direct curl_api.sh Usage
+
+**Using just curl_api** (recommended):
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Direct script usage** (lower-level):
+```bash
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && dispatch "{\"function\": \"list_documents\"}"')
+```
+
+**Benefits of just curl_api**:
+- ✅ Cleaner syntax (no need to source or call dispatch)
+- ✅ Proper error handling via justfile
+- ✅ Consistent working directory handling
+- ✅ Part of documented justfile interface
+
+### Environment Variables
+
+**Default settings** (defined in `scripts/curl_api.sh`):
+```bash
+PATIENT_FIRST_NAME=Stuart
+PATIENT_LAST_NAME=McClure
+PATIENT_DATE_OF_BIRTH=1969-03-03
+AUTH_EMAIL=dbeal@numberone.ai
+BACKEND_URL=http://localhost:8000/api/v1
+FRONTEND_URL=http://localhost:3000
+```
+
+**Override patient context**:
+```bash
+PATIENT_FIRST_NAME=John PATIENT_LAST_NAME=Doe PATIENT_DATE_OF_BIRTH=1990-01-01 \
+  (cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+**Enable verbose curl output** (for debugging):
+```bash
+CURL_VERBOSE=1 (cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+### Error Handling
+
+If a function doesn't exist:
+```bash
+$ (cd repos/dem2 && just curl_api '{"function": "nonexistent"}')
+# ERROR: Unknown function: nonexistent
+# Available functions: list_documents, upload_file, process_document, ...
+```
+
+If required arguments are missing:
+```bash
+$ (cd repos/dem2 && just curl_api '{"function": "upload_file"}')
+# ERROR: Missing 'path' field in JSON
+# Usage: {"function": "upload_file", "path": "path/to/file.pdf"}
+```
+
+### When to Use curl_api
+
+**Use curl_api for**:
+- ✅ Quick API testing during development
+- ✅ One-off administrative tasks (upload, delete, etc.)
+- ✅ Debugging API endpoints and responses
+- ✅ Validating authentication and patient context
+- ✅ Scripting batch operations
+
+**Don't use curl_api for**:
+- ❌ Production operations (use proper API clients)
+- ❌ Performance testing (use dedicated load testing tools)
+- ❌ Automated testing (use pytest with proper fixtures)
+
+### Related Commands
+
+**Low-level curl_api.sh functions** (not dispatched, but useful):
+```bash
+# Get patient ID and set context
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && _export_patient_context_id_internal && declare -p X_PATIENT_CONTEXT_ID')
+
+# Call backend API with auth
+(cd repos/dem2 && bash -c 'source scripts/curl_api.sh && _export_patient_context_id_internal && auth_backend "/graph-memory/medical/observations/grouped"')
+```
+
+**See also**:
+- `repos/dem2/scripts/curl_api.sh` - Complete function implementations
+- `repos/dem2/justfile` (line 271-347) - curl_api rule documentation
+- `.claude/skills/machina-ui/SKILL.md` - UI debugging with curl_api examples
 
 ## Environment Variables
 

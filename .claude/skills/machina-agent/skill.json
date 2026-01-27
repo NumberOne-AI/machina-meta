@@ -1,0 +1,5 @@
+{
+  "name": "machina-agent",
+  "description": "Debug and trace MachinaMed medical agent errors in GKE environments. Use for investigating agent failures, tracing invocations, analyzing MALFORMED_FUNCTION_CALL errors, and generating comprehensive error reports from agent-trace.log files.",
+  "category": "project"
+}

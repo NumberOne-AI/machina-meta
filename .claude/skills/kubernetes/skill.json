@@ -1,0 +1,5 @@
+{
+  "name": "kubernetes",
+  "description": "Kubernetes container orchestration platform. Use for K8s clusters, deployments, pods, services, networking, storage, configuration, and DevOps tasks.",
+  "category": "project"
+}

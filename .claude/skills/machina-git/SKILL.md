@@ -223,35 +223,42 @@ Every git command MUST be combined with its `cd` command in the SAME Bash tool c
 NOTE: Using machina-git skill for this operation.
 ```
 
-### Step 1: Identify Target Repository
+### Step 1: Identify Target Repository and Ensure Clean Index (CRITICAL)
 
-When user requests a git operation, first identify which repository:
+**Before doing ANYTHING else, identify the target repository and ensure its index is clean.**
 
-```
-User mentions: "commit the backend changes"
-→ Target: repos/dem2
+1. **Identify the target repository:**
+   ```
+   User mentions: "commit the backend changes" → Target: repos/dem2
+   User mentions: "commit CLAUDE.md" → Target: workspace root (machina-meta)
+   ```
 
-User mentions: "commit CLAUDE.md"
-→ Target: workspace root (machina-meta)
+2. **CRITICAL: Ensure index is clean (check for existing staged files):**
+   ```bash
+   # Check for existing staged files in the target repo (cd and git in same call)
+   cd repos/dem2 && git status
+   ```
+   **If output is NOT empty:**
+   - **STOP IMMEDIATELY.**
+   - **Alert the user:** "⚠️ Warning: There are files already staged for commit in this repository. Do you want to include them, or should I unstage them first?"
+   - **DO NOT PROCEED** until the user confirms or you have unstaged the unwanted files.
+   - **NEVER** blindly commit existing staged files unless explicitly instructed.
 
-User mentions: "commit the frontend"
-→ Target: repos/dem2-webui
-
-User mentions: "check status of all repos"
-→ Target: all repositories (use just repo-status or iterate)
-```
-
-If unclear, ask: "Which repository should I work with?"
+If unclear which repo, ask: "Which repository should I work with?"
 
 ### Step 2: Review Current State
 
 **CRITICAL: cd and git commands must be in same Bash call**
 
+**REQUIRED: Always examine the output of `git status` before proceeding.**
+This ensures you see the exact state of untracked (??) vs modified (M) files without ambiguity.
+
 ```bash
-# Single Bash call with cd && git status
+# Check machine-readable status (cd and git in same call)
 cd repos/dem2 && git status
 
-# Single Bash call with cd && git diff
+# Also check human-readable status for context
+cd repos/dem2 && git status
 cd repos/dem2 && git diff
 ```
 
@@ -842,6 +849,7 @@ Before executing any git operation:
 - [ ] **⚠️ NEVER run cd in one Bash call and git in another - ESPECIALLY for `git push`**
 - [ ] Use relative paths from workspace root (e.g., `cd repos/dem2 && git status`)
 - [ ] Review git status and git diff (for commits)
+- [ ] **Check index for existing staged files (`git status`) - Warn if present**
 - [ ] Confirm changes with user (for commits)
 - [ ] Ensure changes are related and atomic (separate unrelated changes)
 - [ ] Stage specific files only (NEVER use `git add .` or `git add -A`)

@@ -4,6 +4,7 @@
 # dependencies = []
 # ///
 """Import and compare Kubernetes environment variables for local development.
+>>>>>>> f18d61a (feat(scripts): add graphrag_cli.py using google-genai SDK and APOC)
 
 CRITICALLY IMPORTANT: Development Commands (machina-python standard)
 =====================================================================

@@ -588,8 +588,10 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - [x] Evidence: agent-trace.log shows `query_graph` tool call at `2026-01-24T01:10:34.839123Z`
       - [x] Same query on local dev: **0 Neo4j SyntaxErrors** - fix verified working
       - [x] Note: Local logs show unrelated "Query validation failed" from pre-existing CypherValidator issue (is_valid before filtering), NOT from QuerySecurityValidator
-    - [ ] Phase 5: Deployment (PENDING)
-      - [ ] Preview environment (tusdi-preview-92)
+    - [x] Phase 5: Deployment
+      - [x] Preview environment (tusdi-preview-92) - Deployed 2026-01-24
+        - Tag `preview-dbeal-docproc-dev` updated to `0bc941c9`
+        - ArgoCD sync completed, health status: Healthy
       - [ ] Staging environment
       - [ ] Production rollout with monitoring
   - **Stage 2 Implementation Phases** (Future - requires Enterprise Edition):
@@ -642,6 +644,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
     - [x] Backend rebuilt with `just dev-restart`
     - [x] Test query executed successfully
     - [x] 0 "Query validation failed" messages in logs after fix
+    - [x] Deployed to preview-92 (2026-01-24) - commit `0bc941c9`
 
 ---
 

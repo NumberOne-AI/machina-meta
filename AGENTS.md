@@ -1,0 +1,984 @@
+# AGENTS.md
+
+This file provides guidance to Claude Code when working with the **machina-meta** workspace.
+
+## ⚠️ CRITICAL: Architecture Analysis Protocol
+
+**Before proposing ANY architectural change or creating extensive documentation (>200 lines):**
+
+### 1. Verify First, Propose Second
+- **Read the actual source code** - Don't assume, verify
+- **Map current architecture** - Document what EXISTS, not what you think exists
+- **Trace data flows** - Follow from entry point to implementation
+- **Check existing APIs/endpoints** - Verify what's already exposed vs internal
+
+### 2. State Assumptions Explicitly
+- **List all assumptions** you're making about the system
+- **Mark each as VERIFIED or UNVERIFIED**
+- **Ask user to confirm BEFORE building on unverified assumptions**
+
+Example format:
+```
+ASSUMPTIONS:
+❌ UNVERIFIED: Component X is exposed via HTTP
+❌ UNVERIFIED: Proposed solution Y addresses problem Z
+→ Ask: "Let me verify: Is X currently accessible via HTTP, or only internal?"
+```
+
+### 3. Watch for Red Flags (Validate Immediately)
+
+Stop and validate if you notice:
+- 🚩 **Wrapper around wrapper** (converting A→B→A) - likely architectural misunderstanding
+- 🚩 **Unclear value proposition** - can't articulate why the change is needed
+- 🚩 **Haven't seen the code** for what you're proposing to modify
+- 🚩 **Building something that should already exist** - ask why it doesn't
+- 🚩 **>1 hour of analysis without user validation** - checkpoint every 30-60 min
+
+### 4. Incremental Validation Checkpoints
+
+After major discovery phases, STOP and validate:
+```
+✋ CHECKPOINT: "Here's what I found about current architecture: [summary]
+Does this match your understanding before I proceed?"
+
+[WAIT FOR USER CONFIRMATION]
+```
+
+### 5. Quick Validation Checklist
+
+Before extensive analysis:
+```
+□ Read actual source code?
+□ Verified assumptions with evidence (code/docs)?
+□ Stated assumptions explicitly to user?
+□ Asked clarifying questions about the goal?
+□ Checked for circular logic in proposal?
+□ User validated direction?
+```
+
+**If ANY box unchecked → STOP and validate first**
+
+## ⚠️ CRITICAL: Bash Command Execution Safety
+
+**ALWAYS be aware of the current directory before running ANY bash command.**
+
+### Startup: Establish Workspace Root
+
+**All bash commands automatically start from the workspace root via SessionStart hook.**
+
+The `.claude/hooks/session-startup.sh` script (configured in `.claude/settings.json`) captures the workspace root path at session startup and writes it to `$CLAUDE_ENV_FILE`. This file is sourced before every bash command.
+
+**This provides:**
+- Every bash command starts from a known location (workspace root)
+- `$WS` environment variable set to workspace root path for convenient reference
+- Forces explicit directory specification for all operations
+- Eliminates ambiguity about current working directory
+- Protection against path confusion
+
+**You must explicitly cd to target directories using subshell pattern:**
+```bash
+# Pattern: (cd target/dir && command)
+(cd repos/dem2 && pytest tests/)
+(cd repos/dem2-webui && pnpm dev)
+
+# Alternative: Use $WS variable for absolute paths
+(cd $WS/repos/dem2 && pytest tests/)
+(cd $WS/repos/dem2-webui && pnpm dev)
+```
+
+### Directory Awareness Protocol
+
+Before executing any bash command:
+
+1. **Acknowledge workspace root** - All commands start from the workspace root (project root)
+2. **Explicitly specify target directory** - Use subshell pattern: `(cd target && command)`
+3. **Verify if uncertain** - Use `pwd` to check current location
+4. **Maintain awareness** - Keep mental model of filesystem hierarchy and where commands execute
+
+**Why this is critical:**
+- Commands execute relative to current working directory
+- SessionStart hook ensures all commands start from the workspace root
+- Wrong directory = wrong files affected, wrong outputs, potential corruption
+- Especially critical in machina-meta with 5 independent git repositories (submodules)
+- Path confusion leads to: wrong repo operations, file not found errors, unexpected behavior
+
+**Required pattern:**
+```bash
+# CORRECT - Use subshell pattern with relative paths
+(cd repos/dem2 && pytest tests/)
+(cd repos/dem2-webui && pnpm dev)
+
+# CORRECT - Use $WS variable for clarity
+(cd $WS/repos/dem2 && pytest tests/)
+(cd $WS/repos/dem2-webui && pnpm dev)
+
+# CORRECT - Verify first if uncertain
+pwd  # Should show workspace root
+echo $WS  # Should show workspace root path
+(cd repos/dem2 && pwd && pytest tests/)
+
+# WRONG - Never assume current directory without explicit cd
+pytest tests/  # Where are tests/? Unclear!
+
+# WRONG - Never use hardcoded absolute paths
+(cd /home/dbeal/repos/NumberOne-AI/machina-meta/repos/dem2 && pytest)  # Not portable
+```
+
+**Repository path references:**
+Use these paths consistently throughout the session:
+- Workspace root: `$WS` or `.` (both refer to workspace root)
+- Backend: `repos/dem2` or `$WS/repos/dem2`
+- Frontend: `repos/dem2-webui` or `$WS/repos/dem2-webui`
+- Infrastructure: `repos/dem2-infra` or `$WS/repos/dem2-infra`
+- Catalog: `repos/medical-catalog` or `$WS/repos/medical-catalog`
+
+**Best practices:**
+- ✅ Trust that SessionStart hook sets you at workspace root
+- ✅ Always use subshell pattern: `(cd target && command)`
+- ✅ Use relative paths from workspace root or `$WS` variable
+- ✅ Check `pwd` or `echo $WS` if uncertain
+- ✅ Include directory context in command descriptions
+- ✅ Maintain awareness of filesystem hierarchy throughout session
+- ❌ Never assume you're in the right directory without explicit cd
+- ❌ Never run commands without knowing where they execute
+- ❌ Never use hardcoded absolute paths
+
+**This applies to ALL bash commands: git, pytest, npm, docker, ls, cp, mv, rm, etc.**
+
+## ⚠️ CRITICAL: Machina-Git Skill Requirement
+
+**When the user requests ANY git operation (commit, push, pull, status, diff, add, checkout, branch, tag, log, show, etc.):**
+
+1. **IMMEDIATELY invoke the machina-git skill** using the Skill tool
+2. **DO NOT run git commands via Bash first**
+3. **DO NOT bypass the skill for "simple" operations** like `git status` or `git diff`
+4. **If you're about to type a bash git command, STOP** and invoke `/machina-git` instead
+
+**This is a hard requirement for workspace safety with submodules.**
+
+- The machina-git skill enforces working directory safety, prevents repo corruption
+- Running git commands directly via Bash bypasses critical safety checks
+- Each of the 5 repositories has independent git history - wrong directory = corrupted state
+- The skill provides secret scanning, commit readiness evaluation, and atomic commit guidance
+
+**Pattern:**
+```
+User: "commit these changes"
+Assistant: [Immediately invokes Skill tool with skill: "machina-git"]
+
+NOT:
+User: "commit these changes"
+Assistant: [Runs bash git commands directly] ❌ WRONG
+```
+
+## ⚠️ CRITICAL: Git Rules
+
+This workspace uses **git submodules**, which means multiple independent git repositories exist within the directory structure. Follow these rules carefully to avoid corrupting repository state.
+
+### 1. Working Directory Safety
+
+**ALWAYS explicitly cd into the target repository using subshell pattern before running ANY git command.**
+
+- **NEVER assume** you are in the correct working directory
+- **ALWAYS use subshell pattern** `(cd target && git ...)` for git operations
+- Running git commands in the wrong directory can corrupt repository state
+- This is especially critical with submodules where each repo has independent git history
+- SessionStart hook ensures commands start from workspace root (accessible via `$WS`)
+
+**Required pattern:**
+```bash
+# CORRECT - Always use subshell pattern for git commands
+(cd repos/dem2 && git status)
+(cd repos/dem2 && git commit -m "message")
+
+# CORRECT - Use $WS variable for clarity
+(cd $WS/repos/dem2 && git status)
+(cd $WS/repos/dem2 && git commit -m "message")
+
+# WRONG - Never assume you're in the right place
+git status  # Dangerous! Which repo am I in?
+```
+
+**Why this matters:**
+- Each submodule is an independent git repository
+- The workspace root (machina-meta) is ALSO a git repository
+- Running git commands in the wrong repo can corrupt state or create confusing commits
+- Path confusion can lead to committing in the wrong repo
+- Subshell pattern ensures explicit directory specification
+
+### 2. Push Policy
+
+**NEVER push to git repositories unless explicitly requested or confirmed by the user.**
+
+- Always commit changes locally
+- **DO NOT** run `git push` automatically
+- **DO NOT** push as part of workflows or multi-step operations
+- Ask the user first: "Should I push these changes to the remote repository?"
+- Only push if the user explicitly says "yes", "push", "push it", or gives clear confirmation
+
+### 3. Commit Message Policy
+
+**NEVER add Claude Code attribution or co-authorship credits to commit messages.**
+
+- **DO NOT** include `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+- **DO NOT** include `Co-Authored-By: Claude <noreply@anthropic.com>` or similar lines
+- Write clear, concise commit messages following conventional commit format (`feat:`, `fix:`, `chore:`, etc.)
+- Follow the existing repository's commit message style
+
+### Applies To
+
+These rules apply to:
+- machina-meta repository (workspace root)
+- All submodule repositories (repos/dem2, repos/dem2-webui, repos/dem2-infra, repos/medical-catalog)
+- Any git command: status, commit, push, pull, checkout, branch, log, diff, tag, etc.
+
+## Workspace Overview
+
+**machina-meta** is the unified workspace for the MachinaMed (dem2) platform. It coordinates multiple git repositories using git submodules, providing integrated development and deployment workflows.
+
+### Managed Repositories
+
+| Repository | Description | Tech Stack |
+|------------|-------------|------------|
+| **dem2** | MachinaMed backend - medical AI platform | Python 3.13, FastAPI, uv, Neo4j, PostgreSQL |
+| **dem2-webui** | MachinaMed frontend | Next.js 15, React 19, TypeScript, pnpm |
+| **dem2-infra** | Infrastructure management | Kubernetes, ArgoCD, Helm |
+| **medical-catalog** | Biomarker/medical catalog service | Python, FastAPI, Qdrant |
+| **gcloud-admin** | DevOps tooling container for GKE cluster operations | Docker, gcloud, kubectl, helm, k9s, argocd |
+
+## Repository Structure
+
+```
+machina-meta/
+├── repos/                    # Git submodules
+│   ├── dem2/                # Backend API (port 8000)
+│   ├── dem2-webui/          # Frontend (port 3000)
+│   ├── dem2-infra/          # Infrastructure configs
+│   └── medical-catalog/     # Catalog service
+├── gcloud-admin/            # DevOps container (kubectl, gcloud, k9s)
+│   ├── Dockerfile           # Admin container definition
+│   ├── docker-compose.yaml  # Container orchestration
+│   └── justfile             # kubectl/gcloud/helm wrappers
+├── scripts/                 # Workspace automation
+│   ├── bootstrap.sh
+│   ├── monitor-preview.sh   # ArgoCD preview monitoring
+│   ├── check-token-permissions.sh
+│   ├── status-all.sh
+│   └── sync-all.sh
+├── nix/                     # Nix package manager dependencies (managed by niv)
+│   └── sources.json         # Pinned package versions (argocd, etc.)
+├── shell.nix                # Nix shell environment with dev tools
+├── justfile                 # Unified operations
+├── README.md                # User documentation
+├── AGENTS.md                # AI assistant guidance (this file)
+└── CLAUDE.md                # Pointer to AGENTS.md
+```
+
+### Nix Development Environment
+
+The workspace uses Nix for reproducible development tooling:
+
+- **`nix/`**: Nix package sources managed by [niv](https://github.com/nmattia/niv)
+  - `sources.json`: Pinned versions of tools (ArgoCD CLI, etc.)
+  - Add packages: `niv add <package>`
+  - Update packages: `niv update <package>`
+
+- **`shell.nix`**: Development shell environment
+  - Auto-loads when entering directory (if using direnv/nix-shell)
+  - Provides: `argocd`, `gh`, `just`, and other CLI tools
+  - Enter manually: `nix-shell`
+
+### gcloud-admin DevOps Container
+
+The **gcloud-admin** directory contains a DevOps container for GKE cluster operations:
+
+**Purpose**: Provides consistent kubectl/gcloud/helm access without local installation
+- Runs in Docker with all Google Cloud tools pre-installed
+- Stores credentials in Docker volumes (persistent across rebuilds)
+- Used for cluster access, ArgoCD operations, and deployment management
+
+**Common operations**:
+```bash
+cd gcloud-admin
+
+# Authenticate and setup (first time)
+just setup-nonprod   # Setup nonprod cluster access
+
+# Run kubectl commands
+just kubectl get pods -n argocd
+just kubectl get applications -n argocd
+
+# Run other tools
+just helm list -A
+just k9s             # Interactive cluster UI
+```
+
+**Integration with machina-meta**:
+- The gcloud-admin justfile is imported as a module in the root justfile
+- List gcloud-admin commands: `just --list gcloud-admin`
+- Run commands using: `just gcloud-admin::<command>`
+- Examples:
+  - `just gcloud-admin::kubectl get pods -n argocd`
+  - `just gcloud-admin::helm list -A`
+  - `just gcloud-admin::k9s`
+  - `just gcloud-admin::setup-nonprod` (first-time setup)
+- See `gcloud-admin/CLAUDE.md` for complete documentation
+- Credentials persist in Docker volume `gcp-config-volume`
+
+## Quick Start
+
+```bash
+# Clone with submodules
+git clone --recursive https://github.com/NumberOne-AI/machina-meta.git
+cd machina-meta
+
+# Bootstrap (first time)
+just bootstrap
+
+# Check status
+just status
+just branches
+just dev-status
+
+# Start development (full stack in containers)
+just dev-up
+```
+
+## Working with the Workspace
+
+### When to Use Workspace Commands
+
+**Use workspace-level commands** (from machina-meta root) for:
+- Multi-repo feature development
+- Checking status across all services
+- Coordinated releases and tagging
+- Managing preview environments
+- Cross-repo branch operations
+
+**Use individual repo commands** (cd into repos/*) for:
+- Service-specific development
+- Running unit tests
+- Service-specific debugging
+- Committing changes
+
+### Common Development Patterns
+
+#### Multi-Repo Feature Development
+
+```bash
+# From machina-meta root
+just repo-checkout feature/my-feature
+
+# Work in individual repos
+cd repos/dem2
+# ... make changes ...
+git commit -m "feat: backend changes"
+git push origin feature/my-feature
+
+cd ../dem2-webui
+# ... make changes ...
+git commit -m "feat: frontend changes"
+git push origin feature/my-feature
+
+# Check status across all
+cd ../..
+just repo-status
+just repo-branches
+```
+
+#### Checking Workspace State
+
+```bash
+just repo-status    # Git status across all repos
+just repo-diff      # Show diffs across all repos
+just repo-branches  # Show current branches
+just repo-log 5     # Show last 5 commits from each repo
+just dev-status     # Check all dev servers (API, frontend, databases)
+```
+
+#### Syncing Repositories
+
+```bash
+just repo-sync      # Update all submodules to latest
+just repo-pull      # Pull latest in each repo
+```
+
+#### Development Stack
+
+```bash
+just dev-status   # Check what's running
+just dev-up       # Start full stack (containers)
+just dev-down     # Stop all services
+just dev-restart  # Rebuild and restart services
+```
+
+## Development Setup by Service
+
+### dem2 (Backend)
+
+```bash
+cd repos/dem2
+
+# Install dependencies
+uv sync
+
+# Start databases
+just dev-env-up -d
+
+# Run migrations
+uv run alembic upgrade head
+just graph-upgrade-head
+
+# Load fixtures
+just load-all-fixtures
+
+# Start server
+just run  # http://localhost:8000
+```
+
+**Key commands:**
+- `just check` - Format + lint + typecheck
+- `just test` - Run unit tests
+- `uv run mypy` - Type checking
+- `just graph-generate` - Regenerate graph models from schema.yml
+
+### dem2-webui (Frontend)
+
+```bash
+cd repos/dem2-webui
+
+# Install dependencies
+pnpm install
+
+# Generate API types (backend must be running)
+pnpm generate
+
+# Start dev server
+pnpm dev  # http://localhost:3000
+
+# Lint and format
+pnpm check
+```
+
+### medical-catalog (Catalog Service)
+
+```bash
+cd repos/medical-catalog
+
+# Install dependencies
+uv sync
+
+# Start service
+just run
+```
+
+### dem2-infra (Infrastructure)
+
+```bash
+cd repos/dem2-infra
+
+# Preview environments
+git checkout -b preview/my-test
+# Push to trigger deployment
+
+# Check current deployments
+kubectl get deployments -n tusdi-dev
+```
+
+## Architecture Overview
+
+### Service Integration
+
+```
+┌─────────────────┐
+│   dem2-webui    │  Port 3000 (Next.js)
+│   (Frontend)    │
+└────────┬────────┘
+         │ HTTP/WebSocket
+         ▼
+┌─────────────────┐
+│      dem2       │  Port 8000 (FastAPI)
+│   (Backend)     │
+└────────┬────────┘
+         │
+         ├──► PostgreSQL (5432)  - User data, sessions
+         ├──► Neo4j (7474,7687)  - Graph data
+         ├──► Redis (6379)       - Pub/sub, cache
+         ├──► Qdrant (6333)      - Vector embeddings
+         └──► medical-catalog    - Biomarker data
+```
+
+### Frontend-Backend Integration
+
+**API Contract:**
+- OpenAPI spec: `http://localhost:8000/api/v1/openapi.json`
+- Type generation: `cd repos/dem2-webui && pnpm generate`
+- Manual types: `repos/dem2-webui/src/types/`
+
+**Authentication:**
+- Dual JWT token system (access + refresh)
+- HTTP-only cookies
+- Auto-refresh on 401
+- Session polling every 60s
+
+**Real-Time (WebSocket):**
+- Endpoint: `ws://localhost:8000/api/v1/medical-data-engine/events`
+- Redis pub/sub backend
+- Auto-reconnection with exponential backoff
+
+**Patient Context Headers:**
+- `X-Patient-Context-ID` - Current patient
+- `X-Patient-Latitude` / `X-Patient-Longitude` - Location
+- `X-Client-Timezone` - Datetime handling
+
+## Git Submodules
+
+Each directory in `repos/` is an independent git repository tracked as a submodule.
+
+### Submodule Workflow
+
+```bash
+# Make changes in a submodule
+cd repos/dem2
+git checkout dev
+git pull
+# ... make changes ...
+git commit -am "changes"
+git push
+
+# Update parent workspace to track new commit
+cd ../..
+git add repos/dem2
+git commit -m "Update dem2 to latest dev"
+git push
+```
+
+### Submodule Tips
+
+- Changes are tracked in the submodule's own repository
+- The workspace tracks which commit each submodule points to
+- Use `just sync-all` to update all submodules to latest
+- Each submodule can be on different branches
+
+## Preview Environments
+
+Create preview environments for testing. See [docs/DEVOPS.md](docs/DEVOPS.md) for comprehensive guide on preview environments, monitoring, and troubleshooting.
+
+```bash
+# From machina-meta root
+just preview my-feature
+
+# Monitor deployment
+./scripts/monitor-preview.sh my-feature
+
+# This will:
+# 1. Tag dem2 and dem2-webui with preview-my-feature
+# 2. Create/checkout preview/my-feature branch in dem2-infra
+# 3. Push changes trigger ArgoCD deployment
+```
+
+## Development Services
+
+The development stack is organized into 5 categories:
+
+### Frontend
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| Frontend | 3000 | Next.js | http://localhost:3000 |
+
+### Backend
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| Backend API | 8000 | FastAPI | http://localhost:8000/docs |
+| Medical Catalog | 8001 | FastAPI | http://localhost:8001/health |
+
+### Database
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| PostgreSQL | 5432 | Relational | `psql -h localhost -U postgres` |
+| Neo4j | 7474, 7687 | Graph | http://localhost:7474 |
+
+### Infrastructure
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| Redis | 6379 | Cache/Pub-Sub | `redis-cli ping` |
+| Qdrant | 6333 | Vector Search | http://localhost:6333 |
+
+### Dev Tools
+| Service | Port | Type | Health Check |
+|---------|------|------|--------------|
+| RedisInsight | 5540 | Redis UI | http://localhost:5540 |
+
+## Integration with External Tools
+
+### gcloud-admin (DevOps Container)
+
+The gcloud-admin container (located outside this workspace) can mount machina-meta:
+
+```bash
+# From gcloud-admin directory
+just workspace-status    # Status from inside container
+just workspace-branches  # Branches from inside container
+just workspace-log       # Logs from inside container
+```
+
+The container mounts machina-meta at `/workspace/` for unified DevOps operations.
+
+## Common Patterns
+
+### Python Projects (dem2, medical-catalog)
+
+- Package manager: `uv`
+- Task runner: `just` (justfile)
+- Linting: `ruff`
+- Type checking: `mypy`
+- Config: `dynaconf` with `config.toml`
+- Testing: `pytest`
+
+### TypeScript/JavaScript (dem2-webui)
+
+- Package manager: `pnpm`
+- Linting/formatting: `biome`
+- Framework: Next.js 15 with App Router
+- State: React Context + hooks
+- API client: Wretch
+
+### Infrastructure (dem2-infra)
+
+- Orchestration: Kubernetes (GKE)
+- CI/CD: GitHub Actions + ArgoCD
+- Registry: Google Artifact Registry
+- Manifests: Kustomize
+
+## API Testing with curl_api
+
+Detailed documentation for using `curl_api` to test backend APIs is available in the **machina-docker** skill.
+
+Use `Skill` tool to load `machina-docker`, or refer to `.claude/skills/machina-docker/SKILL.md`.
+
+Quick reference:
+```bash
+(cd repos/dem2 && just curl_api '{"function": "list_documents"}')
+```
+
+## Environment Configuration
+- **Secrets**: `.env` files (never commit)
+- **Config**: `config.toml` files (can commit)
+- **Template**: `.env.example` in each repo
+
+## Git Workflow
+
+- **Main branches**: `dev` (active development), `main` (production)
+- **Feature branches**: `feature/description` or `TICKET-123-description`
+- **Commits**: Conventional commits (`feat:`, `fix:`, `chore:`, etc.)
+- **Preview envs**: `git tag -f preview-{id} && git push origin preview-{id} --force`
+
+## PROBLEMS.md - Issue Tracking
+
+The `PROBLEMS.md` file tracks known problems, issues, and challenges that may not yet have solutions.
+
+**Relationship to TODO.md**:
+- Problems are observations that need investigation before becoming actionable tasks
+- When a solution is identified, create a TODO item and link it to the problem
+- When the TODO is completed, mark the problem as SOLVED
+
+**Problem States**:
+- `[OPEN]` - Needs investigation to understand root cause
+- `[INVESTIGATING]` - Active analysis or proposed solutions exist
+- `[SOLVED]` - Completed TODO items address this problem
+- `[WONT_FIX]` - Acknowledged but intentionally not addressed
+
+**Severity Levels**:
+- `CRITICAL` - Blocking production or core functionality
+- `HIGH` - Significant impact on users or development
+- `MEDIUM` - Notable issue worth tracking
+- `LOW` - Minor annoyance or edge case
+
+## TODO.md - Task Tracking
+
+The `TODO.md` file tracks planned work, improvements, and technical debt.
+
+**Structure**: Organized as a tree following the workspace hierarchy:
+- `Workspace - Multi-Repo Features` - Cross-repository work
+- `Workspace - Infrastructure & CI/CD` - Workspace-level infrastructure
+- `Workspace - Documentation & Tooling` - Workspace-level docs and tools
+- Repository-specific sections (see individual repos)
+
+**Task States**:
+- `[PROPOSED]` - Under consideration, not yet approved
+- `[STARTED]` - Approved and in progress
+- `[REVIEW]` - Work completed, awaiting user review and approval before marking DONE
+- `[DONE]` - Completed and approved by user
+- `[REVERTED]` - Was DONE but later rolled back (e.g., git revert)
+- `[CANCELLED]` - Removed from scope with documented reason
+
+**Task Format**:
+Each task entry includes:
+- **State**: One of PROPOSED, STARTED, DONE, REVERTED, or CANCELLED
+- **Impact**: HIGH, MEDIUM, or LOW - estimate of value/importance
+- **Added**: Date task was created
+- **Completed**: Date task was finished (for DONE items)
+- **Subtasks**: Checkmarked list of completed work items
+
+**Impact Levels**:
+- `HIGH` - Critical for core functionality, blocking other work, or significant user value
+- `MEDIUM` - Important improvement, enhances quality or developer experience
+- `LOW` - Nice to have, minor improvement, or future consideration
+
+**Workflow**:
+- Add new tasks under the appropriate category with `[PROPOSED]` or `[STARTED]` state
+- Include impact estimate for prioritization
+- When completing work, mark as `[DONE]` with completion date
+- **Important**: DONE items should reference a relevant git commit that implements the change
+- Update continuously as work progresses
+- Include file paths for implementation context where helpful
+
+**Task Journal Requirements**:
+- **All changes to a task MUST be journaled within the task entry itself**
+- Adding steps: Add with `- [ ]` checkbox
+- Completing steps: Change `- [ ]` to `- [x]` with completion note
+- **Removing steps**: Do NOT delete silently. Mark as cancelled with reason:
+  - `- [CANCELLED] Step description - Reason for cancellation (YYYY-MM-DD)`
+- Changing scope: Add a note explaining the change
+- This preserves the full history of task evolution
+
+**Commit Requirements**:
+- **Every git commit MUST have an associated TODO.md item**
+- Before making a commit, ensure there is a corresponding task entry
+- If no task exists, create one (even retroactively) before or with the commit
+- Mark the task as DONE with completion date when work is finished
+- Trivial fixes (typos, formatting) may share a parent task or use a catch-all maintenance task
+
+**Immediate Commit Requirement**:
+- **Changes to PROBLEMS.md or TODO.md MUST be committed to git immediately after modification**
+- Do not batch changes to these files with other work
+- These files track project state and must be version-controlled as soon as they are updated
+
+**⚠️ CRITICAL: Task State Changes Require User Approval**:
+- **NEVER mark a task as [DONE] or a problem as [SOLVED] without explicit user approval**
+- When work is completed, change the task state to [REVIEW]
+- The [REVIEW] state indicates: "Work completed, awaiting user review and approval before marking DONE"
+- Wait for the user to explicitly approve ("mark it done", "looks good", "approved", etc.)
+- Only change from [REVIEW] to [DONE] after receiving explicit user approval
+- This applies to ALL repositories: machina-meta, dem2, dem2-webui, medical-catalog, dem2-infra
+- For problems: use [INVESTIGATING] until user confirms the solution is acceptable, then [SOLVED]
+
+## Project-Specific Documentation
+
+### Workspace Documentation
+
+- [docs/LLM.md](docs/LLM.md) - LLM integration and prompt engineering (use for prompt-related questions)
+- [docs/MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md) - Google ADK agent architecture
+- [docs/DATAFLOW.md](docs/DATAFLOW.md) - System data flow architecture
+- [docs/DEVOPS.md](docs/DEVOPS.md) - DevOps, preview environments, CI/CD, and ArgoCD deployment
+- [docs/DEVOPS_SKILLS.md](docs/DEVOPS_SKILLS.md) - Claude Code skills for DevOps tools (Git, GitHub, Jira, ArgoCD, GKE, Kubernetes, Docker)
+- [docs/CITATIONS.md](docs/CITATIONS.md) - Citation system guidelines
+- [docs/DIAGRAMS.md](docs/DIAGRAMS.md) - Diagram styling standards
+
+### Service Documentation
+
+- [repos/dem2/AGENTS.md](repos/dem2/AGENTS.md) - Backend development, architecture, testing
+- [repos/dem2-webui/AGENTS.md](repos/dem2-webui/AGENTS.md) - Frontend patterns, components, API integration
+- [repos/medical-catalog/AGENTS.md](repos/medical-catalog/AGENTS.md) - Catalog service specifics
+- [repos/dem2-infra/](repos/dem2-infra/) - Infrastructure deployment, ArgoCD
+
+## ⚠️ IMPORTANT: Documentation Maintenance
+
+### MULTI_AGENT_ARCHITECTURE.md - Keep Up to Date
+
+**[docs/MULTI_AGENT_ARCHITECTURE.md](docs/MULTI_AGENT_ARCHITECTURE.md)** documents MachinaMed's Google ADK agent architecture based on verified source code.
+
+**This file MUST be updated whenever agent code changes:**
+
+- Adding/removing agents (update agent types list and count)
+- Modifying agent configs (update routing rules, model selection, etc.)
+- Changing agent composition patterns (update architecture diagrams/examples)
+- Updating SafeAgentTool or other tool wrappers (update tool patterns section)
+- Modifying MachinaMedState (update state management section)
+- Changing callback patterns (update callback system section)
+
+**Location of agent code**: `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/`
+
+**How to update**:
+1. Identify which sections of MULTI_AGENT_ARCHITECTURE.md are affected by code changes
+2. Re-examine the changed source files
+3. Update MULTI_AGENT_ARCHITECTURE.md with verified information (mark as VERIFIED)
+4. Update the "Last Updated" date at the bottom
+5. Create TODO.md task for the documentation update
+6. Commit both files together
+
+**Never let MULTI_AGENT_ARCHITECTURE.md drift from actual implementation - it's a living reference document.**
+
+### DATAFLOW.md - System Data Flow Architecture
+
+**[docs/DATAFLOW.md](docs/DATAFLOW.md)** documents MachinaMed's complete data flow architecture with Mermaid and Graphviz diagrams.
+
+**Purpose**: Comprehensive visual and textual documentation of how data flows through the entire system, from user input through services, agents, databases, and back to the user.
+
+**Key Sections**:
+- System architecture overview
+- Service-level communication (frontend ↔ backend ↔ medical-catalog)
+- Frontend-backend HTTP/WebSocket flows
+- Agent processing (tool calling patterns, internal Python calls)
+- **Document processing pipeline** (upload → extraction → reconciliation → graph storage)
+- Database layer (PostgreSQL, Neo4j, Redis, Qdrant)
+- Container networking
+- Performance characteristics
+
+**This file MUST be updated whenever system architecture changes:**
+- Adding/removing services or databases
+- Changing API endpoints or communication patterns
+- Modifying agent tool calling mechanisms
+- **Updating document processing pipeline** (extraction agents, normalization rules, catalog integration)
+- Changing database schemas or graph patterns
+- Adding new data flows or integration points
+- Modifying authentication/authorization flows
+
+**Regeneration Process**:
+See **[docs/DATAFLOW_README.md](docs/DATAFLOW_README.md)** for detailed instructions on how to regenerate this documentation when the system changes. The process is designed to be repeatable and verification-based.
+
+**How to update**:
+1. Identify which data flows are affected by code changes
+2. Use the Explore agent to research actual implementation
+3. Verify all flows by reading source code (never assume)
+4. Update Mermaid diagrams in DATAFLOW.md
+5. Update corresponding Graphviz .dot files
+6. Update version number and "Last Updated" date
+7. Create TODO.md task for the documentation update
+8. Commit all updated files together
+
+**Never let DATAFLOW.md drift from actual implementation - it's a living reference document.**
+
+### LLM.md - LLM Integration and Prompt Engineering
+
+**[docs/LLM.md](docs/LLM.md)** - Comprehensive reference for LLM provider integrations and prompt engineering.
+
+**Use this document when**:
+- Modifying agent prompts (config.yml files)
+- Adding/changing LLM providers or models
+- Debugging prompt-related issues
+- Understanding prompt template system
+- Model selection or cost optimization questions
+
+**Update when**: Agent prompts change, new LLM providers added, model configurations modified, or prompt engineering patterns updated.
+
+See **[docs/LLM_README.md](docs/LLM_README.md)** for regeneration instructions.
+
+### Citation System - Verifiable Documentation
+
+**[docs/CITATIONS.md](docs/CITATIONS.md)** documents the citation system for MULTI_AGENT_ARCHITECTURE.md, DATAFLOW.md, and all architecture documentation.
+
+**Core Principle**: Every factual claim MUST be provable via an executable command (yq/jq/grep) that returns exit code 0.
+
+**When updating documentation, ALWAYS refer to [docs/CITATIONS.md](docs/CITATIONS.md) for**:
+- Tool selection guide (yq for YAML, jq for JSON, grep for code)
+- Citation format requirements
+- Verification protocols (test ALL citations before committing)
+- Update procedures
+
+### Diagram Styling Standards
+
+**When creating or updating any diagrams, schematics, or visual documents, refer to [docs/DIAGRAMS.md](docs/DIAGRAMS.md)** for required styling standards and best practices.
+
+**All diagrams use Graphviz .dot files with SVG output**:
+1. Create `.dot` file with proper styling and standard entity definitions
+2. Render to SVG: `dot -Tsvg diagram.dot -o diagram.svg`
+3. Reference in markdown: `![Description](diagram.svg)`
+4. Validate consistency: `./scripts/validate_diagram_consistency.py`
+5. Commit both `.dot` source and `.svg` output
+
+See [docs/DIAGRAMS.md](docs/DIAGRAMS.md) for complete workflow, standard entity definitions, and examples.
+
+## Workspace Principles
+
+1. **Submodules maintain independence** - Each repo has its own git history
+2. **Workspace provides coordination** - Unified commands for cross-repo operations
+3. **Service isolation** - Services can be developed and tested independently
+4. **Integrated deployment** - Preview environments coordinate across services
+
+## Quick Reference
+
+### Workspace Commands
+
+| Command | Purpose |
+|---------|---------|
+| `just bootstrap` | Initial setup |
+| `just repo-status` | Git status all repos |
+| `just repo-diff` | Show diffs all repos |
+| `just repo-branches` | Show current branches |
+| `just repo-checkout <branch>` | Checkout across all repos |
+| `just checkout-repo <repo> <branch>` | Checkout in specific repo |
+| `just dev-status` | Check all services |
+| `just dev-up` | Start full stack |
+| `just dev-down` | Stop all services |
+| `just dev-restart` | Rebuild and restart |
+| `just repo-check` | Lint/type check all |
+| `just repo-test` | Test all repos |
+| `just repo-log <n>` | Show commits |
+| `just preview <name>` | Create preview env |
+| `just neo4j-query "CYPHER"` | Execute Cypher query against Neo4j |
+
+### Neo4j Queries
+
+Query Neo4j from the command line using `just neo4j-query`:
+
+```bash
+# Example: List patients
+just neo4j-query "MATCH (n:PatientNode) RETURN n.first_name, n.last_name LIMIT 5"
+
+# Example: Count nodes by label
+just neo4j-query "MATCH (n) RETURN labels(n)[0] as label, count(n) as count ORDER BY count DESC"
+```
+
+- Returns results as JSON arrays (one array per row)
+- Useful for debugging, checking data, and validating extraction results
+
+### Service Commands
+
+| Action | dem2 | dem2-webui |
+|--------|------|------------|
+| Install | `uv sync` | `pnpm install` |
+| Run | `just run` | `pnpm dev` |
+| Check | `just check` | `pnpm check` |
+| Test | `just test` | `pnpm test` |
+
+### API Testing (dem2)
+
+| Command | Purpose |
+|---------|---------|
+| `(cd repos/dem2 && just curl_api '{"function": "list_documents"}')` | List uploaded documents |
+| `(cd repos/dem2 && just curl_api '{"function": "upload_file", "path": "file.pdf"}')` | Upload file |
+| `(cd repos/dem2 && just curl_api '{"function": "process_document", "file_id": "..."}')` | Process document |
+| `(cd repos/dem2 && just curl_api '{"function": "query_agent", "query": "..."}')` | Query medical agent |
+| `(cd repos/dem2 && just curl_api '{"function": "list_tasks"}')` | List processing tasks |
+
+See **machina-docker** skill for complete function reference.
+
+## Troubleshooting
+
+**Submodules out of sync:**
+```bash
+git submodule update --init --recursive
+just repo-sync
+```
+
+**Databases not starting:**
+```bash
+cd repos/dem2
+just dev-env-down
+just dev-env-up -d
+```
+
+**Frontend types out of date:**
+```bash
+cd repos/dem2-webui
+pnpm generate  # Backend must be running
+```
+
+**Port conflicts:**
+```bash
+just dev-status  # Check what's running
+# Kill conflicting processes or change ports in configs
+```
+
+For more help, see [README.md](README.md) or individual repo documentation.
