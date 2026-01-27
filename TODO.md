@@ -66,6 +66,33 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 
 ---
 
+## Workspace - DevOps & Environment Tooling
+
+- [STARTED] **Standardize K8s environment import and local development tooling** - Consistent env vars and localhost rewriting
+  - Impact: MEDIUM | Added: 2026-01-27
+  - Related Problem: "Inconsistent local/preview/dev/staging environment tooling" (PROBLEMS.md)
+  - **Completed**:
+    - [x] Add comparison mode to `import_k8s_environment.py` (`ad2c403`)
+    - [x] Add markdown table output for env comparison (`7522acb`, `9352343`)
+    - [x] Add automatic localhost rewriting for K8s hostnames (`12250a9`)
+    - [x] Add regex support for `port_forward_service.py` service matching (`12250a9`)
+    - [x] Standardize `user_manager.py` to use `DYNACONF_PG_DB__*` variables (`b387221e`)
+    - [x] Add `DYNACONF_BACKEND_API__HOST/PORT` env vars to K8s deployments (`60052ed`)
+    - [x] Add `[default.backend_api]` config section to dynaconf (`e9c0334b`)
+    - [x] Add `DYNACONF_BACKEND_API__HOST` to localhost rewrite vars (`bb87318`)
+  - **Remaining**:
+    - [ ] Update `curl_api.sh` to use `DYNACONF_BACKEND_API__*` variables
+    - [ ] Document standard workflow for local K8s environment access
+    - [ ] Add port rewriting to import script (not just hostnames)
+  - **Files Modified**:
+    - `scripts/import_k8s_environment.py` - K8s env import with localhost rewriting
+    - `scripts/port_forward_service.py` - Regex service matching
+    - `repos/dem2/scripts/user_manager.py` - Dynaconf variable standardization
+    - `repos/dem2-infra/k8s/base/app.yaml` - Backend API env vars
+    - `repos/dem2/machina/machina-medical/config.toml` - backend_api config section
+
+---
+
 ## Workspace - Multi-Repo Features
 
 - [PROPOSED] **Implement transactional multi-repo rebase with `just repo-rebase`** - Safe coordinated rebase across all submodules

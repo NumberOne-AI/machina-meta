@@ -167,6 +167,49 @@ Each problem includes:
 
 ---
 
+## Workspace - DevOps & Environment Tooling
+
+- [INVESTIGATING] **Inconsistent local/preview/dev/staging environment tooling** - Complex port forwarding setups, variable name mismatches
+  - Severity: MEDIUM | Added: 2026-01-27
+  - Related TODOs: "Standardize K8s environment import and local development tooling" (TODO.md)
+  - **Observations**:
+    - Local development requires manual port forwarding to K8s services (postgres, neo4j, redis, qdrant, tusdi-api)
+    - Environment variable names were inconsistent between K8s configs and local scripts
+    - Imported K8s env files contain service hostnames (e.g., `postgres`, `neo4j`) that don't resolve locally
+    - No standard way to reference internal API service (`tusdi-api`) from other pods or local scripts
+    - `curl_api.sh` requires `BACKEND_URL` but this wasn't defined anywhere in K8s
+  - **Specific Issues Found**:
+    1. `user_manager.py` used `POSTGRES_*` but K8s uses `DYNACONF_PG_DB__*` (fixed in `b387221e`)
+    2. K8s hostnames like `postgres`, `neo4j`, `redis` don't resolve on localhost after env import
+    3. No `DYNACONF_BACKEND_API__*` vars existed to reference the internal API service
+    4. Port forwarding required exact service name matches (no wildcards)
+  - **Impact**:
+    - Developer friction when switching between local and K8s environments
+    - Scripts fail silently or with confusing errors due to variable mismatches
+    - Manual hostname replacement needed after importing K8s env files
+  - **Solution Implemented** (2026-01-27):
+    - **machina-meta/scripts/import_k8s_environment.py**:
+      - `ad2c403` - Added comparison mode for .env files
+      - `7522acb` - Added markdown table output
+      - `12250a9` - Added automatic localhost rewriting for K8s hostnames
+      - `bb87318` - Added `DYNACONF_BACKEND_API__HOST` to rewrite vars
+    - **machina-meta/scripts/port_forward_service.py**:
+      - `12250a9` - Added regex fullmatch support for service names (e.g., `".*"` for all services)
+    - **repos/dem2/scripts/user_manager.py**:
+      - `132ee536` - Upgraded to machina-python standards (httpx, TypedDict)
+      - `b387221e` - Standardized to `DYNACONF_PG_DB__*` variables
+    - **repos/dem2-infra/k8s/base/app.yaml**:
+      - `60052ed` - Added `DYNACONF_BACKEND_API__HOST/PORT` to tusdi-api and tusdi-webui
+    - **repos/dem2/machina/machina-medical/config.toml**:
+      - `e9c0334b` - Added `[default.backend_api]` section
+  - **Remaining Work**:
+    - [ ] Update `curl_api.sh` to use `DYNACONF_BACKEND_API__*` variables
+    - [ ] Document standard workflow for local K8s environment access
+    - [ ] Add port rewriting to import script (not just hostnames)
+  - **Status**: Major improvements deployed; workflow now functional
+
+---
+
 ## Workspace - Documentation & Tooling
 
 - [OPEN] **Skillification context management challenges** - Risk of skills not loading when needed or loading unnecessarily
