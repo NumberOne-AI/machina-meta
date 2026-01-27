@@ -123,6 +123,7 @@ LOCALHOST_REWRITE_VARS = frozenset({
     "DYNACONF_PG_DB__HOST",
     "DYNACONF_NEO4J_DB__HOST",
     "DYNACONF_QDRANT__HOST",
+    "DYNACONF_BACKEND_API__HOST",
 })
 
 # Environment variable names that contain URLs with hostnames embedded.
