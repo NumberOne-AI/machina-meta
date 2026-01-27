@@ -4,7 +4,6 @@
 # dependencies = []
 # ///
 """Import and compare Kubernetes environment variables for local development.
->>>>>>> f18d61a (feat(scripts): add graphrag_cli.py using google-genai SDK and APOC)
 
 CRITICALLY IMPORTANT: Development Commands (machina-python standard)
 =====================================================================
@@ -88,12 +87,12 @@ class Symbol:
 
 def print_color(color: str, message: str) -> None:
     """Print colored output."""
-    print(f"{color}{message}{Color.NC}")  # noqa: T201
+    print(f"{color}{message}{Color.NC}")
 
 
 def print_header(title: str) -> None:
     """Print section header."""
-    print()  # noqa: T201
+    print()
     print_color(Color.CYAN, "=" * 60)
     print_color(Color.CYAN, title)
     print_color(Color.CYAN, "=" * 60)
@@ -101,7 +100,7 @@ def print_header(title: str) -> None:
 
 def print_kv(key: str, value: str) -> None:
     """Print key-value pair."""
-    print(f"  {key:<30} {value}")  # noqa: T201
+    print(f"  {key:<30} {value}")
 
 
 # ============================================================
@@ -900,6 +899,21 @@ def parse_env_line(line: str) -> tuple[str, str] | None:
     return (name, value)
 
 
+def _is_single_quoted(value: str) -> bool:
+    """Check if value is single-quoted: 'value'."""
+    return value.startswith("'") and value.endswith("'") and len(value) >= 2  # noqa: PLR2004
+
+
+def _is_double_quoted(value: str) -> bool:
+    """Check if value is double-quoted: "value"."""
+    return value.startswith('"') and value.endswith('"') and len(value) >= 2  # noqa: PLR2004
+
+
+def _is_ansi_c_quoted(value: str) -> bool:
+    """Check if value is ANSI-C quoted: $'value'."""
+    return value.startswith("$'") and value.endswith("'") and len(value) >= 3  # noqa: PLR2004
+
+
 def parse_quoted_value(raw_value: str) -> str:
     """Parse a potentially quoted value from .env file."""
     raw_value = raw_value.strip()
@@ -908,17 +922,17 @@ def parse_quoted_value(raw_value: str) -> str:
         return ""
 
     # Single-quoted: 'value'
-    if raw_value.startswith("'") and raw_value.endswith("'") and len(raw_value) >= 2:
+    if _is_single_quoted(raw_value):
         return raw_value[1:-1]
 
     # Double-quoted: "value"
-    if raw_value.startswith('"') and raw_value.endswith('"') and len(raw_value) >= 2:
+    if _is_double_quoted(raw_value):
         # Handle escape sequences in double quotes
         inner = raw_value[1:-1]
         return inner.replace('\\"', '"').replace("\\\\", "\\")
 
     # ANSI-C quoting: $'value'
-    if raw_value.startswith("$'") and raw_value.endswith("'") and len(raw_value) >= 3:
+    if _is_ansi_c_quoted(raw_value):
         inner = raw_value[2:-1]
         return inner.replace("\\'", "'").replace("\\\\", "\\")
 
@@ -997,33 +1011,42 @@ def truncate_value(value: str | None, *, max_length: int = 50) -> str:
     return repr(value[: max_length - 3] + "...")
 
 
-def print_compare_section(
-    *,
-    title: str,
-    color: str,
-    items: tuple[VarDiff, ...],
-    show_old: bool = False,
-    show_new: bool = False,
-    show_both: bool = False,
-) -> None:
-    """Print a section of comparison results."""
+def _print_diff_item(diff: VarDiff, *, mode: str) -> None:
+    """Print a single diff item based on display mode.
+
+    Args:
+        diff: The variable difference to print
+        mode: One of 'both', 'old', 'new', or 'name'
+    """
+    if mode == "both":
+        print(f"  {diff.name}")
+        print(f"    old: {truncate_value(diff.old_value)}")
+        print(f"    new: {truncate_value(diff.new_value)}")
+    elif mode == "old":
+        print(f"  {diff.name} = {truncate_value(diff.old_value)}")
+    elif mode == "new":
+        print(f"  {diff.name} = {truncate_value(diff.new_value)}")
+    else:
+        print(f"  {diff.name}")
+
+
+def print_compare_section(*, title: str, color: str, items: tuple[VarDiff, ...], mode: str = "name") -> None:
+    """Print a section of comparison results.
+
+    Args:
+        title: Section title (e.g., "REMOVED", "ADDED")
+        color: ANSI color code for the title
+        items: Tuple of VarDiff items to display
+        mode: Display mode - 'both' (old+new), 'old', 'new', or 'name' (default)
+    """
     if not items:
         return
 
-    print()  # noqa: T201
+    print()
     print_color(color, f"{title} ({len(items)}):")
 
     for diff in items:
-        if show_both:
-            print(f"  {diff.name}")  # noqa: T201
-            print(f"    old: {truncate_value(diff.old_value)}")  # noqa: T201
-            print(f"    new: {truncate_value(diff.new_value)}")  # noqa: T201
-        elif show_old:
-            print(f"  {diff.name} = {truncate_value(diff.old_value)}")  # noqa: T201
-        elif show_new:
-            print(f"  {diff.name} = {truncate_value(diff.new_value)}")  # noqa: T201
-        else:
-            print(f"  {diff.name}")  # noqa: T201
+        _print_diff_item(diff, mode=mode)
 
 
 def print_compare_result(result: CompareResult, *, show_identical: bool = True) -> None:
@@ -1031,21 +1054,21 @@ def print_compare_result(result: CompareResult, *, show_identical: bool = True) 
     print_header("Environment Comparison")
 
     total = len(result.removed) + len(result.added) + len(result.changed) + len(result.identical)
-    print()  # noqa: T201
-    print(f"  Total variables: {total}")  # noqa: T201
-    print(f"    Removed:   {len(result.removed)}")  # noqa: T201
-    print(f"    Added:     {len(result.added)}")  # noqa: T201
-    print(f"    Changed:   {len(result.changed)}")  # noqa: T201
-    print(f"    Identical: {len(result.identical)}")  # noqa: T201
+    print()
+    print(f"  Total variables: {total}")
+    print(f"    Removed:   {len(result.removed)}")
+    print(f"    Added:     {len(result.added)}")
+    print(f"    Changed:   {len(result.changed)}")
+    print(f"    Identical: {len(result.identical)}")
 
-    print_compare_section(title="REMOVED", color=Color.RED, items=result.removed, show_old=True)
-    print_compare_section(title="ADDED", color=Color.GREEN, items=result.added, show_new=True)
-    print_compare_section(title="CHANGED", color=Color.YELLOW, items=result.changed, show_both=True)
+    print_compare_section(title="REMOVED", color=Color.RED, items=result.removed, mode="old")
+    print_compare_section(title="ADDED", color=Color.GREEN, items=result.added, mode="new")
+    print_compare_section(title="CHANGED", color=Color.YELLOW, items=result.changed, mode="both")
 
     if show_identical:
-        print_compare_section(title="IDENTICAL", color=Color.CYAN, items=result.identical)
+        print_compare_section(title="IDENTICAL", color=Color.CYAN, items=result.identical, mode="name")
 
-    print()  # noqa: T201
+    print()
 
 
 def output_compare_as_json(result: CompareResult) -> None:
@@ -1062,7 +1085,7 @@ def output_compare_as_json(result: CompareResult) -> None:
             "identical": len(result.identical),
         },
     }
-    print(json.dumps(output_data, indent=2))  # noqa: T201
+    print(json.dumps(output_data, indent=2))
 
 
 # ============================================================
@@ -1070,10 +1093,11 @@ def output_compare_as_json(result: CompareResult) -> None:
 # ============================================================
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Import Kubernetes environment variables",
+def create_import_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    """Create the 'import' subcommand parser."""
+    import_parser = subparsers.add_parser(
+        "import",
+        help="Import environment variables from Kubernetes deployment",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -1086,58 +1110,66 @@ File permissions are set to 600 (owner read/write only).
 """,
     )
 
-    parser.add_argument(
-        "-n",
-        "--namespace",
-        required=True,
-        help="Kubernetes namespace",
-    )
-    parser.add_argument(
-        "-d",
-        "--deployment",
-        required=True,
-        help="Deployment name",
-    )
-    parser.add_argument(
-        "-c",
-        "--container",
-        help="Container name (default: first container)",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        help="Output file path (default: .env.<namespace>.<deployment>)",
-    )
-    parser.add_argument(
-        "--no-comments",
-        action="store_true",
-        help="Omit comments from output file",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output as JSON instead of .env file",
-    )
-    parser.add_argument(
-        "-q",
-        "--quiet",
-        action="store_true",
-        help="Suppress progress output",
+    import_parser.add_argument("-n", "--namespace", required=True, help="Kubernetes namespace")
+    import_parser.add_argument("-d", "--deployment", required=True, help="Deployment name")
+    import_parser.add_argument("-c", "--container", help="Container name (default: first container)")
+    import_parser.add_argument("-o", "--output", help="Output file path (default: .env.<namespace>.<deployment>)")
+    import_parser.add_argument("--no-comments", action="store_true", help="Omit comments from output file")
+    import_parser.add_argument("--json", action="store_true", help="Output as JSON instead of .env file")
+    import_parser.add_argument("-q", "--quiet", action="store_true", help="Suppress progress output")
+
+
+def create_compare_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    """Create the 'compare' subcommand parser."""
+    compare_parser = subparsers.add_parser(
+        "compare",
+        help="Compare two .env files",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s .env.old .env.new
+  %(prog)s .env.old .env.new --json
+  %(prog)s .env.old .env.new --no-identical
+""",
     )
 
-    return parser.parse_args()
+    compare_parser.add_argument("old_file", type=Path, help="Path to old/baseline .env file")
+    compare_parser.add_argument("new_file", type=Path, help="Path to new .env file")
+    compare_parser.add_argument("--json", action="store_true", help="Output as JSON")
+    compare_parser.add_argument("--no-identical", action="store_true", help="Hide identical variables")
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Import and compare Kubernetes environment variables",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    create_import_parser(subparsers)
+    create_compare_parser(subparsers)
+
+    args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+
+    return args
 
 
 def print_import_header(args: argparse.Namespace, output_path: Path) -> None:
     """Print import operation header."""
     print_header("Importing Kubernetes Environment")
-    print()  # noqa: T201
+    print()
     print_kv("Namespace", args.namespace)
     print_kv("Deployment", args.deployment)
     if args.container:
         print_kv("Container", args.container)
     print_kv("Output", str(output_path))
-    print()  # noqa: T201
+    print()
 
 
 def print_import_summary(result: ImportResult) -> None:
@@ -1157,16 +1189,16 @@ def print_import_summary(result: ImportResult) -> None:
 def print_warnings_and_errors(result: ImportResult) -> None:
     """Print warnings and errors from result."""
     if result.warnings:
-        print()  # noqa: T201
+        print()
         print_color(Color.YELLOW, f"{Symbol.WARN} Warnings:")
         for warning in result.warnings:
-            print(f"  - {warning}")  # noqa: T201
+            print(f"  - {warning}")
 
     if result.errors:
-        print()  # noqa: T201
+        print()
         print_color(Color.YELLOW, f"{Symbol.WARN} Errors (some vars missing):")
         for error in result.errors:
-            print(f"  - {error}")  # noqa: T201
+            print(f"  - {error}")
 
 
 def output_as_json(result: ImportResult) -> None:
@@ -1188,7 +1220,7 @@ def output_as_json(result: ImportResult) -> None:
         "warnings": result.warnings,
         "errors": result.errors,
     }
-    print(json.dumps(output_data, indent=2))  # noqa: T201
+    print(json.dumps(output_data, indent=2))
 
 
 def output_env_file(
@@ -1200,23 +1232,23 @@ def output_env_file(
 ) -> None:
     """Generate and output .env file."""
     if not quiet:
-        print()  # noqa: T201
+        print()
         print_color(Color.CYAN, "Generating environment file...")
 
     generate_env_file(result, output_path, include_comments=include_comments)
 
     if not quiet:
-        print()  # noqa: T201
+        print()
         print_color(
             Color.GREEN,
             f"{Symbol.CHECK} Environment file created: {output_path}",
         )
-        print()  # noqa: T201
-        print("  File permissions: 600 (owner read/write only)")  # noqa: T201
-        print()  # noqa: T201
-        print("  Usage:")  # noqa: T201
-        print(f"    source {output_path}")  # noqa: T201
-        print()  # noqa: T201
+        print()
+        print("  File permissions: 600 (owner read/write only)")
+        print()
+        print("  Usage:")
+        print(f"    source {output_path}")
+        print()
 
         resolved = sum(1 for v in result.env_vars.values() if v.value is not None)
         unresolved = len(result.env_vars) - resolved
@@ -1228,10 +1260,8 @@ def output_env_file(
             )
 
 
-def main() -> None:
-    """Entry point for the script."""
-    args = parse_args()
-
+def run_import_command(args: argparse.Namespace) -> None:
+    """Execute the import command."""
     # Determine output path
     output_path = Path(args.output) if args.output else WORKSPACE_ROOT / f".env.{args.namespace}.{args.deployment}"
 
@@ -1249,7 +1279,7 @@ def main() -> None:
     if not result.env_vars and result.errors:
         print_color(Color.RED, f"\n{Symbol.CROSS} Import failed:")
         for error in result.errors:
-            print(f"  - {error}")  # noqa: T201
+            print(f"  - {error}")
         sys.exit(1)
 
     if not args.quiet:
@@ -1266,6 +1296,30 @@ def main() -> None:
             include_comments=not args.no_comments,
             quiet=args.quiet,
         )
+
+
+def run_compare_command(args: argparse.Namespace) -> None:
+    """Execute the compare command."""
+    try:
+        result = compare_env_files(old_path=args.old_file, new_path=args.new_file)
+    except FileNotFoundError as e:
+        print_color(Color.RED, f"{Symbol.CROSS} {e}")
+        sys.exit(1)
+
+    if args.json:
+        output_compare_as_json(result)
+    else:
+        print_compare_result(result, show_identical=not args.no_identical)
+
+
+def main() -> None:
+    """Entry point for the script."""
+    args = parse_args()
+
+    if args.command == "import":
+        run_import_command(args)
+    elif args.command == "compare":
+        run_compare_command(args)
 
 
 if __name__ == "__main__":
