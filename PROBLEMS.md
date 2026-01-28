@@ -428,9 +428,10 @@ Each problem includes:
   - **Next Steps**:
     - [x] Test on all 4 environments (completed 2026-01-28)
     - [x] Identify root cause of modifier loss on staging (2026-01-28) - merge prompt bug
-    - [ ] Fix `_build_episode_merge_prompt()` to include modifiers (TODO added)
-    - [ ] Fix `list[string]` generator bug (add type mapping)
-    - [ ] Investigate why K8s environments fail to persist symptoms
+    - [x] Fix `_build_episode_merge_prompt()` to include modifiers (2026-01-28) - commit `1f69c15c`
+    - [x] Fix `list[string]` generator bug (add type mapping) (2026-01-28) - commit `1f69c15c`
+    - [ ] Verify fix on staging/preview environments
+    - [ ] Investigate why K8s environments fail to persist symptoms (BUG #3)
 
 - [OPEN] **Fragile Text-to-Cypher implementation in CypherAgent** - Custom regex-based parsing causes maintenance burden and risks
   - Severity: HIGH | Added: 2026-01-27

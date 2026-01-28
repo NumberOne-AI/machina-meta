@@ -182,11 +182,18 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - **Proposal**: [docs/proposals/GRAPH_RAG_MIGRATION.md](docs/proposals/GRAPH_RAG_MIGRATION.md)
   - **Goal**: Replace custom Text-to-Cypher implementation in `CypherAgent` with official library.
 
-- [PROPOSED] **Fix symptom episode merge prompt to include modifiers**
-  - Impact: HIGH | Added: 2026-01-28
+- [REVIEW] **Fix symptom episode merge prompt to include modifiers**
+  - Impact: HIGH | Added: 2026-01-28 | Implemented: 2026-01-28
   - Related Problem: "SymptomNode not created properly from conversational symptom queries" (PROBLEMS.md)
   - **Plan:** [docs/plans/FIX_symptom_node_creation.md](docs/plans/FIX_symptom_node_creation.md)
   - Evidence: [docs/evidence/REPORT_symptom_staging_test_20260128.md](docs/evidence/REPORT_symptom_staging_test_20260128.md)
+  - **Implementation** (2026-01-28):
+    - [x] Phase 1: Added `aggravating_factors`, `relieving_factors`, `associated_signs` to merge prompt (BUG #2)
+    - [x] Phase 2: Added `list[string]` type mapping to generator.py, regenerated nodes (BUG #1)
+    - [ ] Phase 3: K8s persistence investigation (BUG #3) - pending
+    - [ ] Phase 4: Verification on staging/preview environments
+  - **Commit:** `1f69c15c` (dem2, dbeal-docproc-dev branch)
+  - **Awaiting:** Verification on staging before marking DONE
   - **Problem**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt - when merging episodes, LLM returns NULL
   - **Impact**: Fresh symptom creation works correctly, but UPDATE/MERGE operations lose all modifier data
   - **Implementation**:
