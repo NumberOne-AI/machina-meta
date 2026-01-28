@@ -320,6 +320,42 @@ Each problem includes:
     - [ ] Update Neo4j storage to handle multiple intervals per reference range
     - [ ] Update frontend to display multiple intervals with clinical designations
 
+- [INVESTIGATING] **SymptomNode not created properly from conversational symptom queries** - Variable behavior across environments with symptom modifiers lost
+  - Severity: HIGH | Added: 2026-01-27 | Updated: 2026-01-28
+  - Related TODOs: None yet
+  - Related Problems: `list[string] generator bug` (EVIDENCE_list_string_generator_bug_20260123.md)
+  - Evidence: [docs/evidence/symptom-node-creation-test-results-20260127.json](docs/evidence/symptom-node-creation-test-results-20260127.json)
+  - **Problem Statement**:
+    - When a user describes a symptom with aggravating and relieving factors in natural language, the system should extract and create a SymptomEpisodeNode with those modifiers
+    - Test query: "I have a headache that gets worse when I'm stressed or in bright light, and gets better when I rest in a dark room."
+    - Expected: SymptomEpisodeNode with name="headache", aggravating_factors=["stress", "bright light"], relieving_factors=["rest in a dark room"]
+  - **Environment Testing Results** (2026-01-28):
+    - [x] **local-dev**: PROBLEM - Symptom created but `list[string]` fields stringified (e.g., `"['stress', 'bright light']"` instead of array)
+    - [x] **tusdi-preview-92**: PROBLEM - Symptom NOT created at all, agent only queried existing graph
+    - [x] **tusdi-dev**: PROBLEM - Symptom extracted (visible in session state) but NOT persisted to Neo4j
+    - [x] **tusdi-staging**: PROBLEM - Symptom created but `aggravating_factors` and `relieving_factors` are NULL
+  - **Key Findings**:
+    1. **local-dev** has the `list[string]` generator bug - modifiers captured but stored as strings not arrays
+    2. **K8s environments** (preview-92, dev) fail to persist symptoms entirely - extraction occurs but graph write fails silently
+    3. **tusdi-staging** creates symptom but loses modifiers during processing pipeline
+    4. Older symptoms in tusdi-dev have PROPER array format, suggesting code version drift or regression
+  - **Root Cause Hypotheses**:
+    1. `list[string]` generator bug affects local-dev (known issue)
+    2. K8s environments may have different code versions or missing database writes
+    3. MAX_TOKENS errors observed on staging may truncate extraction data
+    4. Symptom enricher or processor may silently drop modifiers on certain code paths
+  - **Affected Components**:
+    - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/DataExtractorAgent/` - Symptom extraction
+    - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/symptom.py` - SymptomProcessor
+    - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py` - Symptom enrichment
+    - `repos/dem2/services/graph-memory/src/machina/graph_memory/generator.py` - Node generator (list[string] mapping)
+  - **Next Steps**:
+    - [x] Test on all 4 environments (completed 2026-01-28)
+    - [ ] Investigate why K8s environments fail to persist symptoms
+    - [ ] Fix `list[string]` generator bug (add type mapping)
+    - [ ] Add logging to identify where modifiers are lost in staging pipeline
+    - [ ] Compare deployed code versions across environments
+
 - [OPEN] **Fragile Text-to-Cypher implementation in CypherAgent** - Custom regex-based parsing causes maintenance burden and risks
   - Severity: HIGH | Added: 2026-01-27
   - Related TODOs: "Migrate Text-to-Cypher to `neo4j-graphrag`" (TODO.md)

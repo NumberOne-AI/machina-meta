@@ -1,0 +1,110 @@
+{
+  "problem_id": "symptom-node-not-created-from-query",
+  "problem_refinement": "Variable behavior across ALL environments: local-dev creates symptom (with list[string] bug), K8s environments show inconsistent behavior - some don't persist symptoms, staging creates symptom but loses aggravating/relieving factors",
+  "related_problem": "EVIDENCE_list_string_generator_bug_20260123.md",
+  "test_date": "2026-01-27",
+  "test_query": "I have a headache that gets worse when I'm stressed or in bright light, and gets better when I rest in a dark room.",
+  "expected_behavior": {
+    "symptom_created": true,
+    "symptom_name": "headache",
+    "aggravating_factors": ["stress", "bright light"],
+    "relieving_factors": ["rest in a dark room"],
+    "aggravating_factors_type": "Neo4j array (list)",
+    "relieving_factors_type": "Neo4j array (list)"
+  },
+  "summary": {
+    "local_dev": "PROBLEM: Symptom created but list[string] fields stringified",
+    "tusdi_preview_92": "PROBLEM: Symptom NOT created at all",
+    "tusdi_dev": "PROBLEM: Symptom extracted but NOT persisted to Neo4j",
+    "tusdi_staging": "PROBLEM: Symptom created but aggravating_factors/relieving_factors are NULL (lost during processing)"
+  },
+  "environments": {
+    "local_dev": {
+      "status": "tested",
+      "tested_at": "2026-01-28T00:12:18Z",
+      "symptom_node_created": true,
+      "symptom_episode_node_uuid": "001b7c70-6155-42ca-bde5-91dd4a205d25",
+      "symptom_type_node_uuid": null,
+      "aggravating_factors_extracted": "['stress', 'bright light']",
+      "aggravating_factors_type_actual": "string (stringified Python list)",
+      "relieving_factors_extracted": "['rest', 'dark room']",
+      "relieving_factors_type_actual": "string (stringified Python list)",
+      "problem_exists": true,
+      "problem_description": "Symptom created but list fields stored as strings, not arrays. This is the list[string] generator bug.",
+      "notes": "Agent response correctly identified headache with modifiers. UUID linked in response. Neo4j shows stringified list values.",
+      "neo4j_query_result": {
+        "query": "MATCH (s:SymptomEpisodeNode {uuid: '001b7c70-6155-42ca-bde5-91dd4a205d25'}) RETURN s.uuid, s.name, s.aggravating_factors, s.relieving_factors, s.severity, s.created_at",
+        "result": ["001b7c70-6155-42ca-bde5-91dd4a205d25", "headache", "['stress', 'bright light']", "['rest', 'dark room']", null, 1769559152.341289]
+      }
+    },
+    "tusdi_preview_92": {
+      "status": "tested",
+      "tested_at": "2026-01-28T04:50:30Z",
+      "symptom_node_created": false,
+      "symptom_episode_node_uuid": null,
+      "symptom_type_node_uuid": null,
+      "aggravating_factors_extracted": null,
+      "relieving_factors_extracted": null,
+      "problem_exists": true,
+      "problem_description": "SymptomEpisodeNode NOT created at all. Agent queried existing graph but did not trigger DataExtractorAgent for symptom extraction.",
+      "notes": "Agent response: 'the specific headache symptoms you mentioned...were not found in the current graph results. If you intended to record these as new findings, they are not yet reflected in this summary.' Only 1 existing symptom in DB: 'itchy spleen'.",
+      "agent_response_excerpt": "Please note that the specific headache symptoms you mentioned (aggravated by stress and bright light, improved by rest in a dark room) were not found in the current graph results.",
+      "neo4j_query_result": {
+        "query": "MATCH (s:SymptomEpisodeNode) WHERE toLower(s.name) CONTAINS 'headache' RETURN s.uuid, s.name, s.aggravating_factors, s.relieving_factors, s.created_at ORDER BY s.created_at DESC LIMIT 5",
+        "result": "No results"
+      }
+    },
+    "tusdi_dev": {
+      "status": "tested",
+      "tested_at": "2026-01-28T05:00:00Z",
+      "symptom_node_created": false,
+      "symptom_episode_node_uuid": null,
+      "symptom_type_node_uuid": null,
+      "aggravating_factors_extracted": null,
+      "relieving_factors_extracted": null,
+      "problem_exists": true,
+      "problem_description": "Symptom extraction occurred (visible in session state) but SymptomEpisodeNode NOT persisted to Neo4j. Previous session shows DataExtractorAgent extracted {id:symp_1, code:25064002, type:Symptom, summary:headache occurred 2026-01-26} but no corresponding node in graph.",
+      "notes": "Prior test session (id: 3a3422cd-0986-42cc-90e6-d85d141c2643) from 2026-01-26 shows extraction in data_extractor_agent_state. No symptoms created after timestamp 1769000000. Existing older symptoms (fatigue, headache from ~Dec 2025) have PROPER array format for list fields - NOT stringified. This suggests K8s has different code version or the persistence step is failing silently.",
+      "existing_symptoms_format_note": "Older symptoms in tusdi-dev have proper Neo4j array format: aggravating_factors: [\"vitamin B1 intake\"] (array), not \"['vitamin B1 intake']\" (string)",
+      "session_evidence": {
+        "session_id": "3a3422cd-0986-42cc-90e6-d85d141c2643",
+        "last_user_message": "The patient, Stuart McClure, is experiencing a headache that worsens with stress or bright light and improves with rest in a dark room. Please record this symptom information.",
+        "data_extractor_state": {
+          "recent_extractions": [{"id": "symp_1", "code": "25064002", "type": "Symptom", "summary": "headache occurred 2026-01-26"}]
+        }
+      },
+      "neo4j_query_result": {
+        "query": "MATCH (s:SymptomEpisodeNode) WHERE s.created_at > 1769000000 RETURN s.uuid, s.name, s.aggravating_factors, s.relieving_factors, s.created_at ORDER BY s.created_at DESC",
+        "result": "No results"
+      }
+    },
+    "tusdi_staging": {
+      "status": "tested",
+      "expected_problem_exists": false,
+      "actual_problem_exists": true,
+      "tested_at": "2026-01-28T05:25:20Z",
+      "symptom_node_created": true,
+      "symptom_episode_node_uuid": "f6978d10-e5b4-437f-9a5b-0f5fa30b93ea",
+      "symptom_type_node_uuid": null,
+      "aggravating_factors_extracted": null,
+      "relieving_factors_extracted": null,
+      "problem_exists": true,
+      "problem_description": "Symptom created but aggravating_factors and relieving_factors are NULL - modifiers lost during extraction/processing pipeline",
+      "notes": "First attempt returned generic response 'I am a medical assistant...'. Second attempt said 'I've recorded this information' and created SymptomEpisodeNode. However, the modifiers (stress, bright light, rest in dark room) were NOT stored - both fields are null. finishReason was MAX_TOKENS on second attempt.",
+      "agent_responses": {
+        "first_attempt": "I am a medical assistant and can only help with questions related to your health.",
+        "second_attempt": "I've recorded this information. This will help me provide better support for your health journey moving forward"
+      },
+      "neo4j_query_result": {
+        "query": "MATCH (s:SymptomEpisodeNode) WHERE s.created_at > 1769577000 RETURN s.uuid, s.name, s.aggravating_factors, s.relieving_factors, s.created_at ORDER BY s.created_at DESC LIMIT 5",
+        "result": ["f6978d10-e5b4-437f-9a5b-0f5fa30b93ea", "headache", null, null, 1769577849.254313]
+      }
+    }
+  },
+  "verification_queries": {
+    "find_recent_symptom_episodes": "MATCH (s:SymptomEpisodeNode) WHERE s.name CONTAINS 'headache' OR toLower(s.name) CONTAINS 'headache' RETURN s ORDER BY s.created_at DESC LIMIT 5",
+    "find_symptom_types": "MATCH (t:SymptomTypeNode) WHERE toLower(t.name) CONTAINS 'headache' RETURN t LIMIT 5",
+    "count_recent_symptoms": "MATCH (s:SymptomEpisodeNode) WHERE s.created_at > datetime() - duration('PT1H') RETURN count(s) as count",
+    "verify_specific_symptom": "MATCH (s:SymptomEpisodeNode {uuid: '$UUID'}) RETURN s.uuid, s.name, s.aggravating_factors, s.relieving_factors, s.severity, s.created_at"
+  }
+}
