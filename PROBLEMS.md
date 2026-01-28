@@ -291,25 +291,48 @@ Each problem includes:
   - Jira: [MACH-1031](https://numberone.atlassian.net/browse/MACH-1031)
   - Related Issues: [MACH-83](https://numberone.atlassian.net/browse/MACH-83) (PDF and Image attachments handling)
   - Related Problems: "Reference range extraction incomplete - only extracts single interval" (below)
+  - Evidence Report: [docs/evidence/MACH-1031-reference-range-investigation-20260128.md](docs/evidence/MACH-1031-reference-range-investigation-20260128.md)
   - **Environment**: preview-92
   - **Problem Statement**:
     - In the latest automation run for Boston Heart Dec 2025, NO range values were found for any biomarkers
     - This is distinct from the "single interval" problem - here ZERO ranges are extracted
     - Reference: [Confluence draft page](https://numberone.atlassian.net/wiki/pages/resumedraft.action?draftId=289701889)
   - **Symptoms**:
-    - Medical reports processed but reference ranges are empty/null
+    - Medical reports processed but reference ranges reportedly empty/null in UI
     - Affects all biomarkers in the report, not just specific ones
     - Screenshot attached to MACH-1031 shows the issue
-  - **Potential Causes**:
-    - [ ] LLM prompt not requesting reference range extraction
-    - [ ] Reference range extraction disabled or broken in generic parser
-    - [ ] Boston Heart Dec 2025 report format not recognized
-    - [ ] Regression in document processing pipeline
+  - **Investigation Findings** (2026-01-28):
+    - **Backend data is HEALTHY** - ranges ARE being extracted and stored
+    - **preview-92 Neo4j stats**:
+      | Metric | Count |
+      |--------|-------|
+      | RangeIntervalNode | 3,042 |
+      | ReferenceRangeNode | 1,400 |
+      | ObservationValueNode | 1,375 |
+      | Observations with ranges | 1,212 (88%) |
+      | Observations without ranges | 163 (12%) |
+    - **Boston Heart Dec 2025 specific**:
+      - Document UUID: `18308da6-9736-4b9d-a631-e314d1bccfa3`
+      - Processing status: `completed`
+      - Total observations: 105
+      - With ranges: 93 (88.5%)
+      - Without ranges: 12 (11.5%) - mostly genotypes
+    - **Sample data verified** (ranges exist):
+      - AA/EPA Ratio: 2.53, Range: `<5.88 5.88-14.29 >14.29`, Category: Normal
+      - ALT: 64.0 U/L, Range: `>= 40`, Category: High
+      - ApoB: 63.0 mg/dL, Range: `<80 80-120 >120`, Category: Normal
+    - **Unmatched observations are expected**: genotypes (rs10033464, etc.), heavy metals below detection
+  - **Potential Causes** (updated):
+    - [x] Backend extraction broken - VERIFIED WORKING
+    - [x] Boston Heart Dec 2025 format not recognized - VERIFIED WORKING
+    - [ ] UI not displaying ranges that exist in backend
+    - [ ] API endpoint not returning range data correctly
+    - [ ] Misinterpretation of what "no ranges" means (genotypes vs lab values)
   - **Next Steps**:
-    - [ ] Review Boston Heart Dec 2025 PDF structure
-    - [ ] Check generic parser extraction output for this document
-    - [ ] Compare with previous Boston Heart reports that worked
-    - [ ] Trace extraction pipeline to identify where ranges are lost
+    - [ ] Check UI on preview-92 to verify range display
+    - [ ] Compare API response for observations endpoint
+    - [ ] Verify frontend is correctly reading range data from API
+    - [ ] Clarify with reporter which specific markers were missing ranges
 
 - [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
   - Severity: HIGH | Added: 2026-01-27
