@@ -322,7 +322,7 @@ Each problem includes:
 
 - [INVESTIGATING] **SymptomNode not created properly from conversational symptom queries** - Variable behavior across environments with symptom modifiers lost
   - Severity: HIGH | Added: 2026-01-27 | Updated: 2026-01-28
-  - Related TODOs: None yet
+  - Related TODOs: "Fix symptom episode merge prompt to include modifiers" (TODO.md)
   - Related Problems: `list[string] generator bug` (EVIDENCE_list_string_generator_bug_20260123.md)
   - Evidence: [docs/evidence/symptom-node-creation-test-results-20260127.json](docs/evidence/symptom-node-creation-test-results-20260127.json)
   - Test Report: [docs/evidence/REPORT_symptom_node_creation_20260128.md](docs/evidence/REPORT_symptom_node_creation_20260128.md)
@@ -340,11 +340,11 @@ Each problem includes:
     2. **K8s environments** (preview-92, dev) fail to persist symptoms entirely - extraction occurs but graph write fails silently
     3. **tusdi-staging** creates symptom but loses modifiers during processing pipeline
     4. Older symptoms in tusdi-dev have PROPER array format, suggesting code version drift or regression
-  - **Root Cause Hypotheses**:
-    1. `list[string]` generator bug affects local-dev (known issue)
-    2. K8s environments may have different code versions or missing database writes
-    3. MAX_TOKENS errors observed on staging may truncate extraction data
-    4. Symptom enricher or processor may silently drop modifiers on certain code paths
+  - **Root Cause Analysis** (2026-01-28):
+    - **BUG #1 (local-dev)**: `list[string]` generator bug - neomodel `StringProperty()` stringifies arrays
+    - **BUG #2 (all environments)**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt, so when merging existing episodes, the LLM has no data and returns NULL
+    - **Evidence**: Fresh creation works (modifiers stored correctly), but UPDATE path loses modifiers
+    - **File**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py` lines 753-803
   - **Affected Components**:
     - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/DataExtractorAgent/` - Symptom extraction
     - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/symptom.py` - SymptomProcessor
@@ -352,10 +352,10 @@ Each problem includes:
     - `repos/dem2/services/graph-memory/src/machina/graph_memory/generator.py` - Node generator (list[string] mapping)
   - **Next Steps**:
     - [x] Test on all 4 environments (completed 2026-01-28)
-    - [ ] Investigate why K8s environments fail to persist symptoms
+    - [x] Identify root cause of modifier loss on staging (2026-01-28) - merge prompt bug
+    - [ ] Fix `_build_episode_merge_prompt()` to include modifiers (TODO added)
     - [ ] Fix `list[string]` generator bug (add type mapping)
-    - [ ] Add logging to identify where modifiers are lost in staging pipeline
-    - [ ] Compare deployed code versions across environments
+    - [ ] Investigate why K8s environments fail to persist symptoms
 
 - [OPEN] **Fragile Text-to-Cypher implementation in CypherAgent** - Custom regex-based parsing causes maintenance burden and risks
   - Severity: HIGH | Added: 2026-01-27

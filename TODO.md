@@ -188,6 +188,18 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - **Proposal**: [docs/proposals/GRAPH_RAG_MIGRATION.md](docs/proposals/GRAPH_RAG_MIGRATION.md)
   - **Goal**: Replace custom Text-to-Cypher implementation in `CypherAgent` with official library.
 
+- [PROPOSED] **Fix symptom episode merge prompt to include modifiers**
+  - Impact: HIGH | Added: 2026-01-28
+  - Related Problem: "SymptomNode not created properly from conversational symptom queries" (PROBLEMS.md)
+  - Evidence: [docs/evidence/REPORT_symptom_staging_test_20260128.md](docs/evidence/REPORT_symptom_staging_test_20260128.md)
+  - **Problem**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt - when merging episodes, LLM returns NULL
+  - **Impact**: Fresh symptom creation works correctly, but UPDATE/MERGE operations lose all modifier data
+  - **Implementation**:
+    - [ ] Add `aggravating_factors`, `relieving_factors`, `associated_signs` to EXISTING EPISODE section
+    - [ ] Add same fields to NEW INPUT section from `resource` object
+    - [ ] Test: Create symptom, then update it - modifiers should be preserved
+  - **File**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py` (lines 753-803)
+
 ---
 
 ## Repository-Specific TODOs
