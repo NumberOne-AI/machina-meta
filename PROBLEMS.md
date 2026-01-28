@@ -286,7 +286,7 @@ Each problem includes:
 
 ## Workspace - Agent System
 
-- [INVESTIGATING] **No reference range values extracted from medical reports** - MACH-1031
+- [SOLVED] **No reference range values extracted from medical reports** - MACH-1031
   - Severity: HIGH | Added: 2026-01-28
   - Jira: [MACH-1031](https://numberone.atlassian.net/browse/MACH-1031)
   - Related Issues: [MACH-83](https://numberone.atlassian.net/browse/MACH-83) (PDF and Image attachments handling)
@@ -334,17 +334,28 @@ Each problem includes:
       - Value History chart: displays correctly ✅
       - Reference Ranges: N/A, N/A, N/A ❌
     - Backend has the data (verified via Neo4j), but UI shows nothing
-  - **Root Cause** (narrowed down):
+  - **Root Cause** (FOUND 2026-01-28):
     - [x] Backend extraction broken - VERIFIED WORKING
     - [x] Boston Heart Dec 2025 format not recognized - VERIFIED WORKING
     - [x] UI missing Reference Ranges section - NO, section exists but shows N/A
-    - [ ] **API endpoint not returning range data** - LIKELY CAUSE
-    - [ ] **Frontend not correctly parsing range data from API** - LIKELY CAUSE
-  - **Next Steps**:
-    - [x] Check UI on preview-92 to verify range display - DONE, shows N/A
-    - [ ] **Inspect API response** for biomarker/observation endpoint to see if ranges are included
-    - [ ] **Trace frontend code** that renders Reference Ranges section
-    - [ ] Compare API response structure between working (local/dev) and broken (preview-92) environments
+    - [x] API endpoint not returning range data - NOT THE ISSUE
+    - [x] Frontend code broken - NOT THE ISSUE (works locally)
+    - **ACTUAL CAUSE: Wrong frontend image deployed on preview-92**
+      - `dem2-infra` branch `preview/dbeal-docproc-dev` has:
+        ```yaml
+        # tusdi-webui uses WRONG tag:
+        newTag: latest  # ❌ Should be preview-dbeal-docproc-dev
+        ```
+      - Backend uses correct tag: `preview-dbeal-docproc-dev-e9c0334b112f7b82e7971b646a00e56828812860`
+      - Frontend uses `latest` which doesn't have range display code
+  - **Resolution** (2026-01-28):
+    - **Root cause confirmed**: Wrong frontend image deployed (`latest` instead of preview tag)
+    - **Fix**: Updated `preview-dbeal-docproc-dev` tag in dem2-webui to point to correct commit
+    - CI/CD workflow automatically updated dem2-infra kustomization:
+      - Before: `newTag: latest`
+      - After: `newTag: preview-dbeal-docproc-dev-034e0981d54579fb513d99f7e2a8335f45ff6602`
+    - **Verified**: Ranges now display correctly in table view and detail view
+    - Examples: `Potassium Range: 3.5-5.3`, `Insulin Range: Optimal <10, Borderline 10-15, Increased Risk >15 µU/mL`
 
 - [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
   - Severity: HIGH | Added: 2026-01-27
