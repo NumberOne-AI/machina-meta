@@ -556,6 +556,148 @@ For forwarding multiple services simultaneously with automatic restart on failur
 
 Press `Ctrl+C` to stop all port-forwards managed by the script.
 
+### Pattern 12: ArgoCD Application Sync and Management
+
+For syncing, monitoring, and troubleshooting ArgoCD deployments on GKE preview environments.
+
+**Prerequisites**:
+- gcloud-admin container setup completed (`just gcloud-admin::setup-nonprod`)
+- ArgoCD authentication (`just gcloud-admin::auth-argocd`)
+
+**Key Concepts**:
+- **ArgoCD app name**: Format is `argocd/<app-name>` (e.g., `argocd/preview-pr-92`)
+- **Kubernetes namespace**: Format is `tusdi-<env>` (e.g., `tusdi-preview-92`, `tusdi-staging`)
+- These are DIFFERENT: app name `preview-pr-92` deploys to namespace `tusdi-preview-92`
+
+**Check ArgoCD Authentication Status**:
+
+```bash
+# Verify you're logged in
+just gcloud-admin::auth-argocd-status
+
+# If not logged in, authenticate
+just gcloud-admin::auth-argocd
+```
+
+**List ArgoCD Applications**:
+
+```bash
+# List all apps
+just gcloud-admin::argocd app list
+
+# Filter preview apps
+just gcloud-admin::argocd app list | grep preview
+```
+
+**Check Application Status**:
+
+```bash
+# Get app summary (sync status, health, resources)
+just gcloud-admin::argocd app get argocd/preview-pr-92
+
+# Get status as JSON for scripting
+just gcloud-admin::argocd app get argocd/preview-pr-92 --output json | jq '{
+  sync_status: .status.sync.status,
+  health_status: .status.health.status,
+  operation_state: .status.operationState.phase
+}'
+```
+
+**Sync Application (Trigger Deployment)**:
+
+```bash
+# Basic sync - applies manifests from git
+just gcloud-admin::argocd app sync argocd/preview-pr-92
+
+# Force sync - override any drift
+just gcloud-admin::argocd app sync argocd/preview-pr-92 --force
+
+# Sync with prune - remove resources not in git
+just gcloud-admin::argocd app sync argocd/preview-pr-92 --prune
+```
+
+**Handle Stuck Operations**:
+
+If sync fails with "another operation is already in progress":
+
+```bash
+# Check current operation state
+just gcloud-admin::argocd app get argocd/preview-pr-92 --output json | jq '.status.operationState'
+
+# Terminate stuck operation
+just gcloud-admin::argocd app terminate-op argocd/preview-pr-92
+
+# Then retry sync
+just gcloud-admin::argocd app sync argocd/preview-pr-92
+```
+
+**Monitor Deployment Progress**:
+
+```bash
+# Watch pods in the namespace
+just gcloud-admin::kubectl get pods -n tusdi-preview-92 -w
+
+# Check specific deployment
+just gcloud-admin::kubectl get pods -n tusdi-preview-92 | grep tusdi-api
+
+# Get pod logs
+just gcloud-admin::kubectl logs -n tusdi-preview-92 <pod-name> --tail=100
+
+# Get recent events
+just gcloud-admin::kubectl get events -n tusdi-preview-92 --sort-by='.lastTimestamp' | tail -20
+```
+
+**Troubleshooting Unhealthy Deployments**:
+
+```bash
+# Check deployment status
+just gcloud-admin::kubectl describe deployment tusdi-api -n tusdi-preview-92
+
+# Check pod status and restart count
+just gcloud-admin::kubectl get pods -n tusdi-preview-92 -o wide
+
+# Check pod events for errors
+just gcloud-admin::kubectl describe pod <pod-name> -n tusdi-preview-92
+
+# Check pod logs for startup errors (like ImportError)
+just gcloud-admin::kubectl logs -n tusdi-preview-92 <pod-name> --tail=200
+```
+
+**Force Redeploy (Delete and Let ArgoCD Recreate)**:
+
+If a deployment is corrupted or stuck:
+
+```bash
+# Delete the deployment (ArgoCD will recreate it)
+just gcloud-admin::kubectl delete deployment tusdi-api -n tusdi-preview-92
+
+# Sync to trigger recreation
+just gcloud-admin::argocd app sync argocd/preview-pr-92
+
+# Monitor recreation
+just gcloud-admin::kubectl get pods -n tusdi-preview-92 -w
+```
+
+**Common Scenarios**:
+
+| Problem | Solution |
+|---------|----------|
+| ImportError on startup | Push code fix, ArgoCD auto-syncs, or manual sync |
+| Deployment deleted accidentally | `argocd app sync` recreates from manifests |
+| Sync stuck "in progress" | `argocd app terminate-op` then retry |
+| Pod CrashLoopBackOff | Check logs, fix code/config, push, sync |
+| Image pull error | Verify image exists in registry, check secrets |
+
+**Workflow: Fix Code Error on Preview**:
+
+1. **Identify error** (e.g., ImportError in pod logs)
+2. **Fix locally** and commit the fix
+3. **Push to branch** that the preview tracks
+4. **Wait for CI/CD** to build new image (GitHub Actions)
+5. **ArgoCD auto-syncs** or manually trigger: `just gcloud-admin::argocd app sync argocd/preview-pr-92`
+6. **Monitor pod** until healthy: `just gcloud-admin::kubectl get pods -n tusdi-preview-92 -w`
+7. **Verify fix** by checking pod logs: `just gcloud-admin::kubectl logs -n tusdi-preview-92 <pod-name> --tail=50`
+
 ---
 
 ## Volume Management
