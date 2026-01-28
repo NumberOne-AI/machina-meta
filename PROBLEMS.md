@@ -323,14 +323,17 @@ Each problem includes:
       - ApoB: 63.0 mg/dL, Range: `<80 80-120 >120`, Category: Normal
     - **Unmatched observations are expected**: genotypes (rs10033464, etc.), heavy metals below detection
   - **UI Verification** (2026-01-28):
-    - **CONFIRMED BUG**: UI detail view shows "Reference Ranges: N/A" for all markers
+    - **CONFIRMED BUG**: Ranges missing in BOTH table view AND detail view
     - Tested on preview-92.n1-machina.dev/markers
-    - Potassium marker detail dialog shows:
+    - **Table view (markers list)**:
+      - Name column shows: `Potassium` / `1` / `Unit: mmol/L`
+      - SHOULD show: `Potassium` / `1` / `Range: 3.5-5.0 mmol/L` / `Unit: mmol/L`
+      - The "Range: ..." line is completely missing ❌
+    - **Detail dialog (click on marker)**:
       - Latest Value: 4.4 mmol/L ✅
       - Value History chart: displays correctly ✅
       - Reference Ranges: N/A, N/A, N/A ❌
-    - The UI HAS a Reference Ranges section, but it's not displaying the data
-    - Backend has the data (verified via Neo4j), but UI shows N/A
+    - Backend has the data (verified via Neo4j), but UI shows nothing
   - **Root Cause** (narrowed down):
     - [x] Backend extraction broken - VERIFIED WORKING
     - [x] Boston Heart Dec 2025 format not recognized - VERIFIED WORKING
