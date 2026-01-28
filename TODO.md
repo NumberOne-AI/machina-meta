@@ -213,17 +213,20 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
   - **Implementation** (2026-01-28):
     - [x] Phase 1: Added `aggravating_factors`, `relieving_factors`, `associated_signs` to merge prompt (BUG #2)
     - [x] Phase 2: Added `list[string]` type mapping to generator.py, regenerated nodes (BUG #1)
+    - [x] Phase 2.5: Fixed SymptomType pydantic model type mismatch (BUG #4) - Changed `synonyms`/`tags` from `str | None` to `list[str] | None` across backend and frontend
     - [ ] Phase 3: K8s persistence investigation (BUG #3) - pending
     - [ ] Phase 4: Verification on staging/preview environments
-  - **Commit:** `1f69c15c` (dem2, dbeal-docproc-dev branch)
+  - **Commits:**
+    - `1f69c15c` (dem2, dbeal-docproc-dev branch) - BUG #1 and #2
+    - BUG #4 pending commit across dem2 and dem2-webui
   - **Awaiting:** Verification on staging before marking DONE
-  - **Problem**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt - when merging episodes, LLM returns NULL
-  - **Impact**: Fresh symptom creation works correctly, but UPDATE/MERGE operations lose all modifier data
-  - **Implementation**:
-    - [ ] Add `aggravating_factors`, `relieving_factors`, `associated_signs` to EXISTING EPISODE section
-    - [ ] Add same fields to NEW INPUT section from `resource` object
-    - [ ] Test: Create symptom, then update it - modifiers should be preserved
-  - **File**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py` (lines 753-803)
+  - **Files Modified (BUG #4)**:
+    - `packages/medical-types/src/machina/medical_types/symptom.py` - Changed synonyms/tags to `list[str] | None`
+    - `services/graph-memory/.../symptom_schema.py` - Updated 4 schema models
+    - `services/medical-data-engine/.../symptom_enricher.py` - Fixed `_create_type_from_catalog()` to pass arrays
+    - `src/types/symptoms.ts` (frontend) - Changed to `string[] | null`
+    - `src/components/symptoms/sections/symptom-about-section.tsx` (frontend) - Iterate arrays directly
+  - **Static Analysis:** All passed (mypy, ruff, biome, tsc)
 
 ---
 
@@ -244,6 +247,11 @@ Track changes to this TODO file: new items added, state changes, revisions, reor
 ### 2025-12-29
 - Created workspace-level TODO.md with framework instructions
 - Established structure for workspace-level vs repository-specific task tracking
+
+### 2026-01-28
+- Updated symptom fix task with BUG #4 (SymptomType pydantic model type mismatch) fix details.
+- Fixed `synonyms`/`tags` type alignment across backend (medical-types, graph-memory, medical-data-engine) and frontend (symptoms.ts, symptom-about-section.tsx).
+- All static analysis passed (mypy, ruff, biome, tsc).
 
 ### 2026-01-27
 - Moved completed tasks to DONE.md.

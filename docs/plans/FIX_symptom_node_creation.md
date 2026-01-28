@@ -1,9 +1,10 @@
 # Plan: Fix SymptomNode Creation Issues
 
 **Created:** 2026-01-28
-**Status:** PROPOSED
+**Status:** IN PROGRESS (Phases 1, 2, 2.5 COMPLETED)
 **Related Problem:** PROBLEMS.md "SymptomNode not created properly from conversational symptom queries"
 **Related TODO:** TODO.md "Fix symptom episode merge prompt to include modifiers"
+**Last Updated:** 2026-01-28
 
 ## Executive Summary
 
@@ -31,11 +32,12 @@ SymptomEpisodeNode:
 
 ## Identified Bugs
 
-| Bug | Environment | Root Cause | Severity |
-|-----|-------------|------------|----------|
-| BUG #1 | local-dev | `list[string]` generator bug - arrays stringified | HIGH |
-| BUG #2 | ALL | Merge prompt missing modifier fields | HIGH |
-| BUG #3 | K8s (preview-92, dev) | Unknown - symptoms not persisted | HIGH |
+| Bug | Environment | Root Cause | Severity | Status |
+|-----|-------------|------------|----------|--------|
+| BUG #1 | local-dev | `list[string]` generator bug - arrays stringified | HIGH | ✅ FIXED |
+| BUG #2 | ALL | Merge prompt missing modifier fields | HIGH | ✅ FIXED |
+| BUG #3 | K8s (preview-92, dev) | Unknown - symptoms not persisted | HIGH | INVESTIGATING |
+| BUG #4 | ALL | SymptomType pydantic model type mismatch | HIGH | ✅ FIXED |
 
 ---
 
@@ -67,15 +69,17 @@ repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher
 
 ### Implementation Steps
 
-1. [ ] Read current `_build_episode_merge_prompt()` implementation
-2. [ ] Add `aggravating_factors` to EXISTING EPISODE section (from `existing_episode`)
-3. [ ] Add `relieving_factors` to EXISTING EPISODE section (from `existing_episode`)
-4. [ ] Add `associated_signs` to EXISTING EPISODE section (from `existing_episode`)
-5. [ ] Add `aggravating_factors` to NEW INPUT section (from `resource`)
-6. [ ] Add `relieving_factors` to NEW INPUT section (from `resource`)
-7. [ ] Add `associated_signs` to NEW INPUT section (from `resource`)
-8. [ ] Run linting and type checks: `(cd repos/dem2 && just check)`
+1. [x] Read current `_build_episode_merge_prompt()` implementation - **DONE (2026-01-28)**
+2. [x] Add `aggravating_factors` to EXISTING EPISODE section (from `existing_episode`) - **DONE**
+3. [x] Add `relieving_factors` to EXISTING EPISODE section (from `existing_episode`) - **DONE**
+4. [x] Add `associated_signs` to EXISTING EPISODE section (from `existing_episode`) - **DONE**
+5. [x] Add `aggravating_factors` to NEW INPUT section (from `resource`) - **DONE**
+6. [x] Add `relieving_factors` to NEW INPUT section (from `resource`) - **DONE**
+7. [x] Add `associated_signs` to NEW INPUT section (from `resource`) - **DONE**
+8. [x] Run linting and type checks: `(cd repos/dem2 && just check)` - **PASSED**
 9. [ ] Test on local-dev: Create symptom, then update it - verify modifiers preserved
+
+**Commit:** `1f69c15c` (dem2, dbeal-docproc-dev branch)
 
 ### Test Plan
 
@@ -133,13 +137,15 @@ repos/dem2/services/graph-memory/src/machina/graph_memory/generator.py
 
 ### Implementation Steps
 
-1. [ ] Read current `generator.py` type_map
-2. [ ] Add `"list[string]": ("ArrayProperty", "ArrayProperty")` entry
-3. [ ] Verify ArrayProperty import exists
-4. [ ] Regenerate graph nodes: `(cd repos/dem2 && just graph-generate)`
-5. [ ] Verify `nodes.py` now has `ArrayProperty(StringProperty())` for modifier fields
-6. [ ] Run linting and type checks: `(cd repos/dem2 && just check)`
+1. [x] Read current `generator.py` type_map - **DONE (2026-01-28)**
+2. [x] Add `"list[string]": ("ArrayProperty", "ArrayProperty")` entry - **DONE**
+3. [x] Verify ArrayProperty import exists - **DONE**
+4. [x] Regenerate graph nodes: `(cd repos/dem2 && just graph-generate)` - **DONE**
+5. [x] Verify `nodes.py` now has `ArrayProperty(StringProperty())` for modifier fields - **VERIFIED**
+6. [x] Run linting and type checks: `(cd repos/dem2 && just check)` - **PASSED**
 7. [ ] Test on local-dev: Create symptom with modifiers, verify stored as arrays not strings
+
+**Commit:** `1f69c15c` (dem2, dbeal-docproc-dev branch)
 
 ### Test Plan
 
@@ -160,6 +166,102 @@ just neo4j-query "MATCH (s:SymptomEpisodeNode) RETURN s.aggravating_factors LIMI
 1. Revert generator.py change
 2. Regenerate graph nodes
 3. Commit revert
+
+---
+
+## Phase 2.5: Fix SymptomType Pydantic Model Type Mismatch (BUG #4) ✅ COMPLETED
+
+**Priority:** HIGH - Discovered during testing
+**Estimated Effort:** Medium
+**Risk:** Medium (touches API schemas and frontend)
+**Status:** ✅ COMPLETED (2026-01-28)
+
+### Problem
+
+During testing, a `ValidationError` was discovered:
+```
+ValidationError: 2 validation errors for SymptomType
+synonyms: Input should be a valid string [type=string_type, input_value=['n', 'e', 'u', 'r', 'o',...], input_type=list]
+tags: Input should be a valid string [type=string_type, input_value=['n', 'e', 'u', 'r', 'o',...], input_type=list]
+```
+
+**Root Cause:**
+- Neo4j stores `synonyms` and `tags` as `ArrayProperty(StringProperty())` (arrays)
+- `SymptomType` pydantic model expected `str | None` (string)
+- When `node_to_symptom_type()` passed arrays to pydantic, validation failed
+
+### Solution
+
+Align all type definitions to use `list[str] | None` across:
+1. Backend pydantic models
+2. Backend API schemas
+3. Frontend TypeScript types
+4. Frontend React components
+
+### Files Modified
+
+**Backend (dem2):**
+```
+packages/medical-types/src/machina/medical_types/symptom.py
+  - Changed synonyms, tags from str | None to list[str] | None
+
+services/graph-memory/src/machina/graph_memory/medical/graph/condition/symptom_schema.py
+  - Changed synonyms, tags in 4 models:
+    - SymptomTypeCreate
+    - SymptomTypeUpdate
+    - SymptomTypeResponse
+    - SymptomTypeDetailResponse
+
+services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py
+  - Fixed _create_type_from_catalog() to pass arrays directly (was joining to comma-separated strings)
+```
+
+**Frontend (dem2-webui):**
+```
+src/types/symptoms.ts
+  - Changed synonyms, tags from string | null to string[] | null in:
+    - SymptomType interface
+    - SymptomTypeDetailResponse interface
+
+src/components/symptoms/sections/symptom-about-section.tsx
+  - Removed unused parseCommaSeparated() helper
+  - Now iterates arrays directly
+```
+
+### Implementation Steps
+
+1. [x] Identify root cause: pydantic type mismatch with Neo4j storage
+2. [x] Update `SymptomType` in medical-types package
+3. [x] Update API schemas in graph-memory service
+4. [x] Update symptom_enricher to pass arrays (not comma-joined strings)
+5. [x] Update frontend TypeScript types
+6. [x] Update frontend React component
+7. [x] Run static analysis: mypy, ruff, biome, tsc - **ALL PASSED**
+8. [ ] Test end-to-end with symptom creation
+
+### Verification
+
+```bash
+# Backend static analysis
+(cd repos/dem2 && uv run ruff check --select=E,W,F,B,I,UP,N,S,PL,RUF --line-length 120 \
+  packages/medical-types/src/machina/medical_types/symptom.py \
+  services/graph-memory/src/machina/graph_memory/medical/graph/condition/symptom_schema.py \
+  services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py)
+# Result: All checks passed!
+
+(cd repos/dem2 && uv run mypy --strict \
+  packages/medical-types/src/machina/medical_types/symptom.py \
+  services/graph-memory/src/machina/graph_memory/medical/graph/condition/symptom_schema.py \
+  services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py)
+# Result: Success: no issues found
+
+# Frontend static analysis
+(cd repos/dem2-webui && pnpm biome check src/types/symptoms.ts src/components/symptoms/sections/symptom-about-section.tsx)
+# Result: No errors detected
+
+(cd repos/dem2-webui && pnpm tsc --noEmit)
+# Result: No errors
+```
 
 ---
 
@@ -267,7 +369,7 @@ Will be determined based on investigation findings.
 ```
 repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/
 ├── enricher/
-│   └── symptom_enricher.py        # BUG #2 - merge prompt
+│   └── symptom_enricher.py        # BUG #2 - merge prompt, BUG #4 - _create_type_from_catalog()
 ├── engine/
 │   ├── engine.py                  # Resource preparation
 │   └── processors/
@@ -278,10 +380,20 @@ repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/
 repos/dem2/services/graph-memory/src/machina/graph_memory/
 ├── generator.py                   # BUG #1 - type mapping
 └── medical/graph/condition/
-    └── nodes.py                   # Generated node definitions
+    ├── nodes.py                   # Generated node definitions
+    └── symptom_schema.py          # BUG #4 - API schemas (SymptomTypeCreate, etc.)
+
+repos/dem2/packages/medical-types/src/machina/medical_types/
+└── symptom.py                     # BUG #4 - SymptomType pydantic model
 
 repos/dem2/services/medical-agent/src/machina/medical_agent/agents/
 └── DataExtractorAgent/
     ├── agent.py                   # LLM extraction
     └── config.yml                 # Agent configuration
+
+repos/dem2-webui/src/
+├── types/
+│   └── symptoms.ts                # BUG #4 - Frontend TypeScript types
+└── components/symptoms/sections/
+    └── symptom-about-section.tsx  # BUG #4 - React component rendering
 ```
