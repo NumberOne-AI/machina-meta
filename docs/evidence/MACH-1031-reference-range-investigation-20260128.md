@@ -9,7 +9,11 @@
 
 Investigation of reported issue: "No range values are found in any of the medical reports" on preview-92 environment for Boston Heart Dec 2025 automation run.
 
-**Finding**: Backend data is healthy. Reference ranges ARE being extracted and stored correctly. Issue may be UI-related or a misinterpretation of the data.
+**Status**: ✅ **RESOLVED**
+
+**Root Cause**: Wrong frontend Docker image deployed on preview-92. The `dem2-infra` kustomization was using `newTag: latest` instead of the preview-specific tag.
+
+**Resolution**: Updated `preview-dbeal-docproc-dev` tag in dem2-webui, which triggered CI/CD workflow to update dem2-infra with correct image tag.
 
 ## Environment Tested
 
@@ -138,19 +142,81 @@ RETURN CASE WHEN ri IS NOT NULL THEN 'has_range' ELSE 'no_range' END as status,
 -- Result: has_range: 93, no_range: 12
 ```
 
+## UI Investigation
+
+### Initial UI State (Before Fix)
+
+Tested on `preview-92.n1-machina.dev/markers` using Playwright browser automation:
+
+**Table View (markers list)**:
+- Name column showed: `Potassium` / `1` / `Unit: mmol/L`
+- Expected: `Potassium` / `1` / `Range: 3.5-5.0 mmol/L` / `Unit: mmol/L`
+- The "Range: ..." line was **completely missing**
+
+**Detail Dialog (click on marker)**:
+- Latest Value: 4.4 mmol/L ✅
+- Value History chart: displayed correctly ✅
+- Reference Ranges section: **N/A, N/A, N/A** ❌
+
+### Root Cause Analysis
+
+Checked `dem2-infra` repository, branch `preview/dbeal-docproc-dev`:
+
+```yaml
+# k8s/overlays/preview/kustomization.yaml
+images:
+  - name: us-central1-docker.pkg.dev/n1-machina1/tusdi/tusdi-api:latest
+    newTag: preview-dbeal-docproc-dev-e9c0334b112f7b82e7971b646a00e56828812860  # ✅ Correct
+
+  - name: us-central1-docker.pkg.dev/n1-machina1/tusdi/tusdi-webui:latest
+    newTag: latest  # ❌ WRONG - should be preview tag
+```
+
+**Problem**: Backend was using correct preview tag, but frontend was using `latest` which didn't have the range display code.
+
+### Resolution
+
+1. **Updated dem2-webui tag**: Moved `preview-dbeal-docproc-dev` tag from `be6ab90` (Jan 22) to `034e098` (Jan 27)
+   ```bash
+   cd repos/dem2-webui
+   git tag -d preview-dbeal-docproc-dev
+   git tag preview-dbeal-docproc-dev origin/dbeal-docproc-dev
+   git push origin preview-dbeal-docproc-dev --force
+   ```
+
+2. **CI/CD Workflow Triggered**: `n1-bot-dev` automatically updated dem2-infra:
+   ```
+   03f256e chore: update webui image to preview-dbeal-docproc-dev-034e0981d54579fb513d99f7e2a8335f45ff6602 for preview environment
+   ```
+
+3. **ArgoCD Deployed**: New frontend image deployed to preview-92
+
+### Verified Fix
+
+After deployment, UI now shows ranges correctly:
+
+| Marker | Range Displayed |
+|--------|-----------------|
+| Potassium | `Range: 3.5-5.3` ✅ |
+| Estradiol | `Range: <=39.8` ✅ |
+| Total Testosterone | `Range: 187.72-684.19` ✅ |
+| Free T3 | `Range: 2.0-4.4` ✅ |
+| Total Cholesterol | `Range: <200` ✅ |
+| Uric Acid | `Range: 4.0-8.0` ✅ |
+| Calcium | `Range: 8.6-10.3` ✅ |
+| Triglycerides | `Range: <150` ✅ |
+| Sodium | `Range: 135-146` ✅ |
+| Ferritin | `Range: 22-322 ng/mL` ✅ |
+| Albumin | `Range: 3.6-5.1` ✅ |
+| Insulin | `Range: Optimal <10, Borderline 10-15, Increased Risk >15 µU/mL` ✅ |
+
 ## Conclusions
 
 1. **Backend extraction is working correctly** - 88% of observations have range matches
 2. **Boston Heart Dec 2025 specifically has ranges** - 93/105 observations (88.5%) have ranges
 3. **Unmatched observations are expected** - genotypes and specialty tests without standard ranges
-4. **Issue may be UI-related** - need to verify frontend display
-
-## Next Steps
-
-1. [ ] Check UI on preview-92 to see if ranges are displayed
-2. [ ] Compare API response for observations endpoint
-3. [ ] Verify frontend is correctly reading range data from API
-4. [ ] Clarify with reporter what specific markers were missing ranges
+4. **Root cause was deployment issue** - wrong frontend Docker image (`latest` vs preview tag)
+5. **Issue resolved** - updating preview tag triggered CI/CD to deploy correct frontend
 
 ## Raw Data
 
