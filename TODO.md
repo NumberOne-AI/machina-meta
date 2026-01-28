@@ -191,6 +191,7 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
 - [PROPOSED] **Fix symptom episode merge prompt to include modifiers**
   - Impact: HIGH | Added: 2026-01-28
   - Related Problem: "SymptomNode not created properly from conversational symptom queries" (PROBLEMS.md)
+  - **Plan:** [docs/plans/FIX_symptom_node_creation.md](docs/plans/FIX_symptom_node_creation.md)
   - Evidence: [docs/evidence/REPORT_symptom_staging_test_20260128.md](docs/evidence/REPORT_symptom_staging_test_20260128.md)
   - **Problem**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt - when merging episodes, LLM returns NULL
   - **Impact**: Fresh symptom creation works correctly, but UPDATE/MERGE operations lose all modifier data

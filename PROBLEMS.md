@@ -393,10 +393,11 @@ Each problem includes:
 
 - [INVESTIGATING] **SymptomNode not created properly from conversational symptom queries** - Variable behavior across environments with symptom modifiers lost
   - Severity: HIGH | Added: 2026-01-27 | Updated: 2026-01-28
+  - **Plan:** [docs/plans/FIX_symptom_node_creation.md](docs/plans/FIX_symptom_node_creation.md)
   - Related TODOs: "Fix symptom episode merge prompt to include modifiers" (TODO.md)
   - Related Problems: `list[string] generator bug` (EVIDENCE_list_string_generator_bug_20260123.md)
   - Evidence: [docs/evidence/symptom-node-creation-test-results-20260127.json](docs/evidence/symptom-node-creation-test-results-20260127.json)
-  - Test Report: [docs/evidence/REPORT_symptom_node_creation_20260128.md](docs/evidence/REPORT_symptom_node_creation_20260128.md)
+  - Test Report: [docs/evidence/REPORT_symptom_staging_test_20260128.md](docs/evidence/REPORT_symptom_staging_test_20260128.md)
   - **Problem Statement**:
     - When a user describes a symptom with aggravating and relieving factors in natural language, the system should extract and create a SymptomEpisodeNode with those modifiers
     - Test query: "I have a headache that gets worse when I'm stressed or in bright light, and gets better when I rest in a dark room."
