@@ -176,6 +176,29 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - All 27 reference range tests pass, all 10 observation interval tests pass
       - Commit: `f9484ace` (dem2), `fe4cc00` (dem2-webui)
 
+- [DONE] **Simplify IntervalCategory enum from 10 to 5 categories** - Consolidate category schema with 3 colors
+  - Impact: HIGH | Added: 2026-01-28 | Completed: 2026-01-28
+  - **Plan:** [docs/plans/simplify-categories.md](docs/plans/simplify-categories.md)
+  - **Problem**: Original 10-category schema (Ideal, Optimal, Normal, Borderline, Elevated, Abnormal, Low, High, Critical Low, Critical High) was overly complex and inconsistent
+  - **Solution**: Consolidated to 5 logical categories with 3 colors:
+    - Low (Red): Falls outside reference range (below lower limit)
+    - Diminished (Yellow): Within reference range but near lower boundary
+    - Normal (Green): Healthy/optimal/target range
+    - Elevated (Yellow): Within reference range but near upper boundary
+    - High (Red): Falls outside reference range (above upper limit)
+  - **Implementation**:
+    - [x] Updated `IntervalCategory` enum in `observation.py` and `medcat/models.py`
+    - [x] Updated frontend TypeScript enum in `fhir-storage.ts`
+    - [x] Updated color mappings in `observation-range-helpers.ts` and `interval-status-badge.tsx`
+    - [x] Updated `formatReferenceRange()` in `name.tsx`
+    - [x] Standardized field names: `label`→`clinical_designation`, `low`→`lower_reference_limit`, `high`→`upper_reference_limit`
+    - [x] Updated vital signs reference ranges with explicit categories
+    - [x] Removed deprecated `infer_category_from_label()` function
+    - [x] Updated generic parser prompt with Category Classification section
+    - [x] Updated tests (37 tests pass)
+    - [x] Updated documentation (`REFERENCE_RANGE_EXTRACTION.md`)
+  - **Files Modified**: 14 files across dem2 and dem2-webui (see plan file for full list)
+  - **Commits**: Multiple commits on `dbeal-docproc-dev` branches
 
 - [PROPOSED] **Migrate Text-to-Cypher to `neo4j-graphrag`** - Standardize GraphRAG implementation
   - Impact: HIGH | Added: 2026-01-27
