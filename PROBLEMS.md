@@ -357,39 +357,31 @@ Each problem includes:
     - **Verified**: Ranges now display correctly in table view and detail view
     - Examples: `Potassium Range: 3.5-5.3`, `Insulin Range: Optimal <10, Borderline 10-15, Increased Risk >15 µU/mL`
 
-- [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
-  - Severity: HIGH | Added: 2026-01-27
-  - Related TODOs: "Support multi-interval reference range extraction in generic parser" (TODO.md)
+- [SOLVED] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
+  - Severity: HIGH | Added: 2026-01-27 | Solved: 2026-01-28
+  - Related TODOs: "Support multi-interval reference range extraction in generic parser" (TODO.md) [REVIEW]
   - **Problem Statement**:
     - Current generic parser extracts only ONE reference range interval per biomarker (e.g., `<18 mg/L`)
     - Real lab reports often include multiple range classifications for a single biomarker
     - Example: hs-CRP may have: `<1.0 mg/L (Low Risk)`, `1.0-3.0 mg/L (Borderline)`, `>3.0 mg/L (Increased Risk)`
     - Example: BMI may have: `18.5-24.9 (Normal)`, `25.0-29.9 (Overweight)`, `30.0+ (Obese)`
     - Users cannot see the full clinical context of their results
-  - **Current Behavior**:
-    - Generic parser extracts: `reference_range: "<18 mg/L"` (single text field)
-    - Interval matching only works with one range boundary
-    - Clinical designations like "Optimal", "Borderline", "High Risk" are lost
-  - **Required Data to Extract**:
-    1. **Range interval notation**: The numeric bounds (e.g., `<1.0`, `1.0-3.0`, `>3.0`, `18.5-24.9`)
-    2. **Range unit**: The measurement unit (e.g., `mg/L`, `kg/m²`, `mmol/L`)
-    3. **Range clinical designation**: The clinical label (e.g., `Normal`, `Borderline`, `Increased Risk`, `Optimal`, `Obese`)
-  - **Affected Components**:
-    - `repos/dem2/services/docproc/src/machina/docproc/extractors/generic_parser.py` - LLM extraction
-    - `repos/dem2/packages/medical-types/src/machina/medical_types/observation.py` - Data models
-    - `repos/dem2/services/medical-data-engine/` - Graph storage
-    - `repos/dem2-webui/src/components/fhir-storage/` - Frontend display
-  - **Impact**:
-    - Clinical context lost during extraction
-    - Interval matching incomplete (can only match against single range)
-    - Users must manually interpret multi-range reference tables
-  - **Next Steps**:
-    - [ ] Analyze sample lab reports to catalog multi-interval patterns
-    - [ ] Design updated LLM output schema supporting array of intervals
-    - [ ] Update generic parser prompts to extract all intervals
-    - [ ] Update data models (`RangeInterval`, `ObservationReferenceRange`)
-    - [ ] Update Neo4j storage to handle multiple intervals per reference range
-    - [ ] Update frontend to display multiple intervals with clinical designations
+  - **Solution Implemented** (2026-01-28):
+    - Updated LLM output schema with `ExtractionReferenceRangeInterval` model
+    - Updated generic parser prompts to request array of intervals
+    - Added `_create_reference_range_from_intervals()` method in `observation_converter.py`
+    - Fixed type errors in `code_resolver.py` and `metadata_enricher.py`
+    - Frontend already supports multi-interval display via `ReferenceRangeDisplay` component
+    - All 27 reference range tests pass, all 10 observation interval tests pass
+    - Commits: `f9484ace` (dem2), `fe4cc00` (dem2-webui)
+  - **Completed Steps**:
+    - [x] Analyze sample lab reports to catalog multi-interval patterns
+    - [x] Design updated LLM output schema supporting array of intervals
+    - [x] Update generic parser prompts to extract all intervals
+    - [x] Update data models (`RangeInterval`, `ObservationReferenceRange`)
+    - [x] Update Neo4j storage to handle multiple intervals per reference range
+    - [x] Update frontend to display multiple intervals with clinical designations
+    - [x] Fix remaining type errors (2026-01-28)
 
 - [INVESTIGATING] **SymptomNode not created properly from conversational symptom queries** - Variable behavior across environments with symptom modifiers lost
   - Severity: HIGH | Added: 2026-01-27 | Updated: 2026-01-28

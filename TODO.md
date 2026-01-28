@@ -167,6 +167,14 @@ Do not batch changes to TODO.md or PROBLEMS.md with other work. These files trac
       - Updated `ReferenceRangeDisplay`, `ObservationHistoryChart`, and `ObservationValueForm`
     - [x] **Phase 7: Testing** - End-to-end validation (2026-01-27)
       - Verified successful extraction from `Boston Heart July 2021.pdf`
+    - [x] **Phase 8: Type Error Fixes** - Fix remaining mypy errors (2026-01-28)
+      - Fixed `observation_converter.py`: Added `_create_reference_range_from_intervals()` method
+      - Fixed `code_resolver.py`: Use `document_reference_range.stringify()` instead of missing `reference_range_str`
+      - Fixed `metadata_enricher.py`: Same fix for LLM prompt context
+      - Fixed `observation-history-chart.tsx`: Corrected variable name `reference_range` (was `referenceRange`)
+      - Updated `REFERENCE_RANGE_EXTRACTION.md` documentation
+      - All 27 reference range tests pass, all 10 observation interval tests pass
+      - Commit: `f9484ace` (dem2), `fe4cc00` (dem2-webui)
 
 
 - [PROPOSED] **Migrate Text-to-Cypher to `neo4j-graphrag`** - Standardize GraphRAG implementation
