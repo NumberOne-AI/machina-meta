@@ -93,3 +93,66 @@ The symptom extraction pipeline works correctly for **new symptom creation**. Th
 **TODO Added:** See TODO.md "Fix symptom episode merge prompt to include modifiers"
 
 **Status:** ROOT CAUSE IDENTIFIED - Merge prompt missing modifier fields
+
+---
+
+## K8s Environment Investigation (2026-01-28)
+
+### Data Flow Analysis
+
+Traced the complete symptom processing pipeline for conversational queries:
+
+```
+DataExtractorAgent._after_model_callback()
+  ↓ ExtractUserQueryResources parsed from LLM response
+  ↓ data.is_empty() check
+  ↓ data_callback(engine_input)
+  ↓
+MedicalDataEngineService.process_raw_medical_data()
+  ↓ patient_id validation
+  ↓ ProcessingTask created and queued
+  ↓
+TaskWorker._process_task()
+  ↓ self.engine.process(task.engine_input)
+  ↓
+MedicalDataEngine.process()
+  ↓ _prepare_resource_data() extracts prepared.symptoms
+  ↓ symptom_processor.process()
+  ↓
+SymptomProcessor.process()
+  ↓ _process_single_resource() for each symptom
+  ↓ find_in_storage() or enrich_and_create()
+  ↓ Returns ResourceProcessingResult with stats
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `services/medical-agent/.../DataExtractorAgent/agent.py` | LLM extraction, calls `data_callback()` |
+| `services/medical-data-engine/src/.../service.py` | Task queuing, worker management |
+| `services/medical-data-engine/src/.../worker.py` | Task processing, calls `engine.process()` |
+| `services/medical-data-engine/src/.../engine/engine.py` | Resource preparation, processor orchestration |
+| `services/medical-data-engine/src/.../engine/processors/symptom.py` | Symptom processing, error handling |
+
+### Potential K8s Failure Points
+
+1. **LLM Extraction Failure**: `DataExtractorAgent` uses `gemini-3-pro-preview` - may behave differently across environments
+2. **Patient ID Missing**: `process_raw_medical_data()` returns `None` early if `patient_id` is missing
+3. **Silent Exception Handling**: `SymptomProcessor._process_single_resource()` catches exceptions and increments `failed` count without re-raising
+
+### Error Logging Patterns to Search
+
+```
+# In K8s logs, search for:
+symptom_processing_failed      # Exception during symptom processing
+task_processing_completed      # Check total_stats for failed > 0
+process_raw_medical_data_missing_patient_id  # Patient ID validation failed
+```
+
+### Recommended Next Steps
+
+1. **Enable debug logging** on tusdi-preview-92/dev for `machina.medical_data_engine.engine.processors.symptom`
+2. **Query K8s logs** for `symptom_processing_failed` and `task_processing_completed`
+3. **Check LLM response** - verify `ExtractUserQueryResources.symptoms` is not empty after extraction
+4. **Compare configurations** - check for environment-specific settings that might affect symptom processing

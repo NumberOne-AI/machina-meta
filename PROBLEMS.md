@@ -345,6 +345,17 @@ Each problem includes:
     - **BUG #2 (all environments)**: `_build_episode_merge_prompt()` in `symptom_enricher.py` does NOT include `aggravating_factors`, `relieving_factors`, or `associated_signs` in the LLM prompt, so when merging existing episodes, the LLM has no data and returns NULL
     - **Evidence**: Fresh creation works (modifiers stored correctly), but UPDATE path loses modifiers
     - **File**: `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/enricher/symptom_enricher.py` lines 753-803
+  - **Data Flow Analysis for K8s Environments** (2026-01-28):
+    - Traced full pipeline: `DataExtractorAgent` → `data_callback()` → `MedicalDataEngineService.process_raw_medical_data()` → `TaskWorker` → `MedicalDataEngine.process()` → `SymptomProcessor.process()`
+    - **DataExtractorAgent** (lines 99-142 in `agent.py`) parses LLM response into `ExtractUserQueryResources`, calls `data_callback(engine_input)` if `not data.is_empty()`
+    - **MedicalDataEngineService** (lines 92-145 in `service.py`) creates `ProcessingTask`, queues for worker
+    - **TaskWorker** (lines 132-146 in `worker.py`) calls `self.engine.process()`, logs `total_stats` including symptom failures
+    - **SymptomProcessor** (lines 206-319 in `symptom.py`) processes resources, catches exceptions and increments `failed` count
+    - **Potential K8s failure points**:
+      1. LLM (gemini-3-pro-preview) doesn't extract symptoms - different behavior per environment
+      2. Missing `patient_id` in `process_raw_medical_data()` returns `None` early
+      3. `SymptomProcessor` exceptions caught but swallowed (logged, not re-raised)
+    - **Next investigation**: Check K8s logs for `symptom_processing_failed`, `task_processing_completed` with `failed > 0`
   - **Affected Components**:
     - `repos/dem2/services/medical-agent/src/machina/medical_agent/agents/DataExtractorAgent/` - Symptom extraction
     - `repos/dem2/services/medical-data-engine/src/machina/medical_data_engine/engine/processors/symptom.py` - SymptomProcessor
