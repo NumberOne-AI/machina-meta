@@ -322,17 +322,26 @@ Each problem includes:
       - ALT: 64.0 U/L, Range: `>= 40`, Category: High
       - ApoB: 63.0 mg/dL, Range: `<80 80-120 >120`, Category: Normal
     - **Unmatched observations are expected**: genotypes (rs10033464, etc.), heavy metals below detection
-  - **Potential Causes** (updated):
+  - **UI Verification** (2026-01-28):
+    - **CONFIRMED BUG**: UI detail view shows "Reference Ranges: N/A" for all markers
+    - Tested on preview-92.n1-machina.dev/markers
+    - Potassium marker detail dialog shows:
+      - Latest Value: 4.4 mmol/L ✅
+      - Value History chart: displays correctly ✅
+      - Reference Ranges: N/A, N/A, N/A ❌
+    - The UI HAS a Reference Ranges section, but it's not displaying the data
+    - Backend has the data (verified via Neo4j), but UI shows N/A
+  - **Root Cause** (narrowed down):
     - [x] Backend extraction broken - VERIFIED WORKING
     - [x] Boston Heart Dec 2025 format not recognized - VERIFIED WORKING
-    - [ ] UI not displaying ranges that exist in backend
-    - [ ] API endpoint not returning range data correctly
-    - [ ] Misinterpretation of what "no ranges" means (genotypes vs lab values)
+    - [x] UI missing Reference Ranges section - NO, section exists but shows N/A
+    - [ ] **API endpoint not returning range data** - LIKELY CAUSE
+    - [ ] **Frontend not correctly parsing range data from API** - LIKELY CAUSE
   - **Next Steps**:
-    - [ ] Check UI on preview-92 to verify range display
-    - [ ] Compare API response for observations endpoint
-    - [ ] Verify frontend is correctly reading range data from API
-    - [ ] Clarify with reporter which specific markers were missing ranges
+    - [x] Check UI on preview-92 to verify range display - DONE, shows N/A
+    - [ ] **Inspect API response** for biomarker/observation endpoint to see if ranges are included
+    - [ ] **Trace frontend code** that renders Reference Ranges section
+    - [ ] Compare API response structure between working (local/dev) and broken (preview-92) environments
 
 - [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
   - Severity: HIGH | Added: 2026-01-27
