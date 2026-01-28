@@ -286,6 +286,31 @@ Each problem includes:
 
 ## Workspace - Agent System
 
+- [INVESTIGATING] **No reference range values extracted from medical reports** - MACH-1031
+  - Severity: HIGH | Added: 2026-01-28
+  - Jira: [MACH-1031](https://numberone.atlassian.net/browse/MACH-1031)
+  - Related Issues: [MACH-83](https://numberone.atlassian.net/browse/MACH-83) (PDF and Image attachments handling)
+  - Related Problems: "Reference range extraction incomplete - only extracts single interval" (below)
+  - **Environment**: preview-92
+  - **Problem Statement**:
+    - In the latest automation run for Boston Heart Dec 2025, NO range values were found for any biomarkers
+    - This is distinct from the "single interval" problem - here ZERO ranges are extracted
+    - Reference: [Confluence draft page](https://numberone.atlassian.net/wiki/pages/resumedraft.action?draftId=289701889)
+  - **Symptoms**:
+    - Medical reports processed but reference ranges are empty/null
+    - Affects all biomarkers in the report, not just specific ones
+    - Screenshot attached to MACH-1031 shows the issue
+  - **Potential Causes**:
+    - [ ] LLM prompt not requesting reference range extraction
+    - [ ] Reference range extraction disabled or broken in generic parser
+    - [ ] Boston Heart Dec 2025 report format not recognized
+    - [ ] Regression in document processing pipeline
+  - **Next Steps**:
+    - [ ] Review Boston Heart Dec 2025 PDF structure
+    - [ ] Check generic parser extraction output for this document
+    - [ ] Compare with previous Boston Heart reports that worked
+    - [ ] Trace extraction pipeline to identify where ranges are lost
+
 - [OPEN] **Reference range extraction incomplete - only extracts single interval** - Many labs provide multiple range classifications (Normal, Borderline, Increased Risk)
   - Severity: HIGH | Added: 2026-01-27
   - Related TODOs: "Support multi-interval reference range extraction in generic parser" (TODO.md)
