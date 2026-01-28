@@ -86,6 +86,17 @@ Revise the category system throughout the codebase, consolidating from 10 catego
 - [x] **Update Router** - Fixed `graph-memory/.../observation/router.py` to check only `IntervalCategory.NORMAL` (removed OPTIMAL reference)
 - [x] **Update Documentation** - Updated `REFERENCE_RANGE_EXTRACTION.md` to use new 5-category schema (NORMAL, ELEVATED, HIGH) and new field names (clinical_designation, interval_notation, lower_reference_limit, upper_reference_limit). Deleted outdated code examples and Future Enhancements section.
 
+- [x] **Medical Catalog Models** (`repos/dem2/packages/external/src/machina/external/medcat/models.py`)
+  - Found separate `IntervalCategory` enum with old 10-value schema
+  - Updated to new 5-category schema (Low, Diminished, Normal, Elevated, High)
+  - Updated docstring with color mapping and meanings
+
+- [x] **Frontend Interval Status Badge** (`repos/dem2-webui/src/components/fhir-storage/interval-status-badge.tsx`)
+  - Found switch statement still handling old categories (Ideal, Optimal, Borderline, Abnormal, Critical High, Critical Low)
+  - Updated switch to handle only 5 new categories
+  - Removed unused `darkRed` color style
+  - Updated comment to document 5 categories with 3 colors
+
 ---
 
 ## Vital Signs Category Mapping Analysis
@@ -178,3 +189,5 @@ The old `infer_category_from_label()` function used keyword matching which had s
 | `repos/dem2/packages/medical-types/tests/test_reference_range_intervals.py`                                      | Updated tests to use new 5-category schema                                           |
 | `repos/dem2/services/graph-memory/tests/test_observation_interval_matching.py`                                   | Updated tests to use new 5-category schema                                           |
 | `repos/dem2/docs/REFERENCE_RANGE_EXTRACTION.md`                                                                  | Updated examples to new 5-category schema and field names, deleted Future Enhancements |
+| `repos/dem2/packages/external/src/machina/external/medcat/models.py`                                             | Updated separate IntervalCategory enum to 5-category schema                            |
+| `repos/dem2-webui/src/components/fhir-storage/interval-status-badge.tsx`                                         | Updated switch statement to 5 categories, removed darkRed color                        |
